@@ -24,8 +24,7 @@
 
 #define BROADCAST_UID 0
 
-//#define INITIAL_SERIAL_PRESCALER 208 // 9615 Baud (close to 9600 Baud)
-#define INITIAL_SERIAL_PRESCALER 5 // 400 kBaud
+#define INITIAL_SERIAL_PRESCALER 6 // 333 kBaud
 
 // Internal array of LED data
 CRGB leds[NUM_LEDS];
@@ -36,7 +35,7 @@ TXOnlySerial debug_serial(TX_DEBUG_PIN);
 // The UID for this board. The bar will only answer to messages sent to this specific UID,
 //  or to the broadcast UID
 // Fixed for now. Should be written in Flash for each board.
-uint8_t uid = 42;
+uint8_t uid = 16;
 
 // The index of the byte currently being received 
 uint8_t byte_index = 0;
@@ -132,6 +131,8 @@ inline uint8_t GetSerialByte() {
   uint8_t num_samples = 0;
   uint8_t sampling_mask = 0;
 
+  ToggleB4();
+
   // We use polling instead of interrupts. This could be changed to an interrupt handler if needed.
   while(true) {
     // Poll the USI counter interrupt bit
@@ -195,6 +196,10 @@ void setup() {
   FastLED.addLeds<WS2812B, LEDS_PIN, GRB>(leds, NUM_LEDS);
   FastLED.setBrightness(255);
   fill_solid(leds, NUM_LEDS, CRGB::Black);
+  // Show the UID on the LEDs
+  for (int i = 0; i < 8; i++) {
+    leds[i] = ((uid >> i) & 1) ? CRGB::White : CRGB::Black;
+  }
   FastLED.show();
 
   // Setup Serial output for debug
