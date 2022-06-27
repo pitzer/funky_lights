@@ -1,6 +1,7 @@
 import serial
 import time
 import crc8
+import sys
 
 serial_port = None
 
@@ -9,7 +10,14 @@ MAGIC = 0x55
 CMD_LEDS = 1
 CMD_SERIAL_BAUDRATE = 2
 BROADCAST_UID = 0
-INITIAL_BAUDRATE = 400000
+INITIAL_BAUDRATE = 333333
+TTY_DEVICE = '/dev/tty.usbserial-14430'
+uid = 1
+
+if len(sys.argv) > 1:
+  TTY_DEVICE = sys.argv[1]
+if len(sys.argv) > 2:
+  uid = int(sys.argv[2])
 
 def SetupSerial(device, baudrate, serial_port):
   """ Configure both the target LEDs and the local UART for a new baudrate
@@ -28,7 +36,7 @@ def SetupSerial(device, baudrate, serial_port):
     #  change baudrate
     serial_port.write(PrepareBaudrateMsg(BROADCAST_UID, prescaler))
     serial_port.close()
-  serial_port = serial.Serial('/dev/tty.usbserial-14330', baudrate = baudrate)
+  serial_port = serial.Serial(device, baudrate = baudrate)
   print("Opened serial port %s with baudrate %d" % (serial_port.name, serial_port.baudrate))
   time.sleep(1)
   return serial_port
@@ -57,7 +65,7 @@ def PrepareLedMsg(bar_uid, rgbs):
   Returns:
    a bytearray, ready to send on the serial port
   """
-  header = [MAGIC, bar, CMD_LEDS]
+  header = [MAGIC, bar_uid, CMD_LEDS]
   data = RgbToBits(rgbs)
   crc_compute = crc8.crc8()
   crc_compute.update(bytearray(data))
@@ -93,14 +101,13 @@ for i in range(int(NUM_LEDS / 2)):
   rgbs += [(col, 255 - col, 0)]
 
 # Configure the serial port. Do it twice to exercise the speed change on 
-serial_port = SetupSerial('/dev/tty.usbserial-14330', INITIAL_BAUDRATE, serial_port)
-serial_port = SetupSerial('/dev/tty.usbserial-14330', 400000, serial_port)
+serial_port = SetupSerial(TTY_DEVICE, INITIAL_BAUDRATE, serial_port)
+serial_port = SetupSerial(TTY_DEVICE, 333333, serial_port)
 
 # Send messages to all the bars
-bar = 42
 for i in range(100000):
-  for bar in range(50):
-    serial_port.write(PrepareLedMsg(bar, rgbs))
+  serial_port.write(PrepareLedMsg(uid, rgbs))
   rgbs = rgbs[1:] + rgbs[:1]
+  time.sleep(0.05)
 
 serial_port.close()  
