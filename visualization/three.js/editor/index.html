@@ -72,6 +72,7 @@
 			import { Menubar } from './js/Menubar.js';
 			import { Resizer } from './js/Resizer.js';
 			import { VRButton } from '../examples/jsm/webxr/VRButton.js';
+            import { AddObjectCommand } from './js/commands/AddObjectCommand.js';
 
 			window.URL = window.URL || window.webkitURL;
 			window.BlobBuilder = window.BlobBuilder || window.WebKitBlobBuilder || window.MozBlobBuilder;
@@ -126,6 +127,16 @@
 				mesh.position.set(x, y, z);
 				return mesh;
 			};
+            var createCubeAt = function (x, y, z, w) {
+                    w = w === undefined ? 0.03 : w;
+                    var mesh = new THREE.Mesh(
+                        new THREE.BoxGeometry(w, w, w),
+                        new THREE.MeshBasicMaterial({
+                            color: 0xff0000
+                        }));
+                    mesh.position.set(x, y, z);
+                    return mesh;
+                };
 			const requestURL = '../../led_config.json';
 			const request = new Request(requestURL);
 			const response = await fetch(request);
@@ -133,17 +144,24 @@
 			console.log(data);
 			
 			
-			var ledLightsGroup = new THREE.Group();
-			ledLightsGroup.name = 'LED lights'
+            const ledObjectGroupName = 'LED lights';
+            // Remove and existing instantiation of the LED group
+            var ledLightsGroup = editor.scene.getObjectByName(ledObjectGroupName);
+            if (ledLightsGroup !== undefined) {
+                editor.execute(new RemoveObjectCommand(editor, ledLightsGroup));
+            }
+            // Create an visualization group with one child per segment
+			ledLightsGroup = new THREE.Group();
+			ledLightsGroup.name = ledObjectGroupName;
 			for (var segment of data.led_segments) {
 				var ledSegmentGroup = new THREE.Group();
-				ledSegmentGroup.name = segment.name;
+				ledSegmentGroup.name = segment.uid;
 				for (var led_positions of segment.led_positions) {
-					ledSegmentGroup.add(createSphereAt(led_positions[0], led_positions[1], led_positions[2]));
+					ledSegmentGroup.add(createCubeAt(led_positions[0], led_positions[1], led_positions[2]));
 				}
 				ledLightsGroup.add(ledSegmentGroup);
-			}
-			editor.scene.add(ledLightsGroup);
+			}            
+			editor.execute(new AddObjectCommand(editor, ledLightsGroup));
 			
 			
 			// Start listening to websockets for LED updates
@@ -151,37 +169,48 @@
 				return ((1 << 24) + (r << 16) + (g << 8) + b);
 			}	
 			var ws = new WebSocket("ws://127.0.0.1:5678/");
-			const NUM_LEDS = 30;
 			ws.binaryType = 'arraybuffer';
 			ws.onmessage = function (event) {
                 // console.log(event.data);
 				var parser = new jParser(event.data, {
-					data: {
-						magic: 'uint8', // 1
-						uid: 'uint8',   // 4
-						command: 'uint8', // 4
-						rgb: function () {
-								var led_colors = [];
-								for (let i = 0; i < NUM_LEDS; i++) {
-									const col = this.parse('uint16');
-									led_colors.push([(col >> 8) & 0xF8, (col >> 3) & 0xFC, (col << 3) & 0xF8]);
-								}
-								return led_colors;
-							},
+					segment: {
+                        uid: 'uint8',
+                        num_leds: 'uint16',
+                        command: 'uint8',
+                        rgb: function () {
+                            var led_colors = [];
+                            for (let i = 0; i < this.current.num_leds; i++) {
+                                const col = this.parse('uint16');
+                                led_colors.push([(col >> 8) & 0xF8, (col >> 3) & 0xFC, (col << 3) & 0xF8]);
+                            }
+                            return led_colors;
+                        }
+                    },
+                    data: {
+                        magic: 'uint8',
+                        num_segments: 'uint8',
+                        segments: ['array', 'segment', function () { return this.current.num_segments; }], 
 						crc: 'uint8'
 					}
 				});
 				const led_data = parser.parse('data');
-				// console.log(led_data);
+				console.log(led_data);
 
 				// Update color
-				for (var segment of ledLightsGroup.children) {
-					for (let i = 0; i < NUM_LEDS; i++) {
-						const led = segment.children[i];
-						const col = led_data.rgb[i];
-						led.material.color = new THREE.Color(col[0]/255, col[1]/255, col[2]/255);
-					}
-				}
+                for (var segment of led_data.segments) {
+                    const uid = segment.uid;
+                    const num_led = segment.num_leds;
+                    for (var lights of ledLightsGroup.children) {
+                        if (lights.name != uid) continue;
+                        for (let i = 0; i < num_led; i++) {
+                            const led = lights.children[i];
+                            const col = segment.rgb[i];
+                            led.material.color = new THREE.Color(col[0] / 255, col[1] / 255, col[2] / 255);
+                        }
+                    }
+
+                }
+				
 				editor.signals.sceneGraphChanged.dispatch();
 				
             };
@@ -196,7 +225,7 @@
 
 					if ( state !== undefined ) {
 
-						editor.fromJSON( state );
+						// editor.fromJSON( state );
 
 					}
 
