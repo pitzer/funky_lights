@@ -1,5 +1,7 @@
-#Author-
-#Description-
+""" This is a Fusion 360 script that updates body names based on the presence
+    of tags of the form: TAG(<name>) in the hierarchy component names. It is
+    useful as a preprocessor for exports that flatten the hierarchy (like the
+    OBJ file export for example) """
 
 import adsk.core, adsk.fusion, adsk.cam, traceback
 
