@@ -1,3 +1,4 @@
+from operator import le
 import crc8
 import json
 import serial
@@ -7,6 +8,9 @@ import asyncio
 import websockets
 import functools
 import time
+
+from patterns.rg_transition_pattern import RGTRansitionPattern
+from patterns.video_pattern import VideoPattern, Rect
 
 MAGIC = 0x55
 CMD_LEDS = 1
@@ -64,47 +68,66 @@ def PrepareLedSegmentsMsg(segments):
 
 async def ws_serve(websocket, generator):
     while True:
-        pattern = await asyncio.shield(generator.pattern)
+        message = await asyncio.shield(generator.result)
         try:
-            await websocket.send(pattern)
+            await websocket.send(message)
         except websockets.ConnectionClosed as exc:
             break
 
-class Segment:
-    def __init__(self, uid, num_leds):
-        self.uid = uid
-        self.num_leds = num_leds
-        self.colors = [(255, 0, 0) for i in range(num_leds)]
-
 class PatternGenerator:
     def __init__(self, led_config):
-        self.pattern = asyncio.Future()
-        self.led_config = led_config
-        self.segments = []
-        PATTERN_SIZE = 30
-        for s in led_config['led_segments']:
-            segment = Segment(s['uid'], s['num_leds'])
-            for i in range(int(PATTERN_SIZE / 2)):
-                col = int(i / int(PATTERN_SIZE / 2) * 255)
-                segment.colors[i] = (col, 255 - col, 0)
-            for i in range(int(PATTERN_SIZE / 2), PATTERN_SIZE):
-                col = int(255 - ((i - int(PATTERN_SIZE / 2))/ int(PATTERN_SIZE / 2) * 255))
-                segment.colors[i] = (col, 255 - col, 0)
-            for i in range(PATTERN_SIZE, segment.num_leds):
-                col = 0
-                segment.colors[i] = (col, 255 - col, 0)
-            self.segments.append(segment)
+        self.result = asyncio.Future()
+        config = [
+            (VideoPattern, dict(file='media/milkdrop.mp4', fps=1, crop=Rect(60, 130, 60, 60))),
+            (VideoPattern, dict(file='media/psychill2.mp4', fps=10, crop=Rect(60, 130, 60, 60))),
+            (VideoPattern, dict(file='media/psychill1.mp4', fps=10, crop=Rect(60, 130, 60, 60))),
+            (VideoPattern, dict(file='media/butter_churn.mp4', fps=10, crop=Rect(60, 60, 60, 60))),
+            (RGTRansitionPattern, dict())
+        ]
+
+        self.patterns = []
+        for cls, params in config:
+            pattern = cls()
+            for key in params:
+                setattr(pattern, key, params[key])
+            pattern.prepareSegments(led_config)
+            pattern.initialize()
+            self.patterns.append(pattern)
+        self.current_pattern = self.patterns[0]
+
 
     async def tick(self, delta):
-        for segment in self.segments:
-            segment.colors = segment.colors[1:] + segment.colors[:1]
+        self.current_pattern.animate(delta)
 
     async def run(self):
+        ANIMATION_RATE = 20
+        FPS_UPDATE_RATE = 1
+
+        prev_animation_time = time.time() - 1.0 / ANIMATION_RATE
+        start_time = time.time()
+        counter = 0
         while True:
-            await self.tick(1.0)
-            self.pattern.set_result(PrepareLedSegmentsMsg(self.segments))
-            self.pattern = asyncio.Future()
-            await asyncio.sleep(0.1)
+            cur_animation_time = time.time()
+
+            # Process animation
+            await self.tick(cur_animation_time - prev_animation_time)
+
+            # Update future for processing by IO
+            self.result.set_result(PrepareLedSegmentsMsg(
+                self.current_pattern.segments))
+            self.result = asyncio.Future()
+            prev_animation_time = cur_animation_time
+
+            # Sleep for the remaining time
+            processing_time = time.time() - cur_animation_time
+            await asyncio.sleep(max(0, 1.0/ANIMATION_RATE - processing_time))  
+
+            # Output update rate to console
+            counter += 1
+            if (time.time() - start_time) > 1.0 / FPS_UPDATE_RATE :
+                print("Animation FPS: ", counter / (time.time() - start_time))
+                counter = 0
+                start_time = time.time()
 
 
 async def main():
