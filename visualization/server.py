@@ -78,14 +78,15 @@ class PatternGenerator:
     def __init__(self, led_config):
         self.result = asyncio.Future()
         config = [
-            (VideoPattern, dict(file='media/milkdrop.mp4', fps=1, crop=Rect(60, 130, 60, 60))),
-            (VideoPattern, dict(file='media/psychill2.mp4', fps=10, crop=Rect(60, 130, 60, 60))),
-            (VideoPattern, dict(file='media/psychill1.mp4', fps=10, crop=Rect(60, 130, 60, 60))),
             (VideoPattern, dict(file='media/butter_churn.mp4', fps=10, crop=Rect(60, 60, 60, 60))),
-            (RGTRansitionPattern, dict())
+            (VideoPattern, dict(file='media/psychill1.mp4', fps=10, crop=Rect(60, 130, 60, 60))),
+            (VideoPattern, dict(file='media/psychill2.mp4', fps=10, crop=Rect(60, 130, 60, 60))),
+            (RGTRansitionPattern, dict()),
+            (VideoPattern, dict(file='media/milkdrop.mp4', fps=10, crop=Rect(60, 130, 60, 60)))
         ]
 
         self.patterns = []
+        self.current_pattern_index = 0
         for cls, params in config:
             pattern = cls()
             for key in params:
@@ -93,28 +94,34 @@ class PatternGenerator:
             pattern.prepareSegments(led_config)
             pattern.initialize()
             self.patterns.append(pattern)
-        self.current_pattern = self.patterns[0]
 
 
-    async def tick(self, delta):
-        self.current_pattern.animate(delta)
+    async def tick(self, pattern, delta):
+        pattern.animate(delta)
 
     async def run(self):
         ANIMATION_RATE = 20
         FPS_UPDATE_RATE = 1
+        PATTERN_DURATION = 10
 
         prev_animation_time = time.time() - 1.0 / ANIMATION_RATE
+        prev_pattern_time = time.time()
         start_time = time.time()
         counter = 0
         while True:
             cur_animation_time = time.time()
 
+            # Rotate patterns
+            if (cur_animation_time - prev_pattern_time) > PATTERN_DURATION: 
+                self.current_pattern_index = (self.current_pattern_index + 1) % len(self.patterns)
+                prev_pattern_time = cur_animation_time
+            pattern = self.patterns[self.current_pattern_index]
+
             # Process animation
-            await self.tick(cur_animation_time - prev_animation_time)
+            await self.tick(pattern, cur_animation_time - prev_animation_time)
 
             # Update future for processing by IO
-            self.result.set_result(PrepareLedSegmentsMsg(
-                self.current_pattern.segments))
+            self.result.set_result(PrepareLedSegmentsMsg(pattern.segments))
             self.result = asyncio.Future()
             prev_animation_time = cur_animation_time
 
