@@ -73,6 +73,7 @@
 			import { Resizer } from './js/Resizer.js';
 			import { VRButton } from '../examples/jsm/webxr/VRButton.js';
             import { AddObjectCommand } from './js/commands/AddObjectCommand.js';
+            import * as BufferGeometryUtils from '../examples/jsm/utils/BufferGeometryUtils.js';
 
 			window.URL = window.URL || window.webkitURL;
 			window.BlobBuilder = window.BlobBuilder || window.WebKitBlobBuilder || window.MozBlobBuilder;
@@ -113,105 +114,70 @@
 			document.body.appendChild( resizer.dom );
 
 	
-			// Load LED positions
-			var createSphereAt = function (x, y, z, w, h, r) {
-				w = w === undefined ? 12 : w;
-				h = h === undefined ? 6 : h;
-				r = r === undefined ? 0.03 : r;
-				var mesh = new THREE.Mesh(
-						new THREE.SphereGeometry(r, w, h),
-						new THREE.MeshStandardMaterial({
-							color: 0xff0000,
-							emissive: 0x404040
-						}));
-				mesh.position.set(x, y, z);
-				return mesh;
-			};
-            var createCubeAt = function (x, y, z, w) {
-                    w = w === undefined ? 0.03 : w;
-                    var mesh = new THREE.Mesh(
-                        new THREE.BoxGeometry(w, w, w),
-                        new THREE.MeshBasicMaterial({
-                            color: 0xff0000
-                        }));
-                    mesh.position.set(x, y, z);
-                    return mesh;
-                };
+			// Load LED config from JSON
 			const requestURL = '../../led_config.json';
 			const request = new Request(requestURL);
 			const response = await fetch(request);
-			const data = await response.json();
-			// console.log(data);
+			const ledConfigData = await response.json();
 			
-			
-            const ledObjectGroupName = 'LED lights';
             // Remove and existing instantiation of the LED group
-            var ledLightsGroup = editor.scene.getObjectByName(ledObjectGroupName);
-            if (ledLightsGroup !== undefined) {
-                editor.execute(new RemoveObjectCommand(editor, ledLightsGroup));
+            const ledObjectName = 'LED lights';
+            var ledLights = editor.scene.getObjectByName(ledObjectName);
+            if (ledLights !== undefined) {
+                editor.execute(new RemoveObjectCommand(editor, ledLights));
             }
-            // Create an visualization group with one child per segment
-			ledLightsGroup = new THREE.Group();
-			ledLightsGroup.name = ledObjectGroupName;
-			for (var segment of data.led_segments) {
-				var ledSegmentGroup = new THREE.Group();
-				ledSegmentGroup.name = segment.uid;
-				for (var led_positions of segment.led_positions) {
-					ledSegmentGroup.add(createCubeAt(led_positions[0], led_positions[1], led_positions[2]));
-				}
-				ledLightsGroup.add(ledSegmentGroup);
-			}            
-			editor.execute(new AddObjectCommand(editor, ledLightsGroup));
 			
+            // Create a 3D cube for each LED
+            const textureWidth = 128;
+            const textureHeight = 128;
+            const cubeWidth = 0.03;
+            var baseGeometry = new THREE.BoxGeometry(cubeWidth, cubeWidth, cubeWidth);
+            var cubes = [];
+            var index = 0;
+			for (var segment of ledConfigData.led_segments) {
+				for (var led_positions of segment.led_positions) {
+                    var geometry = baseGeometry.clone();
+                    geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(led_positions[0], led_positions[1], led_positions[2]));
+                    // Colors are in order of the LED config. The texture is sized to a power of 2 for more efficient processing by the GPU.
+                    const u = Math.floor(index / textureWidth) / (textureHeight - 1);
+                    const v = (index % textureWidth) / (textureWidth - 1);
+                    var uvAttribute = geometry.attributes.uv;
+                    for (var i = 0; i < uvAttribute.count; i++) {
+                        // Not sure why v and u are flipped here. I would have expected them the other way around
+                        uvAttribute.setXY(i, v, u);
+                    }
+                    cubes.push(geometry);
+                    index = index + 1;
+				}
+			}
+            // Merge all geometries into one buffer for fast rendering.
+            const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(cubes, false);
+            const size = textureWidth * textureHeight;
+            const initialTextureData = new Uint8Array(4 * size);
+            for (let i = 0; i < size; i++) {
+                const stride = i * 4;
+                initialTextureData[stride] = 0;
+                initialTextureData[stride + 1] = 0;
+                initialTextureData[stride + 2] = 0;
+                initialTextureData[stride + 3] = 255;
+            }
+            const texture = new THREE.DataTexture(initialTextureData, textureWidth, textureHeight);
+            texture.needsUpdate = true;
+            var material = new THREE.MeshBasicMaterial({ map: texture });
+            ledLights = new THREE.Mesh(mergedGeometry, material);
+            ledLights.name = ledObjectName;
+    
+            // Add mesh to scene graph
+			editor.execute(new AddObjectCommand(editor, ledLights));
 			
 			// Start listening to websockets for LED updates
-			function rgbToHex(r, g, b) {
-				return ((1 << 24) + (r << 16) + (g << 8) + b);
-			}	
-
             function connect() {
                 var ws = new WebSocket("ws://127.0.0.1:5678/");
                 ws.binaryType = 'arraybuffer';
                 ws.onmessage = function (event) {
-                    // console.log(event.data);
-                    var parser = new jParser(event.data, {
-                        segment: {
-                            uid: 'uint8',
-                            num_leds: 'uint16',
-                            command: 'uint8',
-                            rgb: function () {
-                                var led_colors = [];
-                                for (let i = 0; i < this.current.num_leds; i++) {
-                                    const col = this.parse('uint16');
-                                    led_colors.push([(col >> 8) & 0xF8, (col >> 3) & 0xFC, (col << 3) & 0xF8]);
-                                }
-                                return led_colors;
-                            }
-                        },
-                        data: {
-                            magic: 'uint8',
-                            num_segments: 'uint8',
-                            segments: ['array', 'segment', function () { return this.current.num_segments; }], 
-                            crc: 'uint8'
-                        }
-                    });
-                    const led_data = parser.parse('data');
-                    // console.log(led_data);
-
-                    // Update color
-                    for (var segment of led_data.segments) {
-                        const uid = segment.uid;
-                        const num_led = segment.num_leds;
-                        for (var lights of ledLightsGroup.children) {
-                            if (lights.name != uid) continue;
-                            for (let i = 0; i < num_led; i++) {
-                                const led = lights.children[i];
-                                const col = segment.rgb[i];
-                                led.material.color = new THREE.Color(col[0] / 255, col[1] / 255, col[2] / 255);
-                            }
-                        }
-                    }
-                    
+                    const data = new Uint8Array(event.data);
+                    material.map = new THREE.DataTexture(data, textureWidth, textureHeight);
+                    material.map.needsUpdate = true;
                     editor.signals.sceneGraphChanged.dispatch();
                 };
                 ws.onclose = function (e) {
