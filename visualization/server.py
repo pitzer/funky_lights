@@ -15,6 +15,8 @@ from patterns.video_pattern import VideoPattern, Rect
 MAGIC = 0x55
 CMD_LEDS = 1
 WEB_SOCKET_PORT = 5678
+TEXTURE_WIDTH = 128
+TEXTURE_HEIGHT = 128
 
 def UInt16ToBytes(val):
     bytes = val.to_bytes(2, byteorder='little', signed=False)
@@ -66,6 +68,16 @@ def PrepareLedSegmentsMsg(segments):
     msg = header + data + crc
     return bytearray(msg)
 
+def PrepareTextureMsg(segments):
+    msg = []
+    texture_size = TEXTURE_WIDTH * TEXTURE_HEIGHT * 4
+    for segment in segments:
+        for color in segment.colors:
+            msg += [color[0], color[1], color[2], 255]
+    # Added padding to the end of the buffer to fill the full texture
+    msg += [0] * (texture_size - len(msg))
+    return bytearray(msg)
+
 async def ws_serve(websocket, generator):
     while True:
         message = await asyncio.shield(generator.result)
@@ -78,11 +90,11 @@ class PatternGenerator:
     def __init__(self, led_config):
         self.result = asyncio.Future()
         config = [
-            (VideoPattern, dict(file='media/butter_churn.mp4', fps=10, crop=Rect(60, 60, 60, 60))),
-            (VideoPattern, dict(file='media/psychill1.mp4', fps=10, crop=Rect(60, 130, 60, 60))),
-            (VideoPattern, dict(file='media/psychill2.mp4', fps=10, crop=Rect(60, 130, 60, 60))),
+            (VideoPattern, dict(file='media/butter_churn.mp4', fps=20, crop=Rect(60, 60, 60, 60))),
+            (VideoPattern, dict(file='media/psychill1.mp4', fps=20, crop=Rect(60, 130, 60, 60))),
+            (VideoPattern, dict(file='media/psychill2.mp4', fps=20, crop=Rect(60, 130, 60, 60))),
             (RGTRansitionPattern, dict()),
-            (VideoPattern, dict(file='media/milkdrop.mp4', fps=10, crop=Rect(60, 130, 60, 60)))
+            (VideoPattern, dict(file='media/milkdrop.mp4', fps=20, crop=Rect(60, 130, 60, 60)))
         ]
 
         self.patterns = []
@@ -121,7 +133,7 @@ class PatternGenerator:
             await self.tick(pattern, cur_animation_time - prev_animation_time)
 
             # Update future for processing by IO
-            self.result.set_result(PrepareLedSegmentsMsg(pattern.segments))
+            self.result.set_result(PrepareTextureMsg(pattern.segments))
             self.result = asyncio.Future()
             prev_animation_time = cur_animation_time
 
@@ -131,7 +143,7 @@ class PatternGenerator:
 
             # Output update rate to console
             counter += 1
-            if (time.time() - start_time) > 1.0 / FPS_UPDATE_RATE :
+            if (time.time() - start_time) > 1.0 / FPS_UPDATE_RATE:
                 print("Animation FPS: ", counter / (time.time() - start_time))
                 counter = 0
                 start_time = time.time()
