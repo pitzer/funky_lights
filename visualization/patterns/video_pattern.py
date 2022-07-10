@@ -17,6 +17,7 @@ class VideoPattern(Pattern):
         super().__init__()
         self.file = ''
         self.crop = None
+        self.fps = 20
 
     def initialize(self):
         self.video = cv2.VideoCapture(self.file)
@@ -25,8 +26,8 @@ class VideoPattern(Pattern):
         self.current_frame = 0
         self.prev_delta = 0
 
-        width = min(self.video_width, self.crop.width)
-        height = min(self.video_height, self.crop.height)
+        if self.crop is None:
+            self.crop = Rect(0, 0, self.video_width, self.video_height)
         max_x = max_y = max_z = sys.float_info.min
         min_x = min_y = min_z = sys.float_info.max
         for segment in self.segments:
@@ -39,12 +40,12 @@ class VideoPattern(Pattern):
                 min_z = min(min_z, p[2])
 
         offset = np.array([-min_y, -min_z])
-        scale = np.array([(height - 1) / (max_y - min_y), (width - 1) / (max_z - min_z)]) 
+        scale = np.array([(self.crop.height - 1) / (max_y - min_y), (self.crop.width - 1) / (max_z - min_z)]) 
         for segment in self.segments:
             uv = []
             for p in segment.led_positions:
                 pm = np.multiply(p[1:] + offset, scale).astype(int)
-                u = int(height) - 1 - pm[0] + self.crop.u
+                u = int(self.crop.height) - 1 - pm[0] + self.crop.u
                 v = pm[1] + self.crop.v
                 def clamp(minimum, x, maximum):
                     return max(minimum, min(x, maximum))
