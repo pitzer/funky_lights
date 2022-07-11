@@ -66,6 +66,7 @@ def PrepareLedMsg(bar_uid, rgbs):
    a bytearray, ready to send on the serial port
   """
   header = [MAGIC, bar_uid, CMD_LEDS]
+  header += [len(rgbs)]
   data = RgbToBits(rgbs)
   crc_compute = crc8.crc8()
   crc_compute.update(bytearray(data))

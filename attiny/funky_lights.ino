@@ -17,7 +17,7 @@
 #define TX_DEBUG_PIN 2
 #define TIMER_DEBUG_PIN 4
 
-#define NUM_LEDS 30
+#define MAX_NUM_LEDS 30
 
 #define MAGIC_BYTE 0x55
 #define CRC_POLYNOMIAL 0x07
@@ -27,7 +27,7 @@
 #define INITIAL_SERIAL_PRESCALER 6 // 333 kBaud
 
 // Internal array of LED data
-CRGB leds[NUM_LEDS];
+CRGB leds[MAX_NUM_LEDS];
 
 // Software serial port, used for debug only
 TXOnlySerial debug_serial(TX_DEBUG_PIN);
@@ -35,12 +35,16 @@ TXOnlySerial debug_serial(TX_DEBUG_PIN);
 // The UID for this board. The bar will only answer to messages sent to this specific UID,
 //  or to the broadcast UID
 // Fixed for now. Should be written in Flash for each board.
-uint8_t uid = 16;
+uint8_t uid = 1;
+
+// The actual number of LEDs. The initial value is 8 to display the uid before LED messages arrive.
+uint8_t num_leds = 8;
+uint8_t new_num_leds = 8;
 
 // The index of the byte currently being received 
 uint8_t byte_index = 0;
 // The current state of the deserializer
-enum {IDLE, MAGIC, UID, CMD, DATA_LEDS, PRESCALER, CRC} state = IDLE;
+enum {IDLE, MAGIC, UID, CMD, NUM_LEDS, DATA_LEDS, PRESCALER, CRC} state = IDLE;
 
 //
 // Messages formats
@@ -65,10 +69,11 @@ typedef struct __attribute__((packed)) LedMsg {
   uint8_t magic;
   uint8_t uid;
   Cmd cmd = CMD_LEDS;
-  LedColor leds[NUM_LEDS];
+  uint16_t num_leds;
+  LedColor leds[MAX_NUM_LEDS];
   uint8_t crc;
 };
-LedColor led_colors[NUM_LEDS];
+LedColor led_colors[MAX_NUM_LEDS];
 uint8_t* led_colors_bytes = reinterpret_cast<uint8_t *>(led_colors);
 
 // Helper function to print a value in binary WITH leading zeros.
@@ -193,9 +198,9 @@ void setup() {
   pinMode(TIMER_DEBUG_PIN, OUTPUT);
   
   // Setup the LED strip
-  FastLED.addLeds<WS2812B, LEDS_PIN, GRB>(leds, NUM_LEDS);
+  FastLED.addLeds<WS2812B, LEDS_PIN, GRB>(leds, num_leds);
   FastLED.setBrightness(255);
-  fill_solid(leds, NUM_LEDS, CRGB::Black);
+  fill_solid(leds, num_leds, CRGB::Black);
   // Show the UID on the LEDs
   for (int i = 0; i < 8; i++) {
     leds[i] = ((uid >> i) & 1) ? CRGB::White : CRGB::Black;
@@ -207,7 +212,7 @@ void setup() {
   debug_serial.println("");
   debug_serial.println("Funky LEDs");
   debug_serial.print("Number of LEDs: ");
-  debug_serial.println(NUM_LEDS);
+  debug_serial.println(num_leds);
   debug_serial.print("UID: ");
   debug_serial.println(uid);  
 
@@ -252,7 +257,7 @@ void loop() {
       cmd = c;
       switch(c) {
         case CMD_LEDS:
-          state = DATA_LEDS;
+          state = NUM_LEDS;
           break;
         case CMD_SERIAL_BAUDRATE:
           state = PRESCALER;
@@ -268,9 +273,13 @@ void loop() {
           break;
         }
       break;
+    case NUM_LEDS:
+      new_num_leds = c;
+      state = DATA_LEDS;
+      break;
     case DATA_LEDS:
       led_colors_bytes[byte_index++] = c;
-      if (byte_index == NUM_LEDS * 2) {
+      if (byte_index == new_num_leds * 2) {
         state = CRC;
       }
       break;
@@ -284,7 +293,7 @@ void loop() {
       uint8_t crc = 0;
       switch (cmd) {
         case CMD_LEDS:
-          crc = crc8(led_colors_bytes, sizeof(led_colors), CRC_POLYNOMIAL);
+          crc = crc8(led_colors_bytes, new_num_leds * 2, CRC_POLYNOMIAL);
           break;
         case CMD_SERIAL_BAUDRATE:
           crc = crc8(&prescaler, 1, CRC_POLYNOMIAL);
@@ -293,7 +302,20 @@ void loop() {
       if (c == crc) {
         switch (cmd) {
           case CMD_LEDS:
-            for (int i = 0; i < NUM_LEDS; i++) {
+            if(new_num_leds != num_leds) {
+              // Update FastLED in case the number of LEDs has changed.
+              interrupts();
+              debug_serial.print("Updating # of LEDs: ");
+              debug_serial.print(num_leds);
+              debug_serial.print(" -> ");
+              debug_serial.println(new_num_leds);
+              FastLED.addLeds<WS2812B, LEDS_PIN, GRB>(leds, new_num_leds);
+              FastLED.setBrightness(255);
+              fill_solid(leds, new_num_leds, CRGB::Black);
+              noInterrupts();
+              num_leds = new_num_leds;
+            }
+            for (int i = 0; i < num_leds; i++) {
               uint16_t col = led_colors[i];
               leds[i] = CRGB((col >> 8) & 0xF8, (col >> 3) & 0xFC, (col << 3) & 0xF8);
             }
