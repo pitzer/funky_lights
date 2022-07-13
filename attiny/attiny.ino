@@ -15,14 +15,14 @@
 #define TX_DEBUG_PIN 2
 #define TIMER_DEBUG_PIN 4
 
-#define MAX_NUM_LEDS 30
+#define MAX_NUM_LEDS 100
 
 #define MAGIC_BYTE 0x55
 #define CRC_POLYNOMIAL 0x07
 
 #define BROADCAST_UID 0
 
-#define INITIAL_SERIAL_PRESCALER 6 // 333 kBaud
+#define INITIAL_SERIAL_PRESCALER 8 // 250 kBaud
 
 // Internal array of LED data
 ws2812b<B,1> fab_led;
@@ -258,6 +258,9 @@ void setup()
         if ((uid >> i) & 1) 
         {
           fab_led.sendPixels(1, grb_white);
+        } 
+        else {
+          fab_led.sendPixels(1, grb_black);
         }
     }
     
@@ -293,16 +296,6 @@ void sendPixelsR5G6B5(
     bytes[1] = (elem >> 8) & 0xF8;
     bytes[2] = (elem << 3) & 0xF8;
     fab_led.sendBytes(3, bytes);
-
-    debug_serial.print("hex: ");
-    debug_serial.println(elem, HEX);
-    debug_serial.print("Color: (");
-    debug_serial.print(bytes[0]);
-    debug_serial.print(",");
-    debug_serial.print(bytes[1]);
-    debug_serial.print(",");
-    debug_serial.print(bytes[2]);
-    debug_serial.println(")");
   }
 
   RESTORE_INTERRUPTS;
@@ -402,8 +395,7 @@ void loop()
             crc = crc8(&prescaler, 1, CRC_POLYNOMIAL);
             break;
         }
-//        if (c == crc)
-        if (1)
+        if (c == crc)
         {
             switch (cmd)
             {
@@ -420,6 +412,7 @@ void loop()
                     noInterrupts();
                     num_leds = new_num_leds;
                 }
+                sendPixelsR5G6B5(num_leds, led_colors);
                 break;
             case CMD_SERIAL_BAUDRATE:
                 InitSerial(prescaler);
@@ -435,30 +428,7 @@ void loop()
                 debug_serial.println(c, HEX);
                 noInterrupts();
             }
-        }
-        uint8_t bytes[3];
-        for (int i = 0; i < num_leds; i++) {
-          const uint16_t elem = led_colors[i];
-        
-          bytes[0] = (elem >> 3) & 0xFC;
-          bytes[1] = (elem >> 8) & 0xF8;
-          bytes[2] = (elem << 3) & 0xF8;
-      
-          debug_serial.print("hex: ");
-          debug_serial.println(elem, HEX);
-          debug_serial.print("Color: (");
-          debug_serial.print(bytes[0]);
-          debug_serial.print(",");
-          debug_serial.print(bytes[1]);
-          debug_serial.print(",");
-          debug_serial.print(bytes[2]);
-          debug_serial.println(")");
-        }
-  
-//        interrupts();
-//        sendPixelsR5G6B5(num_leds, led_colors);
-//        noInterrupts();
-        
+        }        
         break;
     }
 }

@@ -5,12 +5,12 @@ import sys
 
 serial_port = None
 
-NUM_LEDS = 30
+NUM_LEDS = 100
 MAGIC = 0x55
 CMD_LEDS = 1
 CMD_SERIAL_BAUDRATE = 2
 BROADCAST_UID = 0
-INITIAL_BAUDRATE = 333333
+INITIAL_BAUDRATE = 250000
 TTY_DEVICE = '/dev/tty.usbserial-14430'
 uid = 1
 
@@ -65,11 +65,9 @@ def PrepareLedMsg(bar_uid, rgbs):
   Returns:
    a bytearray, ready to send on the serial port
   """
-  rgbs = rgbs[:2]
   header = [MAGIC, bar_uid, CMD_LEDS]
   header += [len(rgbs)]
   data = RgbToBits(rgbs)
-  print(str([hex(d) for d in bytearray(data)]))
   crc_compute = crc8.crc8()
   crc_compute.update(bytearray(data))
   crc = [crc_compute.digest()[0]]
@@ -105,12 +103,11 @@ for i in range(int(NUM_LEDS / 2)):
 
 # Configure the serial port. Do it twice to exercise the speed change on 
 serial_port = SetupSerial(TTY_DEVICE, INITIAL_BAUDRATE, serial_port)
-serial_port = SetupSerial(TTY_DEVICE, 333333, serial_port)
+serial_port = SetupSerial(TTY_DEVICE, 250000, serial_port)
 
 # Send messages to all the bars
 for i in range(100000):
   serial_port.write(PrepareLedMsg(uid, rgbs))
-  break
   rgbs = rgbs[1:] + rgbs[:1]
   time.sleep(0.05)
 
