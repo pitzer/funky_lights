@@ -3,19 +3,21 @@
 //  frequency can vary +/-10%. In practice the bound is much closer, but we should implement
 //  a routine which regularly tunes the clock frequency by looking at the position of the serial
 //  stream bit transitions.
+#define VERBOSE 0
+#define DEBUG_SERIAL 0
+#define REUSE_LED_BUFFER 1
 
 #include <FastLED.h>
 #include <TXOnlySerial.h>
 #include <CRC.h>
 
-#define VERBOSE 0
 
 #define LEDS_PIN 1
 #define RX_PIN 0
 #define TX_DEBUG_PIN 2
 #define TIMER_DEBUG_PIN 4
 
-#define MAX_NUM_LEDS 30
+#define MAX_NUM_LEDS 120
 
 #define MAGIC_BYTE 0x55
 #define CRC_POLYNOMIAL 0x07
@@ -28,7 +30,19 @@
 CRGB leds[MAX_NUM_LEDS];
 
 // Software serial port, used for debug only
+#if DEBUG_SERIAL
 TXOnlySerial debug_serial(TX_DEBUG_PIN);
+#else
+// Dummy serial port class
+class DummySerial {
+ public:
+  inline void begin(int baudrate) {};
+  inline void print(uint8_t* dat, uint8_t type) {};
+  inline void print(uint8_t* dat) {};
+  inline void println(uint8_t* dat, uint8_t type) {};
+  inline void println(uint8_t* dat) {};
+} debug_serial;
+#endif
 
 // The UID for this board. The bar will only answer to messages sent to this specific UID,
 //  or to the broadcast UID
@@ -87,8 +101,20 @@ typedef struct __attribute__((packed)) LedMsg
     LedColor leds[MAX_NUM_LEDS];
     uint8_t crc;
 };
+
+#if REUSE_LED_BUFFER
+// To save RAM, instead of using a separate buffer to store the raw 16 bit
+//  LED data while we are receiving it, we use the end of the FastLED CRGB
+//  array as a scratch pad. We will then transform it from 16 bits to 24
+//  bits in place. Because we are always reading it from start to end, we
+//  should never overwrite un-translated data.
+
+uint8_t *led_colors_bytes = reinterpret_cast<uint8_t *>(leds) + MAX_NUM_LEDS;
+uint16_t *led_colors = reinterpret_cast<uint16_t *>(led_colors_bytes);
+#else
 LedColor led_colors[MAX_NUM_LEDS];
 uint8_t *led_colors_bytes = reinterpret_cast<uint8_t *>(led_colors);
+#endif
 
 // Helper function to print a value in binary WITH leading zeros.
 void PrintBinary(uint8_t data, bool line_feed)
