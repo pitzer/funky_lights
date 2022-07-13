@@ -4,7 +4,7 @@
 //  a routine which regularly tunes the clock frequency by looking at the position of the serial
 //  stream bit transitions.
 
-#include <FastLED.h>
+#include <FAB_LED.h>
 #include <TXOnlySerial.h>
 #include <CRC.h>
 
@@ -25,7 +25,12 @@
 #define INITIAL_SERIAL_PRESCALER 6 // 333 kBaud
 
 // Internal array of LED data
-CRGB leds[MAX_NUM_LEDS];
+ws2812b<B,1> fab_led;
+const grb grb_white[1] = {{255, 255, 255}};
+const grb grb_black[1] = {{0, 0, 0}};
+const grb grb_red[1] = {{0, 255, 0}};
+const grb grb_green[1] = {{255, 0, 0}};
+const grb grb_blue[1] = {{0, 0, 255}};
 
 // Software serial port, used for debug only
 TXOnlySerial debug_serial(TX_DEBUG_PIN);
@@ -245,15 +250,17 @@ void setup()
     pinMode(TIMER_DEBUG_PIN, OUTPUT);
 
     // Setup the LED strip
-    FastLED.addLeds<WS2812B, LEDS_PIN, GRB>(leds, num_leds);
-    FastLED.setBrightness(255);
-    fill_solid(leds, num_leds, CRGB::Black);
+    fab_led.clear(MAX_NUM_LEDS);
+    delay(100);
     // Show the UID on the LEDs
     for (int i = 0; i < 8; i++)
     {
-        leds[i] = ((uid >> i) & 1) ? CRGB::White : CRGB::Black;
+        if ((uid >> i) & 1) 
+        {
+          fab_led.sendPixels(1, grb_white);
+        }
     }
-    FastLED.show();
+    
 
     // Setup Serial output for debug
     debug_serial.begin(115200);
@@ -269,6 +276,39 @@ void setup()
 
     noInterrupts();
 }
+
+// R5G6B5 version of sendPixels
+void sendPixelsR5G6B5(
+    int count,
+    uint16_t * pixelArray)
+{
+  uint8_t bytes[3];
+
+  DISABLE_INTERRUPTS;
+
+  for (int i = 0; i < count; i++) {
+    const uint16_t elem = pixelArray[i];
+  
+    bytes[0] = (elem >> 3) & 0xFC;
+    bytes[1] = (elem >> 8) & 0xF8;
+    bytes[2] = (elem << 3) & 0xF8;
+    fab_led.sendBytes(3, bytes);
+
+    debug_serial.print("hex: ");
+    debug_serial.println(elem, HEX);
+    debug_serial.print("Color: (");
+    debug_serial.print(bytes[0]);
+    debug_serial.print(",");
+    debug_serial.print(bytes[1]);
+    debug_serial.print(",");
+    debug_serial.print(bytes[2]);
+    debug_serial.println(")");
+  }
+
+  RESTORE_INTERRUPTS;
+
+}
+
 
 void loop()
 {
@@ -336,6 +376,7 @@ void loop()
     case NUM_LEDS:
         new_num_leds = c;
         state = DATA_LEDS;
+        byte_index = 0;
         break;
     case DATA_LEDS:
         led_colors_bytes[byte_index++] = c;
@@ -361,7 +402,8 @@ void loop()
             crc = crc8(&prescaler, 1, CRC_POLYNOMIAL);
             break;
         }
-        if (c == crc)
+//        if (c == crc)
+        if (1)
         {
             switch (cmd)
             {
@@ -374,16 +416,9 @@ void loop()
                     debug_serial.print(num_leds);
                     debug_serial.print(" -> ");
                     debug_serial.println(new_num_leds);
-                    FastLED.addLeds<WS2812B, LEDS_PIN, GRB>(leds, new_num_leds);
-                    FastLED.setBrightness(255);
-                    fill_solid(leds, new_num_leds, CRGB::Black);
+                    fab_led.clear(new_num_leds);
                     noInterrupts();
                     num_leds = new_num_leds;
-                }
-                for (int i = 0; i < num_leds; i++)
-                {
-                    uint16_t col = led_colors[i];
-                    leds[i] = CRGB((col >> 8) & 0xF8, (col >> 3) & 0xFC, (col << 3) & 0xF8);
                 }
                 break;
             case CMD_SERIAL_BAUDRATE:
@@ -401,9 +436,29 @@ void loop()
                 noInterrupts();
             }
         }
-        interrupts();
-        FastLED.show();
-        noInterrupts();
+        uint8_t bytes[3];
+        for (int i = 0; i < num_leds; i++) {
+          const uint16_t elem = led_colors[i];
+        
+          bytes[0] = (elem >> 3) & 0xFC;
+          bytes[1] = (elem >> 8) & 0xF8;
+          bytes[2] = (elem << 3) & 0xF8;
+      
+          debug_serial.print("hex: ");
+          debug_serial.println(elem, HEX);
+          debug_serial.print("Color: (");
+          debug_serial.print(bytes[0]);
+          debug_serial.print(",");
+          debug_serial.print(bytes[1]);
+          debug_serial.print(",");
+          debug_serial.print(bytes[2]);
+          debug_serial.println(")");
+        }
+  
+//        interrupts();
+//        sendPixelsR5G6B5(num_leds, led_colors);
+//        noInterrupts();
+        
         break;
     }
 }

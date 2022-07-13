@@ -65,9 +65,11 @@ def PrepareLedMsg(bar_uid, rgbs):
   Returns:
    a bytearray, ready to send on the serial port
   """
+  rgbs = rgbs[:2]
   header = [MAGIC, bar_uid, CMD_LEDS]
   header += [len(rgbs)]
   data = RgbToBits(rgbs)
+  print(str([hex(d) for d in bytearray(data)]))
   crc_compute = crc8.crc8()
   crc_compute.update(bytearray(data))
   crc = [crc_compute.digest()[0]]
@@ -108,6 +110,7 @@ serial_port = SetupSerial(TTY_DEVICE, 333333, serial_port)
 # Send messages to all the bars
 for i in range(100000):
   serial_port.write(PrepareLedMsg(uid, rgbs))
+  break
   rgbs = rgbs[1:] + rgbs[:1]
   time.sleep(0.05)
 
