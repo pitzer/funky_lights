@@ -4,18 +4,20 @@
 //  a routine which regularly tunes the clock frequency by looking at the position of the serial
 //  stream bit transitions.
 
+#define VERBOSE 0
+#define DEBUG_SERIAL 0
+#define REUSE_LED_BUFFER 1
+
 #include <FAB_LED.h>
 #include <TXOnlySerial.h>
 #include <CRC.h>
-
-#define VERBOSE 0
 
 #define LEDS_PIN 1
 #define RX_PIN 0
 #define TX_DEBUG_PIN 2
 #define TIMER_DEBUG_PIN 4
 
-#define MAX_NUM_LEDS 100
+#define MAX_NUM_LEDS 230
 
 #define MAGIC_BYTE 0x55
 #define CRC_POLYNOMIAL 0x07
@@ -32,8 +34,19 @@ const grb grb_red[1] = {{0, 255, 0}};
 const grb grb_green[1] = {{255, 0, 0}};
 const grb grb_blue[1] = {{0, 0, 255}};
 
-// Software serial port, used for debug only
+#if DEBUG_SERIAL
 TXOnlySerial debug_serial(TX_DEBUG_PIN);
+#else
+// Dummy serial port class
+class DummySerial {
+ public:
+  inline void begin(int baudrate) {};
+  inline void print(uint8_t* dat, uint8_t type) {};
+  inline void print(uint8_t* dat) {};
+  inline void println(uint8_t* dat, uint8_t type) {};
+  inline void println(uint8_t* dat) {};
+} debug_serial;
+#endif
 
 // The UID for this board. The bar will only answer to messages sent to this specific UID,
 //  or to the broadcast UID

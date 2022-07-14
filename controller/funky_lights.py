@@ -5,7 +5,7 @@ import sys
 
 serial_port = None
 
-NUM_LEDS = 100
+NUM_LEDS = 120
 MAGIC = 0x55
 CMD_LEDS = 1
 CMD_SERIAL_BAUDRATE = 2
