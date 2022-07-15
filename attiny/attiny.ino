@@ -429,6 +429,7 @@ void loop()
                 break;
             case CMD_SERIAL_BAUDRATE:
                 InitSerial(prescaler);
+                fab_led.clear(num_leds);
                 break;
             }
         }
