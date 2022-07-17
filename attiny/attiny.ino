@@ -7,6 +7,7 @@
 #include <FastLED.h>
 #include <TXOnlySerial.h>
 #include <CRC.h>
+#include <EEPROM.h>
 
 #define VERBOSE 0
 
@@ -240,6 +241,9 @@ inline uint8_t GetSerialByte()
 
 void setup()
 {
+    // Read UID from EEPROM
+    uid = EEPROM.read(0);
+    
     // IO directions
     pinMode(RX_PIN, INPUT);
     pinMode(TIMER_DEBUG_PIN, OUTPUT);
