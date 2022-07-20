@@ -25,6 +25,8 @@
 
 #define INITIAL_SERIAL_PRESCALER 6 // 333 kBaud
 
+#define UID_UNDEFINED 0xFF
+
 // Internal array of LED data
 CRGB leds[MAX_NUM_LEDS];
 
@@ -241,7 +243,7 @@ inline uint8_t GetSerialByte()
 
 void setup()
 {
-    // Read UID from EEPROM
+    // Read UID from EEPROM. If the UID was never set this value will be UID_UNDEFINED.
     uid = EEPROM.read(0);
     
     // IO directions
@@ -249,13 +251,20 @@ void setup()
     pinMode(TIMER_DEBUG_PIN, OUTPUT);
 
     // Setup the LED strip
-    FastLED.addLeds<WS2812B, LEDS_PIN, GRB>(leds, num_leds);
+    FastLED.addLeds<WS2812B, LEDS_PIN, GRB>(leds, MAX_NUM_LEDS);
     FastLED.setBrightness(255);
-    fill_solid(leds, num_leds, CRGB::Black);
-    // Show the UID on the LEDs
-    for (int i = 0; i < 8; i++)
+    if (uid == UID_UNDEFINED) 
     {
-        leds[i] = ((uid >> i) & 1) ? CRGB::White : CRGB::Black;
+      fill_solid(leds, MAX_NUM_LEDS, CRGB::Red);
+    } 
+    else 
+    {
+      fill_solid(leds, MAX_NUM_LEDS, CRGB::Black);
+      // Show the UID on the LEDs
+      for (int i = 0; i < 8; i++)
+      {
+          leds[i] = ((uid >> i) & 1) ? CRGB::White : CRGB::Black;
+      }
     }
     FastLED.show();
 
@@ -266,8 +275,15 @@ void setup()
     debug_serial.print("Number of LEDs: ");
     debug_serial.println(num_leds);
     debug_serial.print("UID: ");
-    debug_serial.println(uid);
-
+    if (uid == UID_UNDEFINED) 
+    {
+      debug_serial.println("undefined");
+    } 
+    else
+    {
+      debug_serial.println(uid);
+    }
+    
     // Setup the input serial port
     InitSerial(INITIAL_SERIAL_PRESCALER);
 
