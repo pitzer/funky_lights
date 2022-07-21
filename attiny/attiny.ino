@@ -10,13 +10,13 @@
 #include <EEPROM.h>
 
 #define VERBOSE 0
-#define DEBUG_SERIAL 1
+#define DEBUG_SERIAL 0
 #define LEDS_PIN 1
 #define RX_PIN 0
 #define TX_DEBUG_PIN 2
 #define TIMER_DEBUG_PIN 4
 
-#define MAX_NUM_LEDS 30
+#define MAX_NUM_LEDS 230
 
 #define MAGIC_BYTE 0x55
 #define CRC_POLYNOMIAL 0x07
@@ -116,7 +116,6 @@ void sendPixelsR5G6B5(
 {
   uint8_t bytes[3];
 
-  DISABLE_INTERRUPTS;
   for (uint16_t i = 0; i < count; i++) 
   {
     const uint16_t elem = pixelArray[i];
@@ -125,17 +124,14 @@ void sendPixelsR5G6B5(
     bytes[2] = (elem << 3) & 0xF8;
     fab_led.sendBytes(3, bytes);
   }
-  RESTORE_INTERRUPTS;
 }
 
 void sendPixelsSolidColor(const uint16_t numPixels, const grb * color)
 {
-  DISABLE_INTERRUPTS;
   for( uint16_t i = 0; i < numPixels; i++) 
   {
     fab_led.sendBytes(3, (const uint8_t *) color);
   }
-  RESTORE_INTERRUPTS;
 }
 
 // Helper function to print a value in binary WITH leading zeros.
@@ -302,18 +298,18 @@ void setup()
     }
     else 
     {
-      fab_led.clear(MAX_NUM_LEDS);
+      sendPixelsSolidColor(MAX_NUM_LEDS, grb_black);
       delay(100);
       // Show the UID on the LEDs
       for (int i = 0; i < 8; i++)
       {
           if ((uid >> i) & 1) 
           {
-            fab_led.sendPixels(1, grb_white);
+            sendPixelsSolidColor(1, grb_white);
           } 
           else 
           {
-            fab_led.sendPixels(1, grb_black);
+            sendPixelsSolidColor(1, grb_black);
           }
       }
     }
@@ -446,14 +442,13 @@ void loop()
                     debug_serial.print(" -> ");
                     debug_serial.println(new_num_leds);
                     noInterrupts();
-                    fab_led.clear(new_num_leds);
+                    sendPixelsSolidColor(MAX_NUM_LEDS, grb_black);
                     num_leds = new_num_leds;
                 }
                 sendPixelsR5G6B5(num_leds, led_colors);
                 break;
             case CMD_SERIAL_BAUDRATE:
                 InitSerial(prescaler);
-                fab_led.clear(num_leds);
                 break;
             }
         }
