@@ -1,10 +1,10 @@
 from operator import le
 import crc8
 import json
-import serial
 import time
 import sys
 import asyncio
+import serial_asyncio
 import websockets
 import functools
 import time
@@ -18,9 +18,14 @@ WEB_SOCKET_PORT = 5678
 TEXTURE_WIDTH = 128
 TEXTURE_HEIGHT = 128
 
+TTY_DEVICE = '/dev/tty.usbserial-14110'
+INITIAL_BAUDRATE = 333333
+
+
 def UInt16ToBytes(val):
     bytes = val.to_bytes(2, byteorder='little', signed=False)
     return [bytes[0], bytes[1]]
+
 
 def RgbToBits(rgbs):
     """ Convert RGB value given as a 3-tuple to a list of two bytes that can
@@ -34,19 +39,22 @@ def RgbToBits(rgbs):
     out = []
     for rgb in rgbs:
         r, g, b = rgb
-        out += [((g << 3) & 0xE0) | ((b >> 3) & 0x1F), (r & 0xF8) | ((g >> 5) & 0x07)]
+        out += [((g << 3) & 0xE0) | ((b >> 3) & 0x1F),
+                (r & 0xF8) | ((g >> 5) & 0x07)]
     return out
+
 
 def PrepareLedMsg(bar_uid, rgbs):
     """ Prepare a message from a list of RGB colors
     Args:
-    serial: Serial port object. Should be already initialized
-    bar_uid: UID of the bar to which we want to send the message
-    rgbs: list of rgb tuples
+     serial: Serial port object. Should be already initialized
+     bar_uid: UID of the bar to which we want to send the message
+     rgbs: list of rgb tuples
     Returns:
-    a bytearray, ready to send on the serial port
+     a bytearray, ready to send on the serial port
     """
-    header = [MAGIC, bar_uid, len(rgbs), CMD_LEDS]
+    header = [MAGIC, bar_uid, CMD_LEDS]
+    header += [len(rgbs)]
     data = RgbToBits(rgbs)
     crc_compute = crc8.crc8()
     crc_compute.update(bytearray(data))
@@ -54,12 +62,13 @@ def PrepareLedMsg(bar_uid, rgbs):
     msg = header + data + crc
     return bytearray(msg)
 
+
 def PrepareLedSegmentsMsg(segments):
     header = [MAGIC, len(segments)]
     data = []
     for segment in segments:
         data += [segment.uid]
-        data += UInt16ToBytes(len(segment.colors)) 
+        data += UInt16ToBytes(len(segment.colors))
         data += [CMD_LEDS]
         data += RgbToBits(segment.colors)
     crc_compute = crc8.crc8()
@@ -67,6 +76,7 @@ def PrepareLedSegmentsMsg(segments):
     crc = [crc_compute.digest()[0]]
     msg = header + data + crc
     return bytearray(msg)
+
 
 def PrepareTextureMsg(segments):
     msg = []
@@ -78,23 +88,54 @@ def PrepareTextureMsg(segments):
     msg += [0] * (texture_size - len(msg))
     return bytearray(msg)
 
+
 async def ws_serve(websocket, generator):
     while True:
-        message = await asyncio.shield(generator.result)
+        segments = await asyncio.shield(generator.result)
         try:
-            await websocket.send(message)
+            await websocket.send(PrepareTextureMsg(segments))
         except websockets.ConnectionClosed as exc:
             break
+
+
+class SerialWriter(asyncio.Protocol):
+    def __init__(self, generator):
+        super().__init__()
+        self.transport = None
+        self.generator = generator
+
+    def connection_made(self, transport):
+        """Store the serial transport and schedule the task to send data.
+        """
+        self.transport = transport
+        print('Writer connection created')
+        asyncio.ensure_future(self.serve())
+        print('Writer.send() scheduled')
+
+    def connection_lost(self, exc):
+        print('Writer closed')
+
+    async def serve(self):
+        while True:
+            segments = await asyncio.shield(self.generator.result)
+            for segment in segments:
+                if len(segment.colors) < 256 and segment.uid < 15:
+                    self.transport.serial.write(
+                        PrepareLedMsg(segment.uid, segment.colors))
 
 class PatternGenerator:
     def __init__(self, led_config):
         self.result = asyncio.Future()
         config = [
-            (VideoPattern, dict(file='media/butter_churn.mp4', fps=20, crop=Rect(60, 60, 60, 60))),
-            (VideoPattern, dict(file='media/psychill1.mp4', fps=20, crop=Rect(60, 130, 60, 60))),
-            (VideoPattern, dict(file='media/psychill2.mp4', fps=20, crop=Rect(60, 130, 60, 60))),
+            # (VideoPattern, dict(file='media/butter_churn.mp4',
+            #  fps=20, crop=Rect(60, 60, 60, 60))),
+            # (VideoPattern, dict(file='media/psychill1.mp4',
+            #  fps=20, crop=Rect(60, 130, 60, 60))),
+            # (VideoPattern, dict(file='media/psychill2.mp4',
+            #  fps=20, crop=Rect(60, 130, 60, 60))),
             (RGTRansitionPattern, dict()),
-            (VideoPattern, dict(file='media/milkdrop.mp4', fps=20, crop=Rect(60, 130, 60, 60)))
+            # (VideoPattern, dict(file='media/milkdrop.mp4',
+            #  fps=20, crop=Rect(60, 130, 60, 60)))
         ]
 
         self.patterns = []
@@ -106,7 +147,6 @@ class PatternGenerator:
             pattern.prepareSegments(led_config)
             pattern.initialize()
             self.patterns.append(pattern)
-
 
     async def tick(self, pattern, delta):
         pattern.animate(delta)
@@ -124,8 +164,9 @@ class PatternGenerator:
             cur_animation_time = time.time()
 
             # Rotate patterns
-            if (cur_animation_time - prev_pattern_time) > PATTERN_DURATION: 
-                self.current_pattern_index = (self.current_pattern_index + 1) % len(self.patterns)
+            if (cur_animation_time - prev_pattern_time) > PATTERN_DURATION:
+                self.current_pattern_index = (
+                    self.current_pattern_index + 1) % len(self.patterns)
                 prev_pattern_time = cur_animation_time
             pattern = self.patterns[self.current_pattern_index]
 
@@ -133,13 +174,13 @@ class PatternGenerator:
             await self.tick(pattern, cur_animation_time - prev_animation_time)
 
             # Update future for processing by IO
-            self.result.set_result(PrepareTextureMsg(pattern.segments))
+            self.result.set_result(pattern.segments)
             self.result = asyncio.Future()
             prev_animation_time = cur_animation_time
 
             # Sleep for the remaining time
             processing_time = time.time() - cur_animation_time
-            await asyncio.sleep(max(0, 1.0/ANIMATION_RATE - processing_time))  
+            await asyncio.sleep(max(0, 1.0/ANIMATION_RATE - processing_time))
 
             # Output update rate to console
             counter += 1
@@ -165,6 +206,13 @@ async def main():
     ws_serve_handler = functools.partial(ws_serve, generator=pattern_generator)
     await websockets.serve(ws_serve_handler, '127.0.0.1', WEB_SOCKET_PORT)
 
+    # Start serial
+    loop = asyncio.get_event_loop()
+    serial_serve_handler = functools.partial(
+        SerialWriter, generator=pattern_generator)
+    await serial_asyncio.create_serial_connection(
+        loop, serial_serve_handler, TTY_DEVICE, baudrate=INITIAL_BAUDRATE)
+    
     # Wait forever
     await asyncio.Event().wait()
 
