@@ -90,11 +90,15 @@ class PatternGenerator:
     def __init__(self, led_config):
         self.result = asyncio.Future()
         config = [
-            (VideoPattern, dict(file='media/butter_churn.mp4', fps=20, crop=Rect(60, 60, 60, 60))),
-            (VideoPattern, dict(file='media/psychill1.mp4', fps=20, crop=Rect(60, 130, 60, 60))),
-            (VideoPattern, dict(file='media/psychill2.mp4', fps=20, crop=Rect(60, 130, 60, 60))),
-            (RGTRansitionPattern, dict()),
-            (VideoPattern, dict(file='media/milkdrop.mp4', fps=20, crop=Rect(60, 130, 60, 60)))
+            (VideoPattern, dict(file='media/shifter_escape.mp4', fps=20)),  # original size: 1214×792
+            (VideoPattern, dict(file='media/radial_beams.mp4', fps=20, crop=Rect(0, 0, 850, 720))), # original size: 1214×792
+            # (VideoPattern, dict(file='media/butter_churn.mp4', fps=20, crop=Rect(60, 60, 60, 60))),
+            # (VideoPattern, dict(file='media/psychill1.mp4', fps=20, crop=Rect(60, 130, 60, 60))),
+            # (VideoPattern, dict(file='media/psychill2.mp4', fps=20, crop=Rect(60, 130, 60, 60))),
+            # (RGTRansitionPattern, dict()),
+            # (VideoPattern, dict(file='media/milkdrop.mp4', fps=20, crop=Rect(60, 130, 60, 60))),
+            (VideoPattern, dict(file='media/test_pattern.mp4', fps=20, crop=Rect(0, 0, 800, 720))) # 1280 × 720
+            
         ]
 
         self.patterns = []
@@ -114,7 +118,7 @@ class PatternGenerator:
     async def run(self):
         ANIMATION_RATE = 20
         FPS_UPDATE_RATE = 1
-        PATTERN_DURATION = 10
+        PATTERN_DURATION = 120
 
         prev_animation_time = time.time() - 1.0 / ANIMATION_RATE
         prev_pattern_time = time.time()

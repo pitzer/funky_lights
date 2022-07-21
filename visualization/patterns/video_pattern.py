@@ -55,11 +55,12 @@ class VideoPattern(Pattern):
             segment.uv = np.array(uv)
     
     def animate(self, delta):
-        delta = delta + self.prev_delta
-        frame_delta = int(self.fps * delta)
-        self.prev_delta = delta - frame_delta / (self.fps)
-        if frame_delta <= 0:
-            return
+        # delta = delta + self.prev_delta
+        # frame_delta = int(self.fps * delta)
+        # self.prev_delta = delta - frame_delta / (self.fps)
+        # if frame_delta <= 0:
+        #     return
+        frame_delta = 1
 
         self.current_frame = self.current_frame + frame_delta
         self.video.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame)
