@@ -59,7 +59,7 @@ uint8_t num_leds = 8;
 uint8_t new_num_leds = 8;
 
 // The index of the byte currently being received
-uint8_t byte_index = 0;
+uint16_t byte_index = 0;
 // The current state of the deserializer
 enum
 {
