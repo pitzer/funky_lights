@@ -401,8 +401,16 @@ void loop()
         break;
     case NUM_LEDS:
         new_num_leds = c;
-        state = DATA_LEDS;
-        byte_index = 0;
+        if (new_num_leds > MAX_NUM_LEDS)
+        {
+          // Ignore commands that have too many LEDs
+          state = IDLE;
+        }
+        else
+        {
+          state = DATA_LEDS;
+          byte_index = 0;
+        }
         break;
     case DATA_LEDS:
         led_colors_bytes[byte_index++] = c;
