@@ -4,30 +4,31 @@
 //  a routine which regularly tunes the clock frequency by looking at the position of the serial
 //  stream bit transitions.
 
-#define VERBOSE 0
-#define DEBUG_SERIAL 0
-#define REUSE_LED_BUFFER 1
-
 #include <FAB_LED.h>
 #include <TXOnlySerial.h>
 #include <CRC.h>
+#include <EEPROM.h>
 
+#define VERBOSE 0
+#define DEBUG_SERIAL 1
 #define LEDS_PIN 1
 #define RX_PIN 0
 #define TX_DEBUG_PIN 2
 #define TIMER_DEBUG_PIN 4
 
-#define MAX_NUM_LEDS 230
+#define MAX_NUM_LEDS 30
 
 #define MAGIC_BYTE 0x55
 #define CRC_POLYNOMIAL 0x07
 
 #define BROADCAST_UID 0
 
-#define INITIAL_SERIAL_PRESCALER 8 // 250 kBaud
+#define INITIAL_SERIAL_PRESCALER 6 // 333 kBaud
+
+#define UID_UNDEFINED 0xFF
 
 // Internal array of LED data
-ws2812b<B,1> fab_led;
+ws2812b<B, LEDS_PIN> fab_led;
 const grb grb_white[1] = {{255, 255, 255}};
 const grb grb_black[1] = {{0, 0, 0}};
 const grb grb_red[1] = {{0, 255, 0}};
@@ -107,6 +108,35 @@ typedef struct __attribute__((packed)) LedMsg
 };
 LedColor led_colors[MAX_NUM_LEDS];
 uint8_t *led_colors_bytes = reinterpret_cast<uint8_t *>(led_colors);
+
+// R5G6B5 version of sendPixels
+void sendPixelsR5G6B5(
+    const uint16_t count,
+    uint16_t * pixelArray)
+{
+  uint8_t bytes[3];
+
+  DISABLE_INTERRUPTS;
+  for (uint16_t i = 0; i < count; i++) 
+  {
+    const uint16_t elem = pixelArray[i];
+    bytes[0] = (elem >> 3) & 0xFC;
+    bytes[1] = (elem >> 8) & 0xF8;
+    bytes[2] = (elem << 3) & 0xF8;
+    fab_led.sendBytes(3, bytes);
+  }
+  RESTORE_INTERRUPTS;
+}
+
+void sendPixelsSolidColor(const uint16_t numPixels, const grb * color)
+{
+  DISABLE_INTERRUPTS;
+  for( uint16_t i = 0; i < numPixels; i++) 
+  {
+    fab_led.sendBytes(3, (const uint8_t *) color);
+  }
+  RESTORE_INTERRUPTS;
+}
 
 // Helper function to print a value in binary WITH leading zeros.
 void PrintBinary(uint8_t data, bool line_feed)
@@ -258,25 +288,35 @@ inline uint8_t GetSerialByte()
 
 void setup()
 {
+    // Read UID from EEPROM. If the UID was never set this value will be UID_UNDEFINED.
+    uid = EEPROM.read(0);
+    
     // IO directions
     pinMode(RX_PIN, INPUT);
     pinMode(TIMER_DEBUG_PIN, OUTPUT);
 
     // Setup the LED strip
-    fab_led.clear(MAX_NUM_LEDS);
-    delay(100);
-    // Show the UID on the LEDs
-    for (int i = 0; i < 8; i++)
+    if (uid == UID_UNDEFINED) 
     {
-        if ((uid >> i) & 1) 
-        {
-          fab_led.sendPixels(1, grb_white);
-        } 
-        else {
-          fab_led.sendPixels(1, grb_black);
-        }
+      sendPixelsSolidColor(MAX_NUM_LEDS, grb_red);
     }
-    
+    else 
+    {
+      fab_led.clear(MAX_NUM_LEDS);
+      delay(100);
+      // Show the UID on the LEDs
+      for (int i = 0; i < 8; i++)
+      {
+          if ((uid >> i) & 1) 
+          {
+            fab_led.sendPixels(1, grb_white);
+          } 
+          else 
+          {
+            fab_led.sendPixels(1, grb_black);
+          }
+      }
+    }
 
     // Setup Serial output for debug
     debug_serial.begin(115200);
@@ -285,36 +325,20 @@ void setup()
     debug_serial.print("Number of LEDs: ");
     debug_serial.println(num_leds);
     debug_serial.print("UID: ");
-    debug_serial.println(uid);
+    if (uid == UID_UNDEFINED) 
+    {
+      debug_serial.println("undefined");
+    } 
+    else
+    {
+      debug_serial.println(uid);
+    }
 
     // Setup the input serial port
     InitSerial(INITIAL_SERIAL_PRESCALER);
 
     noInterrupts();
 }
-
-// R5G6B5 version of sendPixels
-void sendPixelsR5G6B5(
-    int count,
-    uint16_t * pixelArray)
-{
-  uint8_t bytes[3];
-
-  DISABLE_INTERRUPTS;
-
-  for (int i = 0; i < count; i++) {
-    const uint16_t elem = pixelArray[i];
-  
-    bytes[0] = (elem >> 3) & 0xFC;
-    bytes[1] = (elem >> 8) & 0xF8;
-    bytes[2] = (elem << 3) & 0xF8;
-    fab_led.sendBytes(3, bytes);
-  }
-
-  RESTORE_INTERRUPTS;
-
-}
-
 
 void loop()
 {
@@ -421,8 +445,8 @@ void loop()
                     debug_serial.print(num_leds);
                     debug_serial.print(" -> ");
                     debug_serial.println(new_num_leds);
-                    fab_led.clear(new_num_leds);
                     noInterrupts();
+                    fab_led.clear(new_num_leds);
                     num_leds = new_num_leds;
                 }
                 sendPixelsR5G6B5(num_leds, led_colors);

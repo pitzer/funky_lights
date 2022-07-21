@@ -5,12 +5,12 @@ import sys
 
 serial_port = None
 
-NUM_LEDS = 120
+NUM_LEDS = 30
 MAGIC = 0x55
 CMD_LEDS = 1
 CMD_SERIAL_BAUDRATE = 2
 BROADCAST_UID = 0
-INITIAL_BAUDRATE = 250000
+INITIAL_BAUDRATE = 333333
 TTY_DEVICE = '/dev/tty.usbserial-14430'
 uid = 1
 
@@ -103,7 +103,7 @@ for i in range(int(NUM_LEDS / 2)):
 
 # Configure the serial port. Do it twice to exercise the speed change on 
 serial_port = SetupSerial(TTY_DEVICE, INITIAL_BAUDRATE, serial_port)
-serial_port = SetupSerial(TTY_DEVICE, 250000, serial_port)
+serial_port = SetupSerial(TTY_DEVICE, 333333, serial_port)
 
 # Send messages to all the bars
 for i in range(100000):
