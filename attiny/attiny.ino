@@ -306,7 +306,7 @@ void setup()
           if ((uid >> i) & 1) 
           {
             sendPixelsSolidColor(1, grb_white);
-          } 
+          }
           else 
           {
             sendPixelsSolidColor(1, grb_black);
@@ -329,7 +329,7 @@ void setup()
     {
       debug_serial.println(uid);
     }
-
+    
     // Setup the input serial port
     InitSerial(INITIAL_SERIAL_PRESCALER);
 
@@ -469,7 +469,7 @@ void loop()
                 debug_serial.println(c, HEX);
                 noInterrupts();
             }
-        }        
+        }
         break;
     }
 }
