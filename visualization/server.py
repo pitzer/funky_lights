@@ -119,7 +119,7 @@ class SerialWriter(asyncio.Protocol):
         while True:
             segments = await asyncio.shield(self.generator.result)
             for segment in segments:
-                if len(segment.colors) < 256 and segment.uid < 15:
+                if len(segment.colors) < 256 and segment.uid <= 1:
                     self.transport.serial.write(
                         PrepareLedMsg(segment.uid, segment.colors))
 

@@ -103,7 +103,7 @@ for i in range(int(NUM_LEDS / 2)):
 
 # Configure the serial port. Do it twice to exercise the speed change on 
 serial_port = SetupSerial(TTY_DEVICE, INITIAL_BAUDRATE, serial_port)
-serial_port = SetupSerial(TTY_DEVICE, 333333, serial_port)
+serial_port = SetupSerial(TTY_DEVICE, 10000, serial_port)
 
 # Send messages to all the bars
 for i in range(100000):
