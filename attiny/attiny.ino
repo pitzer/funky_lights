@@ -4,19 +4,19 @@
 //  a routine which regularly tunes the clock frequency by looking at the position of the serial
 //  stream bit transitions.
 
-#include <FastLED.h>
+#include <FAB_LED.h>
 #include <TXOnlySerial.h>
 #include <CRC.h>
 #include <EEPROM.h>
 
 #define VERBOSE 0
-
+#define DEBUG_SERIAL 0
 #define LEDS_PIN 1
 #define RX_PIN 0
 #define TX_DEBUG_PIN 2
 #define TIMER_DEBUG_PIN 4
 
-#define MAX_NUM_LEDS 30
+#define MAX_NUM_LEDS 230
 
 #define MAGIC_BYTE 0x55
 #define CRC_POLYNOMIAL 0x07
@@ -28,10 +28,26 @@
 #define UID_UNDEFINED 0xFF
 
 // Internal array of LED data
-CRGB leds[MAX_NUM_LEDS];
+ws2812b<B, LEDS_PIN> fab_led;
+const grb grb_white[1] = {{255, 255, 255}};
+const grb grb_black[1] = {{0, 0, 0}};
+const grb grb_red[1] = {{0, 255, 0}};
+const grb grb_green[1] = {{255, 0, 0}};
+const grb grb_blue[1] = {{0, 0, 255}};
 
-// Software serial port, used for debug only
+#if DEBUG_SERIAL
 TXOnlySerial debug_serial(TX_DEBUG_PIN);
+#else
+// Dummy serial port class
+class DummySerial {
+ public:
+  inline void begin(int baudrate) {};
+  inline void print(uint8_t* dat, uint8_t type) {};
+  inline void print(uint8_t* dat) {};
+  inline void println(uint8_t* dat, uint8_t type) {};
+  inline void println(uint8_t* dat) {};
+} debug_serial;
+#endif
 
 // The UID for this board. The bar will only answer to messages sent to this specific UID,
 //  or to the broadcast UID
@@ -43,7 +59,7 @@ uint8_t num_leds = 8;
 uint8_t new_num_leds = 8;
 
 // The index of the byte currently being received
-uint8_t byte_index = 0;
+uint16_t byte_index = 0;
 // The current state of the deserializer
 enum
 {
@@ -92,6 +108,31 @@ typedef struct __attribute__((packed)) LedMsg
 };
 LedColor led_colors[MAX_NUM_LEDS];
 uint8_t *led_colors_bytes = reinterpret_cast<uint8_t *>(led_colors);
+
+// R5G6B5 version of sendPixels
+void sendPixelsR5G6B5(
+    const uint16_t count,
+    uint16_t * pixelArray)
+{
+  uint8_t bytes[3];
+
+  for (uint16_t i = 0; i < count; i++) 
+  {
+    const uint16_t elem = pixelArray[i];
+    bytes[0] = (elem >> 3) & 0xFC;
+    bytes[1] = (elem >> 8) & 0xF8;
+    bytes[2] = (elem << 3) & 0xF8;
+    fab_led.sendBytes(3, bytes);
+  }
+}
+
+void sendPixelsSolidColor(const uint16_t numPixels, const grb * color)
+{
+  for( uint16_t i = 0; i < numPixels; i++) 
+  {
+    fab_led.sendBytes(3, (const uint8_t *) color);
+  }
+}
 
 // Helper function to print a value in binary WITH leading zeros.
 void PrintBinary(uint8_t data, bool line_feed)
@@ -251,22 +292,27 @@ void setup()
     pinMode(TIMER_DEBUG_PIN, OUTPUT);
 
     // Setup the LED strip
-    FastLED.addLeds<WS2812B, LEDS_PIN, GRB>(leds, MAX_NUM_LEDS);
-    FastLED.setBrightness(255);
     if (uid == UID_UNDEFINED) 
     {
-      fill_solid(leds, MAX_NUM_LEDS, CRGB::Red);
-    } 
+      sendPixelsSolidColor(MAX_NUM_LEDS, grb_red);
+    }
     else 
     {
-      fill_solid(leds, MAX_NUM_LEDS, CRGB::Black);
+      sendPixelsSolidColor(MAX_NUM_LEDS, grb_black);
+      delay(100);
       // Show the UID on the LEDs
       for (int i = 0; i < 8; i++)
       {
-          leds[i] = ((uid >> i) & 1) ? CRGB::White : CRGB::Black;
+          if ((uid >> i) & 1) 
+          {
+            sendPixelsSolidColor(1, grb_white);
+          }
+          else 
+          {
+            sendPixelsSolidColor(1, grb_black);
+          }
       }
     }
-    FastLED.show();
 
     // Setup Serial output for debug
     debug_serial.begin(115200);
@@ -355,7 +401,16 @@ void loop()
         break;
     case NUM_LEDS:
         new_num_leds = c;
-        state = DATA_LEDS;
+        if (new_num_leds > MAX_NUM_LEDS)
+        {
+          // Ignore commands that have too many LEDs
+          state = IDLE;
+        }
+        else
+        {
+          state = DATA_LEDS;
+          byte_index = 0;
+        }
         break;
     case DATA_LEDS:
         led_colors_bytes[byte_index++] = c;
@@ -394,17 +449,11 @@ void loop()
                     debug_serial.print(num_leds);
                     debug_serial.print(" -> ");
                     debug_serial.println(new_num_leds);
-                    FastLED.addLeds<WS2812B, LEDS_PIN, GRB>(leds, new_num_leds);
-                    FastLED.setBrightness(255);
-                    fill_solid(leds, new_num_leds, CRGB::Black);
                     noInterrupts();
+                    sendPixelsSolidColor(MAX_NUM_LEDS, grb_black);
                     num_leds = new_num_leds;
                 }
-                for (int i = 0; i < num_leds; i++)
-                {
-                    uint16_t col = led_colors[i];
-                    leds[i] = CRGB((col >> 8) & 0xF8, (col >> 3) & 0xFC, (col << 3) & 0xF8);
-                }
+                sendPixelsR5G6B5(num_leds, led_colors);
                 break;
             case CMD_SERIAL_BAUDRATE:
                 InitSerial(prescaler);
@@ -421,9 +470,6 @@ void loop()
                 noInterrupts();
             }
         }
-        interrupts();
-        FastLED.show();
-        noInterrupts();
         break;
     }
 }
