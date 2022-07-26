@@ -44,6 +44,7 @@
   softuart.c (UART software mode implementation)
 
 */
+#include <string.h>
 
 #include "avr/interrupt.h"
 
@@ -56,8 +57,8 @@ uint8_t softuart_rx(void)
 {
     uint8_t c;
 
-    CLKPR = (1 << CLKPCE);                 // Prescaler enable
-    CLKPR = (1 << CLKPS0) | (1 << CLKPS1); // Clock division factor 8 (0011)
+    CLKPR = (1 << CLKPCE); // Prescaler enable
+    CLKPR = (1 << CLKPS2); // Clock division factor 16 (0100)
 
     PORTB &= ~(1 << PORTB3); // nRE low (read mode, MAX485)
 
@@ -101,8 +102,8 @@ uint8_t softuart_rx(void)
  */
 void softuart_tx(uint8_t c)
 {
-    CLKPR = (1 << CLKPCE);                 // Prescaler enable
-    CLKPR = (1 << CLKPS0) | (1 << CLKPS1); // Clock division factor 8 (0011)
+    CLKPR = (1 << CLKPCE); // Prescaler enable
+    CLKPR = (1 << CLKPS2); // Clock division factor 16 (00100)
 
     PORTB |= 1 << PORTB3; // DE high (tx mode, MAX485)
 
@@ -156,5 +157,16 @@ void softuart_tx_array(const uint8_t *array, uint8_t len)
     {
         softuart_tx(*array++);
         len--;
+    }
+}
+
+/*
+ * send string
+ */
+void softuart_tx_string(const char *str)
+{
+    for (size_t i = 0; i < strlen(str); i++)
+    {
+        softuart_tx(str[i]);
     }
 }

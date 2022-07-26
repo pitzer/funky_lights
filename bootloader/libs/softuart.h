@@ -50,8 +50,8 @@
 
 #include <avr/io.h>
 
-#define F_DIV 8     // CLK divisor
-#define UART_TX PB1 // Use PB1 as TX pin
+#define F_DIV 16    // CLK divisor
+#define UART_TX PB2 // Use PB1 as TX pin
 #define UART_RX PB0 // Use PB0 as RX pin
 #define UART_BAUDRATE 9600
 
@@ -68,5 +68,6 @@ uint8_t softuart_rx(void);
 void softuart_tx(uint8_t c);
 void softuart_send(const uint8_t *s);
 void softuart_tx_array(const uint8_t *array, uint8_t len);
+void softuart_tx_string(const char *str);
 
 #endif // end _SOFTUART_H_
