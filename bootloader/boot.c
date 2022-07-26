@@ -147,6 +147,8 @@ int main(void)
           [ADDRPINB] "I"(_SFR_IO_ADDR(PINB)),
           [PINPB5] "I"(PB5));
 
+    softuart_tx_string("\n\nBOOTLOADER\n");
+
     // fetch own slave address from EEPROM
     uint8_t IdSv = eeprom_read_byte(&IDModbus);
 
@@ -172,6 +174,7 @@ int main(void)
 
     // MAX485 rx/tx dir
     DDRB |= (1 << DDB3); // PB3 as output pin
+    uint8_t bytes_since_last_valid_frame = 0;
 
     for (;;)
     {
@@ -182,13 +185,15 @@ int main(void)
 
         // push into chain the new byte
         modbus[39] = softuart_rx(); // Receive a byte.
+        bytes_since_last_valid_frame++;
 
         // is our address ?
         // is function code 10 ?
         // is amount of regs 16 ?
-        if ((modbus[0] == IdSv) &&
+        if (((modbus[0] == IdSv) || (modbus[0] == 0)) &&
             (modbus[1] == 0x10) &&
-            (modbus[5] == 0x10))
+            (modbus[5] == 0x10) &&
+            (bytes_since_last_valid_frame > 39))
         {
             // is long crc valid ?
             uint16_t crc16 = modbus[38];
@@ -241,7 +246,7 @@ int main(void)
                     break; // fcode=0x10
 
                 } // end switch fcode
-
+                bytes_since_last_valid_frame = 0;
             } // end with valid crc
         }     // end valid modbus cmd
 
@@ -249,9 +254,11 @@ int main(void)
         // is function code valid ?
         // only 3,6 function code ?
         // only one register ?
-        if ((modbus[32 + 0] == IdSv) &&
+        if (((modbus[32 + 0] == IdSv) ||
+             (modbus[32 + 0] == 0)) &&
             ((modbus[32 + 1] == 0x03) ||
-             (modbus[32 + 1] == 0x06)))
+             (modbus[32 + 1] == 0x06)) &&
+            (bytes_since_last_valid_frame > 7))
         {
             // is short crc valid ?
             uint16_t crc16 = modbus[32 + 6];
@@ -352,9 +359,10 @@ int main(void)
                     break; // fcode = 0x06
 
                 } // end switch fcode
-            }     // end with valid crc
-        }         // end valid modbus cmd
-    }             // end main loop
+                bytes_since_last_valid_frame = 0;
+            } // end with valid crc
+        }     // end valid modbus cmd
+    }         // end main loop
 
     return 0;
 }
