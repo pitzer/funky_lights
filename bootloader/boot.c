@@ -339,9 +339,6 @@ int main(void)
                             // confirm mode switch
                             softuart_tx_array(&modbus[32 + 0], 8);
 
-                            // watchdog @ 4 sec
-                            wdt_enable(WDTO_4S);
-
                             // jump to main app
                             // @end of vector table
                             __asm volatile(
