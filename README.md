@@ -10,6 +10,41 @@ https://photos.app.goo.gl/gXQorENS9bhVreZ16
 3D Mesh files for the Funkadelephant art car:
 https://drive.google.com/drive/folders/1XdZmZc8DAyeh26kRkMO6nCtN7fgZzTzO?usp=sharing
 
+## attiny85 board
+Each LED segment is controlled by a small attiny85 based board. The software for the board is in [attiny/attiny.ino](attiny/attiny.ino) file.
+
+Here are the steps to setup and program the board.
+
+### Set fuses and UID
+You first need to burn the flash fuses with the correct values to set the clock to 16Mhz internal and to enable Brown-out detection. There is a way to set the correct clock with the Arduino IDE, but it doesn’t enable the brown out detector. Here is the command to do that (On my osX machine. You guys can figure out what is the path to avrdude on other machines. Tip: you can enable the verbose output in the Arduino IDE preferences, and see what binary it uses).
+We also program the UID into the EEPROM and lock it using the EESAVE fuse to it persists when we update the application firmware.
+``` 
+SEGMENT_UID=7
+/Applications/Arduino.app/Contents/Java/hardware/tools/avr/bin/avrdude -C/Applications/Arduino.app/Contents/Java/hardware/tools/avr/etc/avrdude.conf -v -v -v -v -pattiny85 -cusbtiny -e -Uefuse:w:0xff:m -Uhfuse:w:0xd3:m -Ulfuse:w:0xf1:m -Ueeprom:w:0x$(printf "%.2x" $SEGMENT_UID):m
+``` 
+
+### Program bootloader 
+Next we burn a bootloader onto the board that will enable us to program the boards over serial going forward. With the programmer still attached build and burn the bootloader using the following commands:
+``` 
+cd bootloader
+./make.sh
+./burn.sh
+``` 
+After burning the bootloader will start immediately and display the UID on the LEDs. It will also output some debug information on pin 2.
+If all looks good, disconnect the USB ISP programmer.
+
+### Program main application 
+The main application is in [attiny/attiny.ino](attiny/attiny.ino) and the compiled hex file is in [attiny/attiny.ino.tiny8.hex](attiny/attiny.ino.tiny8.hex). If the ino file is changed a new hex file can be generated using the Arduino IDU under `Sketch -> Export Compiled Binary`. This should overwrite [attiny/attiny.ino.tiny8.hex](attiny/attiny.ino.tiny8.hex).
+NOTE: do NOT use the Arduino IDE or avrdude to program the main application. This will remove the bootloader.
+
+To program the main application, connect to the (LED) serial and run:
+``` 
+cd controller
+python flash_application.py
+``` 
+Note, flash_application will update the main application on all boards connected to the bus by default. Change the UID if only one boards should be updated.
+
+
 ## Visualization
 
 The visualization consists of two parts right now. A server that serves LED control packets over websockets and a 3D visualizer written in javasript and three.js.
