@@ -16,11 +16,23 @@ Each LED segment is controlled by a small attiny85 based board. The software for
 Here are the steps to setup and program the board.
 
 ### Set fuses and UID
-You first need to burn the flash fuses with the correct values to set the clock to 16Mhz internal and to enable Brown-out detection. There is a way to set the correct clock with the Arduino IDE, but it doesn’t enable the brown out detector. Here is the command to do that (On my osX machine. You guys can figure out what is the path to avrdude on other machines. Tip: you can enable the verbose output in the Arduino IDE preferences, and see what binary it uses).
-We also program the UID into the EEPROM and lock it using the EESAVE fuse to it persists when we update the application firmware.
+You first need to burn the flash fuses with the correct values to set the clock to 16Mhz internal and to enable Brown-out detection. There is a way to set the correct clock with the Arduino IDE, but it doesn’t enable the brown out detector. We also program the UID into the EEPROM and lock it using the EESAVE fuse to it persists when we update the application firmware. 
+Here is the full list of fuse bits we need to set:
+
+| Fuse          | Fuse Bit      | Notes                                                             |
+| ------------- | ------------- | ----------------------------------------------------------------- |
+| LOW           | CKSEL1        |                                                                   |
+| LOW           | CKSEL2        |                                                                   |
+| LOW           | CKSEL3        |                                                                   |
+| HIGH          | SPIEN         |                                                                   |
+| HIGH          | BODLEVEL2     | BODLEVEL 100 configure the brown out detector to 4.3V             | 
+| HIGH          | EESAVE        | Lock EEPROM so it doesn’t get erased when programming             |
+| EXTENDED      | SELFPRGEN     | Allow bootloader to program the flash                             |       
+
+Here is the command to set the fuses:
 ``` 
 SEGMENT_UID=7
-/Applications/Arduino.app/Contents/Java/hardware/tools/avr/bin/avrdude -C/Applications/Arduino.app/Contents/Java/hardware/tools/avr/etc/avrdude.conf -v -v -v -v -pattiny85 -cusbtiny -e -Uefuse:w:0xff:m -Uhfuse:w:0xd3:m -Ulfuse:w:0xf1:m -Ueeprom:w:0x$(printf "%.2x" $SEGMENT_UID):m
+/Applications/Arduino.app/Contents/Java/hardware/tools/avr/bin/avrdude -C/Applications/Arduino.app/Contents/Java/hardware/tools/avr/etc/avrdude.conf -v -v -v -v -pattiny85 -cusbtiny -e -Uefuse:w:0xfe:m -Uhfuse:w:0xd3:m -Ulfuse:w:0xf1:m -Ueeprom:w:0x$(printf "%.2x" $SEGMENT_UID):m
 ``` 
 
 ### Program bootloader 
