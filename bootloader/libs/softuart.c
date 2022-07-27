@@ -60,8 +60,6 @@ uint8_t softuart_rx(void)
     CLKPR = (1 << CLKPCE); // Prescaler enable
     CLKPR = (1 << CLKPS2); // Clock division factor 16 (0100)
 
-    PORTB &= ~(1 << PORTB3); // nRE low (read mode, MAX485)
-
     PORTB &= ~(1 << UART_RX);
     DDRB &= ~(1 << UART_RX);
 
