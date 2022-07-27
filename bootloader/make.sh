@@ -47,7 +47,7 @@ printf "BOOT: 0x%04x - 0x%04x \n\n" $ENTRYADDR $(( $ENTRYADDR+$BOOTSIZE ))
 if [ $(( $MAINSIZE )) -ge $(( $ENTRYADDR )) ]
 then
   printf "ERROR main end [0x%04x] overlap boot begin [0x%04x]\n\n" $MAINSIZE $ENTRYADDR
-#   rm -rf build/*
-#   rm -rf *.hex
-#   rm -rf *.eep
+  rm -rf build/*
+  rm -rf *.hex
+  rm -rf *.eep
 fi
