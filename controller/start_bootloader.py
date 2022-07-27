@@ -12,7 +12,7 @@ def main():
         uid = int(sys.argv[2])
 
     # Configure the serial port. Do it twice to exercise the speed change on 
-    serial_port = connection.SetupSerial(tty_device)
+    serial_port = connection.SetupSerial(tty_device, baudrate=connection.LED_BAUDRATE)
     serial_port.write(messages.PrepareBootloaderMsg(uid))
     serial_port.close()  
 

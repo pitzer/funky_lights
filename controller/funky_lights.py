@@ -24,7 +24,7 @@ def main():
         rgbs += [(col, 255 - col, 0)]
 
     # Configure the serial port. Do it twice to exercise the speed change on
-    serial_port = connection.SetupSerial(tty_device)
+    serial_port = connection.InitializeController(tty_device)
 
     # Send messages to all the bars
     for i in range(100000):

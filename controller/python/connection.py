@@ -4,9 +4,20 @@ import time
 
 from . import messages
 
-BAUDRATE = 333333
+START_BAUDRATE = 9600
+LED_BAUDRATE = 250000
 
-def SetupSerial(device, baudrate=BAUDRATE):
+def InitializeController(tty_device, baudrate=LED_BAUDRATE, uid=messages.BROADCAST_UID):
+    serial_port = SetupSerial(tty_device, baudrate=START_BAUDRATE)
+    serial_port.write(messages.PrepareStartLedControllerMsg(uid))
+    time.sleep(0.5)
+
+    if baudrate != START_BAUDRATE:
+        serial_port = ChangeBaudrate(serial_port, baudrate)
+    
+    return serial_port
+
+def SetupSerial(device, baudrate=START_BAUDRATE):
     """ Configure both the target LEDs and the local UART for a new baudrate
      Args:
       device: string with the device name
@@ -18,9 +29,7 @@ def SetupSerial(device, baudrate=BAUDRATE):
     prescaler = int(16000000 / baudrate / 8)
     baudrate = int(16000000 / (8 * prescaler))
     serial_port = serial.Serial(device, baudrate=baudrate)
-    print("Opened serial port %s with baudrate %d" %
-          (serial_port.name, serial_port.baudrate))
-    time.sleep(1)
+    time.sleep(0.1)
     return serial_port
 
 
@@ -39,9 +48,7 @@ def ChangeBaudrate(serial_port, new_baudrate):
     #  change baudrate
     devive = serial_port.name
     serial_port.write(messages.PrepareBaudrateMsg(messages.BROADCAST_UID, prescaler))
+    time.sleep(0.1)
     serial_port.close()
     serial_port = serial.Serial(devive, baudrate=new_baudrate)
-    print("Opened serial port %s with baudrate %d" %
-          (serial_port.name, serial_port.baudrate))
-    time.sleep(1)
     return serial_port

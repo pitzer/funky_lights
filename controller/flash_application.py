@@ -4,12 +4,10 @@ import time
 
 from python import connection, hexfile, messages, crc16
 
-
-
 def main():
     application_file = '../attiny/attiny.ino.tiny8.hex'
     tty_device = '/dev/tty.usbserial-14210'
-    uid = 0
+    uid = messages.BROADCAST_UID
 
     if len(sys.argv) > 1:
         application_file = sys.argv[1]
@@ -25,7 +23,7 @@ def main():
         sys.exit(1)
 
     # Configure the serial port. Do it twice to exercise the speed change on
-    serial_port = connection.SetupSerial(tty_device)
+    serial_port = connection.SetupSerial(tty_device, baudrate=connection.LED_BAUDRATE)
     serial_port.write(messages.PrepareBootloaderMsg(uid))
     serial_port.close()
     time.sleep(1.0)
@@ -72,11 +70,6 @@ def main():
         serial_port.write(bytearray(frame))
         # Wait a little bit before next transmission for the MCU to write the frame to flash
         time.sleep(0.2)
-    
-    # Switch to main application
-    serial_port.write(messages.PrepareStartLedControllerMsg(uid))
-    serial_port.close()
-
 
 if __name__ == '__main__':
     main()
