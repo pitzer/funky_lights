@@ -23,7 +23,7 @@
 
 #define BROADCAST_UID 0
 
-#define INITIAL_SERIAL_PRESCALER 6 // 333 kBaud
+#define INITIAL_SERIAL_PRESCALER 208 // 9600 Baud
 
 #define UID_UNDEFINED 0xFF
 
@@ -79,7 +79,8 @@ enum
 typedef enum
 {
     CMD_LEDS = 1,
-    CMD_SERIAL_BAUDRATE = 2
+    CMD_SERIAL_BAUDRATE = 2,
+    CMD_BOOTLOADER = 3,
 } Cmd;
 Cmd cmd = 0;
 
@@ -282,6 +283,29 @@ inline uint8_t GetSerialByte()
     }
 }
 
+void startBootloader()
+{
+  // jump LOADER
+  asm volatile
+  (
+  
+      // 'FLASH' message into stack
+      "  ldi   r30, 0x42                           \n\t" // 'B'
+      "  push  r30                                 \n\t"
+      "  ldi   r30, 0x4F                           \n\t" // 'O'
+      "  push  r30                                 \n\t"
+      "  ldi   r30, 0x4F                           \n\t" // 'O'
+      "  push  r30                                 \n\t"
+      "  ldi   r30, 0x54                           \n\t" // 'T'
+      "  push  r30                                 \n\t"
+  
+      // jump into bootloader (0x1C00)
+      "  ldi   r30, 0x00                           \n\t"
+      "  ldi   r31, 0x0E                           \n\t"
+      "  ijmp                                      \n\t"
+  );
+}
+
 void setup()
 {
     // Read UID from EEPROM. If the UID was never set this value will be UID_UNDEFINED.
@@ -299,23 +323,10 @@ void setup()
     else 
     {
       sendPixelsSolidColor(MAX_NUM_LEDS, grb_black);
-      delay(100);
-      // Show the UID on the LEDs
-      for (int i = 0; i < 8; i++)
-      {
-          if ((uid >> i) & 1) 
-          {
-            sendPixelsSolidColor(1, grb_white);
-          }
-          else 
-          {
-            sendPixelsSolidColor(1, grb_black);
-          }
-      }
     }
 
     // Setup Serial output for debug
-    debug_serial.begin(115200);
+    debug_serial.begin(9600);
     debug_serial.println("");
     debug_serial.println("Funky LEDs");
     debug_serial.print("Number of LEDs: ");
@@ -386,6 +397,9 @@ void loop()
             break;
         case CMD_SERIAL_BAUDRATE:
             state = PRESCALER;
+            break;
+        case CMD_BOOTLOADER:
+            startBootloader();
             break;
         default:
             if (VERBOSE)
