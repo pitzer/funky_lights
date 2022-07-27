@@ -23,7 +23,7 @@
 
 #define BROADCAST_UID 0
 
-#define INITIAL_SERIAL_PRESCALER 6 // 333 kBaud
+#define INITIAL_SERIAL_PRESCALER 208 // 9600 Baud
 
 #define UID_UNDEFINED 0xFF
 
@@ -323,19 +323,6 @@ void setup()
     else 
     {
       sendPixelsSolidColor(MAX_NUM_LEDS, grb_black);
-      delay(100);
-      // Show the UID on the LEDs
-      for (int i = 0; i < 8; i++)
-      {
-          if ((uid >> i) & 1) 
-          {
-            sendPixelsSolidColor(1, grb_white);
-          }
-          else 
-          {
-            sendPixelsSolidColor(1, grb_black);
-          }
-      }
     }
 
     // Setup Serial output for debug
