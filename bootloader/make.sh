@@ -26,12 +26,13 @@ avr-gcc -c $CFLAGS -flto -MF build/crc16.o.d    -Wa,-adhlns=build/crc16.lst     
 avr-gcc -c $CFLAGS -flto -MF build/softuart.o.d -Wa,-adhlns=build/softuart.c.lst libs/softuart.c -o build/softuart.o
 avr-gcc -c $CFLAGS -flto -MF build/pgmflash.o.d -Wa,-adhlns=build/pgmflash.lst   libs/pgmflash.c -o build/pgmflash.o
 avr-gcc -c $CFLAGS -flto -MF build/eeprom.o.d   -Wa,-adhlns=build/eeprom.c.lst   libs/eeprom.c   -o build/eeprom.o
+avr-gcc -c $CFLAGS -flto -MF build/ws2812.o.d   -Wa,-adhlns=build/ws2812.c.lst   libs/ws2812.c   -o build/ws2812.o
 # boot.c
 avr-gcc -c $CFLAGS -flto -MF build/boot.o.d     -Wa,-adhlns=build/boot.lst       boot.c          -o build/boot.o
 
 avr-gcc $CFLAGS -flto -ffreestanding -nostartfiles -o build/boot.elf build/crt1.o \
                 build/boot.o build/softuart.o build/crc16.o \
-                build/eeprom.o build/pgmflash.o \
+                build/eeprom.o build/pgmflash.o build/ws2812.o \
         -Wl,--relax,--section-start=.text=$ENTRYADDR,--gc-sections,-Map=build/boot.map
 
 

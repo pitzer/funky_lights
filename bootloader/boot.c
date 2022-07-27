@@ -58,14 +58,12 @@
 #include "eeprom.h"
 #include "pgmflash.h"
 #include "softuart.h"
+#include "ws2812.h"
 
 extern uint8_t IDModbus;
 
 // modbus frames
 uint8_t modbus[40];
-
-// Software version string
-static const char PROGMEM BLVers[4] = "0.01"; // 4 octet ASCII
 
 static void send_modbus_array(uint8_t *sendbuff, const uint8_t len)
 {
@@ -105,7 +103,14 @@ int main(void)
     softuart_tx_string("\n\nBOOTLOADER\n");
 
     // fetch own slave address from EEPROM
-    uint8_t IdSv = eeprom_read_byte(&IDModbus);
+    uint8_t uid = eeprom_read_byte(&IDModbus);
+
+    // set WS2812_PIN as output
+    WS2812_DDR_REG |= WS2812_PIN_MASK;
+
+    // display UID on LEDs
+    ws2812_clear();
+    ws2812_send_uid(uid);
 
     /*
      * receive buffer for modbus frame (fcode = 3,4,6)
@@ -127,8 +132,6 @@ int main(void)
      * modbus[0->39]
      */
 
-    // MAX485 rx/tx dir
-    DDRB |= (1 << DDB3); // PB3 as output pin
     uint8_t bytes_since_last_valid_frame = 0;
 
     for (;;)
@@ -145,7 +148,7 @@ int main(void)
         // is our address ?
         // is function code 10 ?
         // is amount of regs 16 ?
-        if (((modbus[0] == IdSv) || (modbus[0] == 0)) &&
+        if (((modbus[0] == uid) || (modbus[0] == 0)) &&
             (modbus[1] == 0x10) &&
             (modbus[5] == 0x10) &&
             (bytes_since_last_valid_frame > 39))
@@ -209,7 +212,7 @@ int main(void)
         // is function code valid ?
         // only 3,6 function code ?
         // only one register ?
-        if (((modbus[32 + 0] == IdSv) ||
+        if (((modbus[32 + 0] == uid) ||
              (modbus[32 + 0] == 0)) &&
             ((modbus[32 + 1] == 0x03) ||
              (modbus[32 + 1] == 0x06)) &&
@@ -235,52 +238,6 @@ int main(void)
                 // triage cmd
                 switch (modbus[32 + 1])
                 {
-
-                // read holding register
-                case 0x03:
-
-                    // return MODE
-                    if (daddr == 0x0000)
-                    {
-                        // requested amount
-                        if (modbus[32 + 5] != 0x01)
-                        {
-                            // illegal data value
-                            send_modbus_exception(&modbus[32 + 0], 0x03);
-                            break;
-                        }
-
-                        modbus[32 + 2] = 0x02; // mslen
-
-                        modbus[32 + 3] = 0x00;
-                        modbus[32 + 4] = 0x01; // bootload mode
-
-                        send_modbus_array(&modbus[32 + 0], 7);
-                    }
-
-                    // return SW VERS
-                    if (daddr == 0x0001)
-                    {
-                        // requested amount
-                        if (modbus[32 + 5] != 0x02)
-                        {
-                            // illegal data value
-                            send_modbus_exception(&modbus[32 + 0], 0x03);
-                            break;
-                        }
-
-                        modbus[32 + 2] = 0x04; // mslen
-
-                        // fetch software version
-                        modbus[32 + 3] = pgm_read_byte(&BLVers[0]);
-                        modbus[32 + 4] = pgm_read_byte(&BLVers[1]);
-                        modbus[32 + 5] = pgm_read_byte(&BLVers[2]);
-                        modbus[32 + 6] = pgm_read_byte(&BLVers[3]);
-
-                        send_modbus_array(&modbus[32 + 0], 9);
-                    }
-
-                    break; // fcode = 0x03
 
                 case 0x06:
 
