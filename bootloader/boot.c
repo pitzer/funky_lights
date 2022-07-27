@@ -102,7 +102,7 @@ int main(void)
 
     softuart_tx_string("\n\nBOOTLOADER\n");
 
-    // fetch own slave address from EEPROM
+    // fetch uid from EEPROM
     uint8_t uid = eeprom_read_byte(&IDModbus);
 
     // set WS2812_PIN as output
