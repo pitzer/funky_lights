@@ -6,8 +6,8 @@ NUM_LEDS = 30
 
 
 def main():
-    tty_device = '/dev/tty.usbserial-14430'
-    uid = 1
+    tty_device = connection.DEFAULT_TTY_DEVICE
+    uid = messages.BROADCAST_UID
 
     if len(sys.argv) > 1:
         tty_device = sys.argv[1]
@@ -23,7 +23,6 @@ def main():
         col = int(255 - (i / (NUM_LEDS / 2) * 255))
         rgbs += [(col, 255 - col, 0)]
 
-    # Configure the serial port. Do it twice to exercise the speed change on
     serial_port = connection.InitializeController(tty_device)
 
     # Send messages to all the bars

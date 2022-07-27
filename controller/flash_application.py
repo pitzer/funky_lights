@@ -1,4 +1,5 @@
 import os
+from sqlite3 import connect
 import sys
 import time
 
@@ -6,7 +7,7 @@ from python import connection, hexfile, messages, crc16
 
 def main():
     application_file = '../attiny/attiny.ino.tiny8.hex'
-    tty_device = '/dev/tty.usbserial-14210'
+    tty_device = connection.DEFAULT_TTY_DEVICE
     uid = messages.BROADCAST_UID
 
     if len(sys.argv) > 1:
@@ -22,7 +23,7 @@ def main():
         print(txt)
         sys.exit(1)
 
-    # Configure the serial port. Do it twice to exercise the speed change on
+    # Switch to bootloader if not already in it
     serial_port = connection.SetupSerial(tty_device, baudrate=connection.LED_BAUDRATE)
     serial_port.write(messages.PrepareBootloaderMsg(uid))
     serial_port.close()
@@ -60,7 +61,7 @@ def main():
         else:
             byte_offset += 1
     
-    # Process last frame
+    # Process last partial frame
     crc = crc16.crc16(frame[0:38])
     frame[38] = (crc & 0x00ff)
     frame[39] = (crc & 0xff00) >> 8
@@ -68,7 +69,7 @@ def main():
     for frame in frames:
         print('TX:' + ''.join([' %02x' % b for b in frame[0:38]]) + ' CRC [' + ''.join([' %02x' % b for b in frame[38:]]) + ']')
         serial_port.write(bytearray(frame))
-        # Wait a little bit before next transmission for the MCU to write the frame to flash
+        # 200ms should be plenty of time for the MCU to write the frame to flash
         time.sleep(0.2)
 
 if __name__ == '__main__':

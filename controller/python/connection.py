@@ -6,6 +6,7 @@ from . import messages
 
 START_BAUDRATE = 9600
 LED_BAUDRATE = 250000
+DEFAULT_TTY_DEVICE = '/dev/tty.usbserial-14210'
 
 def InitializeController(tty_device, baudrate=LED_BAUDRATE, uid=messages.BROADCAST_UID):
     serial_port = SetupSerial(tty_device, baudrate=START_BAUDRATE)

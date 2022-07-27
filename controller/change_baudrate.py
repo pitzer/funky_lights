@@ -3,9 +3,9 @@ from python import connection, messages
 
 
 def main():
-    tty_device = '/dev/tty.usbserial-14430'
-    baudrate = 250000
-    uid = 0
+    tty_device = connection.DEFAULT_TTY_DEVICE
+    baudrate = connection.LED_BAUDRATE
+    uid = messages.BROADCAST_UID
 
     if len(sys.argv) > 1:
         baudrate = int(sys.argv[1])
