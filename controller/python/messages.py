@@ -1,4 +1,5 @@
 import crc8
+from . import crc16
 
 MAGIC = 0x55
 
@@ -76,4 +77,26 @@ def PrepareBootloaderMsg(bar_uid):
     crc_compute.update(bytearray(header + data))
     crc = [crc_compute.digest()[0]]
     msg = header + data + crc
+    return bytearray(msg)
+
+
+def PrepareStartLedControllerMsg(bar_uid):
+    """ Prepare a message to tell the bootloader to start the LED controller.
+    Args:
+     bar_uid: UID of the bar to which we want to send the message
+    Returns:
+     a bytearray, ready to send on the serial port
+    """
+
+    msg = [
+        0x01, # UID
+        0x06,  # Change running MODE
+        0x00, 0x00, # address start
+        0x00, 0x00, # number of bytes
+        0xff, 0xff  # crc
+    ]
+    msg[0] = bar_uid
+    crc = crc16.crc16(msg[0:6])
+    msg[6] = (crc & 0x00ff)
+    msg[7] = (crc & 0xff00) >> 8
     return bytearray(msg)
