@@ -96,56 +96,11 @@ int main(void)
     wdt_disable();
 
     __asm volatile(
-        // jmp into bootload if pin 5 active
-        "  cbi   %[ADDRPRTB], %[PINPB5]              \n\t"
-        "  cbi   %[ADDRDDRB], %[PINPB5]              \n\t"
-        "  sbic  %[ADDRPINB], %[PINPB5]              \n\t"
-        "  rjmp  gotoflashld                         \n\t"
-
-        // jmp into bootload if start vector is bad
-        "  ldi   r30, 0x00                           \n\t"
-        "  ldi   r31, 0x00                           \n\t"
-        "  lpm   r29, Z+                             \n\t"
-        "  cpi   r29, 0xFF                           \n\t"
-        "  brne  gotoflashld                         \n\t"
-        "  lpm   r29, Z                              \n\t"
-        "  cpi   r29, 0xCD                           \n\t"
-        "  brne  gotoflashld                         \n\t"
-
-        // jmp into bootload if BOOT mark in stack
-        "  pop   r30                                 \n\t"
-        "  cpi   r30, 0x54                           \n\t" // 'T'
-        "  brne  gotomainapp                         \n\t"
-        "  pop   r30                                 \n\t"
-        "  cpi   r30, 0x4F                           \n\t" // 'O'
-        "  brne  gotomainapp                         \n\t"
-        "  pop   r30                                 \n\t"
-        "  cpi   r30, 0x4F                           \n\t" // 'O'
-        "  brne  gotomainapp                         \n\t"
-        "  pop   r30                                 \n\t"
-        "  cpi   r30, 0x42                           \n\t" // 'B'
-        "  brne  gotomainapp                         \n\t"
-        "  rjmp  gotoflashld                         \n\t"
-
-        // jump to main app
-        // @end of vector table
-        "gotomainapp:"
-        "  ldi   r30, 0x0F                           \n\t"
-        "  ldi   r31, 0x00                           \n\t"
-        "  ijmp                                      \n\t"
-
-        // bootload
-        "gotoflashld:"
-        // reset stack pointer to RAMEND
+        // Always jmp into bootload
         "  ldi   r28,  lo8(__stack)                  \n\t"
         "  ldi   r29,  hi8(__stack)                  \n\t"
         "  out   0x3e, r29                           \n\t"
-        "  out   0x3d, r28                           \n\t"
-        :
-        : [ADDRPRTB] "I"(_SFR_IO_ADDR(PORTB)),
-          [ADDRDDRB] "I"(_SFR_IO_ADDR(DDRB)),
-          [ADDRPINB] "I"(_SFR_IO_ADDR(PINB)),
-          [PINPB5] "I"(PB5));
+        "  out   0x3d, r28                           \n\t");
 
     softuart_tx_string("\n\nBOOTLOADER\n");
 
