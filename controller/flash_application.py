@@ -3,7 +3,7 @@ from sqlite3 import connect
 import sys
 import time
 
-from python import connection, hexfile, messages, crc16
+from funky_lights import connection, hexfile, messages, crc16
 
 def main():
     application_file = '../attiny/attiny.ino.tiny8.hex'

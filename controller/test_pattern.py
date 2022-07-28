@@ -1,6 +1,6 @@
 import sys
 import time
-from python import connection, messages
+from funky_lights import connection, messages
 
 NUM_LEDS = 30
 

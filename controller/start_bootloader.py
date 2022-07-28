@@ -1,5 +1,5 @@
 import sys
-from python import connection, messages
+from funky_lights import connection, messages
 
 
 def main():
