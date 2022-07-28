@@ -8287,7 +8287,7 @@
         },
         {
             "uid": 225,
-            "name": "leg_back_right/Body1",
+            "name": "leg_back_left/Body1",
             "num_leds": 147,
             "length": 4.919434329996652,
             "led_positions": [
@@ -9030,7 +9030,7 @@
         },
         {
             "uid": 226,
-            "name": "leg_front_right/Body1:1",
+            "name": "leg_front_left/Body1",
             "num_leds": 165,
             "length": 5.516315351202847,
             "led_positions": [
@@ -9863,7 +9863,7 @@
         },
         {
             "uid": 227,
-            "name": "leg_front_right/Body2:1",
+            "name": "leg_front_left/Body2",
             "num_leds": 44,
             "length": 1.4885168346818183,
             "led_positions": [
@@ -10091,7 +10091,7 @@
         },
         {
             "uid": 228,
-            "name": "leg_front_right/Body3:1",
+            "name": "leg_front_left/Body3",
             "num_leds": 40,
             "length": 1.3608287843946252,
             "led_positions": [
@@ -10299,7 +10299,7 @@
         },
         {
             "uid": 229,
-            "name": "leg_front_right/Body4:1",
+            "name": "leg_front_left/Body4",
             "num_leds": 43,
             "length": 1.4341484527239097,
             "led_positions": [
@@ -10522,7 +10522,7 @@
         },
         {
             "uid": 230,
-            "name": "leg_front_right/Body5:1",
+            "name": "leg_front_left/Body5",
             "num_leds": 26,
             "length": 0.8734117299752917,
             "led_positions": [
@@ -10660,7 +10660,7 @@
         },
         {
             "uid": 231,
-            "name": "leg_front_right/Body6:1",
+            "name": "leg_front_left/Body6",
             "num_leds": 35,
             "length": 1.1706940436765991,
             "led_positions": [
@@ -10843,7 +10843,7 @@
         },
         {
             "uid": 232,
-            "name": "leg_front_right/Body1",
+            "name": "leg_front_left/Body1",
             "num_leds": 138,
             "length": 4.631747457071699,
             "led_positions": [
