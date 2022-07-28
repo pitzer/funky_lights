@@ -1,8 +1,9 @@
 import numpy as np
 
 class Segment:
-    def __init__(self, uid, num_leds, led_positions):
+    def __init__(self, uid, bus, num_leds, led_positions):
         self.uid = uid
+        self.bus = bus
         self.num_leds = num_leds
         self.colors = np.array([[255, 0, 0] for i in range(num_leds)])
         self.led_positions = np.array(led_positions)
@@ -14,7 +15,7 @@ class Pattern:
     def prepareSegments(self, led_config):
         for bus in led_config['busses']:
             for s in bus['led_segments']:
-                segment = Segment(s['uid'], s['num_leds'], s['led_positions'])
+                segment = Segment(s['uid'], bus['name'], s['num_leds'], s['led_positions'])
                 self.segments.append(segment)
 
     def initialize(self):

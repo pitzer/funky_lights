@@ -1,5 +1,3 @@
-from operator import le
-import crc8
 import json
 import time
 import sys
@@ -9,78 +7,19 @@ import websockets
 import functools
 import time
 
+from funky_lights import connection, messages
 from patterns.rg_transition_pattern import RGTRansitionPattern
 from patterns.video_pattern import VideoPattern, Rect
 
-MAGIC = 0x55
-CMD_LEDS = 1
 WEB_SOCKET_PORT = 5678
 TEXTURE_WIDTH = 128
 TEXTURE_HEIGHT = 128
-
-TTY_DEVICE = '/dev/tty.usbserial-14110'
-INITIAL_BAUDRATE = 333333
-
-
-def UInt16ToBytes(val):
-    bytes = val.to_bytes(2, byteorder='little', signed=False)
-    return [bytes[0], bytes[1]]
-
-
-def RgbToBits(rgbs):
-    """ Convert RGB value given as a 3-tuple to a list of two bytes that can
-        be sent to the LEDs. We pack data as 16 bits:
-            RRRRRGGGGGGBBBBB
-    Args:
-    rgbs: list of rgb tuples
-    Returns:
-    a list of bytes
-    """
-    out = []
-    for rgb in rgbs:
-        r, g, b = rgb
-        out += [((g << 3) & 0xE0) | ((b >> 3) & 0x1F),
-                (r & 0xF8) | ((g >> 5) & 0x07)]
-    return out
-
-
-def PrepareLedMsg(bar_uid, rgbs):
-    """ Prepare a message from a list of RGB colors
-    Args:
-     serial: Serial port object. Should be already initialized
-     bar_uid: UID of the bar to which we want to send the message
-     rgbs: list of rgb tuples
-    Returns:
-     a bytearray, ready to send on the serial port
-    """
-    header = [MAGIC, bar_uid, CMD_LEDS]
-    header += [len(rgbs)]
-    data = RgbToBits(rgbs)
-    crc_compute = crc8.crc8()
-    crc_compute.update(bytearray(data))
-    crc = [crc_compute.digest()[0]]
-    msg = header + data + crc
-    return bytearray(msg)
-
-
-def PrepareLedSegmentsMsg(segments):
-    header = [MAGIC, len(segments)]
-    data = []
-    for segment in segments:
-        data += [segment.uid]
-        data += UInt16ToBytes(len(segment.colors))
-        data += [CMD_LEDS]
-        data += RgbToBits(segment.colors)
-    crc_compute = crc8.crc8()
-    crc_compute.update(bytearray(data))
-    crc = [crc_compute.digest()[0]]
-    msg = header + data + crc
-    return bytearray(msg)
+TEXTURE_SIZE = TEXTURE_WIDTH * TEXTURE_HEIGHT * 4
 
 
 def PrepareTextureMsg(segments):
     msg = []
-    texture_size = TEXTURE_WIDTH * TEXTURE_HEIGHT * 4
+    texture_size = TEXTURE_SIZE
     for segment in segments:
         for color in segment.colors:
             msg += [color[0], color[1], color[2], 255]
@@ -99,10 +38,11 @@ async def ws_serve(websocket, generator):
 
 
 class SerialWriter(asyncio.Protocol):
-    def __init__(self, generator):
+    def __init__(self, generator, bus):
         super().__init__()
         self.transport = None
         self.generator = generator
+        self.bus = bus
 
     def connection_made(self, transport):
         """Store the serial transport and schedule the task to send data.
@@ -119,9 +59,9 @@ class SerialWriter(asyncio.Protocol):
         while True:
             segments = await asyncio.shield(self.generator.result)
             for segment in segments:
-                if len(segment.colors) < 256 and segment.uid <= 1:
+                if segment.bus == self.bus:
                     self.transport.serial.write(
-                        PrepareLedMsg(segment.uid, segment.colors))
+                        messages.PrepareLedMsg(segment.uid, segment.colors))
 
 class PatternGenerator:
     def __init__(self, led_config):
@@ -195,9 +135,15 @@ async def main():
     led_config_file = 'led_config.json'
     if len(sys.argv) > 1:
         led_config_file = int(sys.argv[1])
+    bus_config_file = 'bus_config.json'
+    if len(sys.argv) > 2:
+        bus_config_file = int(sys.argv[2])
+
     with open(led_config_file, 'r') as f:
         led_config = json.load(f)
-
+    with open(bus_config_file, 'r') as f:
+        bus_config = json.load(f)
+        
     # Start pattern generator
     pattern_generator = PatternGenerator(led_config)
     asyncio.create_task(pattern_generator.run())
@@ -208,10 +154,16 @@ async def main():
 
     # Start serial
     loop = asyncio.get_event_loop()
-    serial_serve_handler = functools.partial(
-        SerialWriter, generator=pattern_generator)
-    await serial_asyncio.create_serial_connection(
-        loop, serial_serve_handler, TTY_DEVICE, baudrate=INITIAL_BAUDRATE)
+    for bus in bus_config['led_busses']:
+        # Start the light app
+        serial_port = connection.InitializeController(bus['device'], baudrate=bus['baudrate'])
+        serial_port.close()
+
+        # Start async serial handlers
+        serial_serve_handler = functools.partial(
+            SerialWriter, generator=pattern_generator, bus=bus['name'])
+        await serial_asyncio.create_serial_connection(
+            loop, serial_serve_handler, bus['device'], baudrate=bus['baudrate'])
     
     # Wait forever
     await asyncio.Event().wait()
