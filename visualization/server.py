@@ -134,10 +134,10 @@ async def main():
     # led_config_file = './visualization/led_config.json'
     led_config_file = 'led_config.json'
     if len(sys.argv) > 1:
-        led_config_file = int(sys.argv[1])
+        led_config_file = sys.argv[1]
     bus_config_file = 'bus_config.json'
     if len(sys.argv) > 2:
-        bus_config_file = int(sys.argv[2])
+        bus_config_file = sys.argv[2]
 
     with open(led_config_file, 'r') as f:
         led_config = json.load(f)
