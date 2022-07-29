@@ -1,0 +1,24 @@
+{
+    "led_busses": [
+        {
+            "name": "dome",
+            "device": "/dev/ttyUSB0",
+            "baudrate": 250000
+        },
+        {
+            "name": "leg_back_right",
+            "device": "/dev/ttyUSB1",
+            "baudrate": 250000
+        }, 
+        {
+            "name": "leg_back_left",
+            "device": "/dev/ttyUSB2",
+            "baudrate": 250000
+        },
+        {
+            "name": "leg_front_left",
+            "device": "/dev/ttyUSB3",
+            "baudrate": 250000
+        }
+    ]
+}
