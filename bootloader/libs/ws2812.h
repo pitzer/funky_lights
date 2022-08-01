@@ -41,7 +41,7 @@
 // WS2812 and clones only need 50 µs
 //
 ///////////////////////////////////////////////////////////////////////
-#define WS2812_RESETTIME 100
+#define WS2812_RESETTIME 20000
 
 #define MAX_NUM_LEDS 255
 
