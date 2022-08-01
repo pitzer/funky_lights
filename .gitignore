@@ -3,3 +3,4 @@
 visualization/media/full
 *.pyc
 bootloader/build
+funky_ligths.egg-info
