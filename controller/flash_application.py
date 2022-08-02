@@ -1,12 +1,11 @@
 import os
-from sqlite3 import connect
 import sys
 import time
 
 from python import connection, hexfile, messages, crc16
 
 def main():
-    application_file = '../attiny/attiny.ino.tiny8.hex'
+    application_file = '../attiny/build/attiny.hex'
     tty_device = connection.DEFAULT_TTY_DEVICE
     uid = messages.BROADCAST_UID
 

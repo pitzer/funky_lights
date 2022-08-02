@@ -42,8 +42,13 @@ After burning the bootloader will start immediately and display the UID on the L
 If all looks good, disconnect the USB ISP programmer.
 
 ### Program main application 
-The main application is in [attiny.ino](attiny/attiny.ino) and the compiled hex file is in [attiny.ino.tiny8.hex](attiny/attiny.ino.tiny8.hex). If the ino file is changed a new hex file can be generated using the Arduino IDU under `Sketch -> Export Compiled Binary`. This should overwrite [attiny.ino.tiny8.hex](attiny/attiny.ino.tiny8.hex).
-NOTE: do NOT use the Arduino IDE or avrdude to program the main application. This will remove the bootloader.
+The main application is in [attiny.ino](attiny/attiny.ino) and the compiled hex file is in [build/attiny.hex](attiny/build/attiny.hex). If the ino file is changed a new hex file can be generated using the [make.sh](attiny/make.sh) command.
+
+``` 
+cd attiny
+./make.sh
+``` 
+NOTE: do NOT use the Arduino IDE to compile ino file or avrdude to program the main application. This will remove the bootloader.
 
 To program the main application, connect to the (LED) serial and run:
 ``` 
