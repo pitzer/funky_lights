@@ -42,10 +42,24 @@ TXOnlySerial debug_serial(TX_DEBUG_PIN);
 class DummySerial {
  public:
   inline void begin(int baudrate) {};
-  inline void print(uint8_t* dat, uint8_t type) {};
-  inline void print(uint8_t* dat) {};
-  inline void println(uint8_t* dat, uint8_t type) {};
-  inline void println(uint8_t* dat) {};
+  size_t print(const char[]) { return 0; };
+  size_t print(char) { return 0; };
+  size_t print(unsigned char, int = DEC) { return 0; };
+  size_t print(int, int = DEC) { return 0; };
+  size_t print(unsigned int, int = DEC) { return 0; };
+  size_t print(long, int = DEC) { return 0; };
+  size_t print(unsigned long, int = DEC) { return 0; };
+  size_t print(double, int = 2) { return 0; };
+
+  size_t println(const char[]) { return 0; };
+  size_t println(char) { return 0; };
+  size_t println(unsigned char, int = DEC) { return 0; };
+  size_t println(int, int = DEC) { return 0; };
+  size_t println(unsigned int, int = DEC) { return 0; };
+  size_t println(long, int = DEC) { return 0; };
+  size_t println(unsigned long, int = DEC) { return 0; };
+  size_t println(double, int = 2) { return 0; };
+  size_t println(void) { return 0; };
 } debug_serial;
 #endif
 
@@ -64,7 +78,6 @@ uint16_t byte_index = 0;
 enum
 {
     IDLE,
-    MAGIC,
     UID,
     CMD,
     NUM_LEDS,
@@ -82,11 +95,11 @@ typedef enum
     CMD_SERIAL_BAUDRATE = 2,
     CMD_BOOTLOADER = 3,
 } Cmd;
-Cmd cmd = 0;
+Cmd cmd;
 
 // Message: Set serial baudrate
 // The baudrate is given as a clock prescaler value. See definition of InitSerial() for details.
-typedef struct __attribute__((packed)) SpeedMsg
+struct __attribute__((packed)) SpeedMsg
 {
     uint8_t magic;
     uint8_t uid;
@@ -98,7 +111,7 @@ uint8_t prescaler;
 
 // Message: Set Leds
 typedef uint16_t LedColor;
-typedef struct __attribute__((packed)) LedMsg
+struct __attribute__((packed)) LedMsg
 {
     uint8_t magic;
     uint8_t uid;
@@ -157,6 +170,11 @@ inline void ToggleB4()
     PORTB = 0x04;
 }
 
+uint32_t PrescalerToBauds(uint8_t prescaler)
+{
+    return 16000000 / (8 * static_cast<uint32_t>(prescaler));
+}
+
 // Configure TIMER0 and the Universal Serial Interface (USI) for a specific baudrate
 // The actual baudrate will be given by the formula:
 //   baudrate = 16Mhz / (8 * prescaler)
@@ -185,10 +203,6 @@ void InitSerial(uint8_t prescaler)
     debug_serial.print(PrescalerToBauds(prescaler));
     debug_serial.println(" Baud");
     noInterrupts();
-}
-uint32_t PrescalerToBauds(uint8_t prescaler)
-{
-    return 16000000 / (8 * static_cast<uint32_t>(prescaler));
 }
 
 // This implements a software UART which uses the built-in hardware deserializer.
@@ -357,7 +371,7 @@ void loop()
     case IDLE:
         if (c == MAGIC_BYTE)
         {
-            state = MAGIC;
+            state = UID;
         }
         else
         {
@@ -370,7 +384,7 @@ void loop()
             }
         }
         break;
-    case MAGIC:
+    case UID:
         if (c == uid || c == BROADCAST_UID)
         {
             state = CMD;
@@ -389,7 +403,7 @@ void loop()
         }
         break;
     case CMD:
-        cmd = c;
+        cmd = static_cast<Cmd>(c);
         switch (c)
         {
         case CMD_LEDS:
@@ -449,6 +463,8 @@ void loop()
         case CMD_SERIAL_BAUDRATE:
             crc = crc8(&prescaler, 1, CRC_POLYNOMIAL);
             break;
+        default:
+            break;
         }
         if (c == crc)
         {
@@ -471,6 +487,8 @@ void loop()
                 break;
             case CMD_SERIAL_BAUDRATE:
                 InitSerial(prescaler);
+                break;
+            default:
                 break;
             }
         }
