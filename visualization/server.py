@@ -38,11 +38,11 @@ async def ws_serve(websocket, generator):
 
 
 class SerialWriter(asyncio.Protocol):
-    def __init__(self, generator, bus):
+    def __init__(self, generator, uids):
         super().__init__()
         self.transport = None
         self.generator = generator
-        self.bus = bus
+        self.uids = uids
 
     def connection_made(self, transport):
         """Store the serial transport and schedule the task to send data.
@@ -59,7 +59,7 @@ class SerialWriter(asyncio.Protocol):
         while True:
             segments = await asyncio.shield(self.generator.result)
             for segment in segments:
-                if segment.bus == self.bus:
+                if segment.uid in self.uids:
                     self.transport.serial.write(
                         messages.PrepareLedMsg(segment.uid, segment.colors))
 
@@ -157,7 +157,7 @@ async def main():
 
         # Start async serial handlers
         serial_serve_handler = functools.partial(
-            SerialWriter, generator=pattern_generator, bus=bus['name'])
+            SerialWriter, generator=pattern_generator, uids=bus['uids'])
         await serial_asyncio.create_serial_connection(
             loop, serial_serve_handler, bus['device'], baudrate=bus['baudrate'])
     

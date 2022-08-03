@@ -134,22 +134,20 @@
             var baseGeometry = new THREE.BoxGeometry(cubeWidth, cubeWidth, cubeWidth);
             var cubes = [];
             var index = 0;
-            for (var bus of ledConfigData.busses) {
-                for (var segment of bus.led_segments) {
-                    for (var led_positions of segment.led_positions) {
-                        var geometry = baseGeometry.clone();
-                        geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(led_positions[0], led_positions[1], led_positions[2]));
-                        // Colors are in order of the LED config. The texture is sized to a power of 2 for more efficient processing by the GPU.
-                        const u = Math.floor(index / textureWidth) / (textureHeight - 1);
-                        const v = (index % textureWidth) / (textureWidth - 1);
-                        var uvAttribute = geometry.attributes.uv;
-                        for (var i = 0; i < uvAttribute.count; i++) {
-                            // Not sure why v and u are flipped here. I would have expected them the other way around
-                            uvAttribute.setXY(i, v, u);
-                        }
-                        cubes.push(geometry);
-                        index = index + 1;
+            for (var segment of ledConfigData.led_segments) {
+                for (var led_positions of segment.led_positions) {
+                    var geometry = baseGeometry.clone();
+                    geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(led_positions[0], led_positions[1], led_positions[2]));
+                    // Colors are in order of the LED config. The texture is sized to a power of 2 for more efficient processing by the GPU.
+                    const u = Math.floor(index / textureWidth) / (textureHeight - 1);
+                    const v = (index % textureWidth) / (textureWidth - 1);
+                    var uvAttribute = geometry.attributes.uv;
+                    for (var i = 0; i < uvAttribute.count; i++) {
+                        // Not sure why v and u are flipped here. I would have expected them the other way around
+                        uvAttribute.setXY(i, v, u);
                     }
+                    cubes.push(geometry);
+                    index = index + 1;
                 }
             }
             // Merge all geometries into one buffer for fast rendering.
