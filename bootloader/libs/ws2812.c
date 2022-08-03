@@ -25,8 +25,8 @@
 */
 
 // Timing in ns
-#define w_zeropulse 125
-#define w_onepulse 500
+#define w_zeropulse 350
+#define w_onepulse 900
 #define w_totalperiod 1250
 
 // Fixed cycles used by the inner loop
