@@ -13,10 +13,7 @@ https://drive.google.com/drive/folders/1XdZmZc8DAyeh26kRkMO6nCtN7fgZzTzO?usp=sha
 ## attiny85 board
 Each LED segment is controlled by a small attiny85 based board. The software for the board is in [attiny/attiny.ino](attiny/attiny.ino) file.
 
-Here are the steps to setup and program the board.
-
-### Set fuses and UID
-You first need to burn the flash fuses with the correct values to set the clock to 16Mhz internal and to enable Brown-out detection. There is a way to set the correct clock with the Arduino IDE, but it doesn’t enable the brown out detector. We also program the UID into the EEPROM and lock it using the EESAVE fuse to it persists when we update the application firmware. 
+For the board to function correctly, we need to set fuses with the correct values to set the clock to 16Mhz internal and to enable Brown-out detection. There is a way to set the correct clock with the Arduino IDE, but it doesn’t enable the brown out detector. We also program the UID into the EEPROM and lock it using the EESAVE fuse to it persists when we update the application firmware. 
 Here is the full list of fuse bits we need to set:
 
 | Fuse          | Fuse Bit      | Notes                                                             |
@@ -27,27 +24,31 @@ Here is the full list of fuse bits we need to set:
 | HIGH          | SPIEN         |                                                                   |
 | HIGH          | BODLEVEL2     | BODLEVEL 100 configure the brown out detector to 4.3V             | 
 | HIGH          | EESAVE        | Lock EEPROM so it doesn’t get erased when programming             |
-| EXTENDED      | SELFPRGEN     | Allow bootloader to program the flash                             |       
+| EXTENDED      | SELFPRGEN     | Allow bootloader to program the flash                             |   
 
-Here is the command to set the fuses:
+The board uses a simple bootloader that will enable us to update the main application over serial versus requiring a programmer attached to the chip. The bootloader is entered whenever the chip is powered on and it requires sending the CMD_BOOTLOADER message to enter the main application. The bootloader and also the main application communicate at 9600 baud by default. Before sending LED commands we typically want to increase the baudrate to a higher value, which is done using the CMD_SERIAL_BAUDRATE message. All of this is abstracted away in Python using the following initialization command:
 ``` 
-SEGMENT_UID=7
-/Applications/Arduino.app/Contents/Java/hardware/tools/avr/bin/avrdude -C/Applications/Arduino.app/Contents/Java/hardware/tools/avr/etc/avrdude.conf -v -v -v -v -pattiny85 -cusbtiny -e -Uefuse:w:0xfe:m -Uhfuse:w:0xd3:m -Ulfuse:w:0xf1:m -Ueeprom:w:0x$(printf "%.2x" $SEGMENT_UID):m
+serial_port = connection.InitializeController(tty_device, baudrate=250000)
 ``` 
 
-### Program bootloader 
-Next we burn a bootloader onto the board that will enable us to program the boards over serial going forward. With the programmer still attached build and burn the bootloader using the following commands:
+### Program bootloader, set fuses, and UID
+To get a board ready for use, we need to program the bootloader, set fuses, and burn the UID to EEPROM. All of this can be done using the [burn.sh](bootloader/burn.sh) script. With the USB programmer still attached burn the bootloader using the following commands:
 ``` 
 cd bootloader
-./make.sh
-./burn.sh
+SEGMENT_UID=217
+./burn.sh $SEGMENT_UID
 ``` 
 After burning the bootloader will start immediately and display the UID on the LEDs. It will also output some debug information on pin 2.
 If all looks good, disconnect the USB ISP programmer.
 
 ### Program main application 
-The main application is in [attiny/attiny.ino](attiny/attiny.ino) and the compiled hex file is in [attiny/attiny.ino.tiny8.hex](attiny/attiny.ino.tiny8.hex). If the ino file is changed a new hex file can be generated using the Arduino IDU under `Sketch -> Export Compiled Binary`. This should overwrite [attiny/attiny.ino.tiny8.hex](attiny/attiny.ino.tiny8.hex).
-NOTE: do NOT use the Arduino IDE or avrdude to program the main application. This will remove the bootloader.
+The main application is in [attiny.ino](attiny/attiny.ino) and the compiled hex file is in [build/attiny.hex](attiny/build/attiny.hex). If the ino file is changed a new hex file can be generated using the [make.sh](attiny/make.sh) command.
+
+``` 
+cd attiny
+./make.sh
+``` 
+NOTE: do NOT use the Arduino IDE to compile ino file or avrdude to program the main application. This will remove the bootloader.
 
 To program the main application, connect to the (LED) serial and run:
 ``` 
@@ -75,14 +76,5 @@ python -m http.server
 ``` 
 
 Now point a browser to http://localhost:8000/three.js/editor 
-
-The LED configuration is loaded when opening the page. The Funky 3D object can be loaded optionally loaded (File->Import->funky.obj or File->Import->dome.obj). Also add some light sources (Add->Ambient/Directional lights).
-
-The LED configuration was generated by fitting a 3D line to the mesh of one of the dome tubes, sampling 30 points along this line, and writing everything out in a simple JSON config format.
-
-Run the following script to update the config:
-``` 
-python generate_led_config.py
-``` 
 
 Video of the prototype: https://youtu.be/v4KDhiCZiSY
