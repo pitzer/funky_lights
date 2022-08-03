@@ -5,7 +5,7 @@ import time
 from funky_lights import connection, hexfile, messages, crc16
 
 def main():
-    application_file = '../attiny/build/attiny.hex'
+    application_file = 'build/attiny.hex'
     tty_device = connection.DEFAULT_TTY_DEVICE
     uid = messages.BROADCAST_UID
 

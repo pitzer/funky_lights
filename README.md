@@ -69,7 +69,6 @@ NOTE: do NOT use the Arduino IDE to compile ino file or avrdude to program the m
 
 To program the main application, connect to the (LED) serial and run:
 ``` 
-cd controller
 python flash_application.py
 ``` 
 Note, flash_application will update the main application on all boards connected to the bus by default. Change the UID if only one boards should be updated.
