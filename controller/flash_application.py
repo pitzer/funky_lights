@@ -2,7 +2,7 @@ import os
 import sys
 import time
 
-from python import connection, hexfile, messages, crc16
+from funky_lights import connection, hexfile, messages, crc16
 
 def main():
     application_file = '../attiny/build/attiny.hex'

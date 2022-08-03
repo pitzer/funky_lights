@@ -1,0 +1,58 @@
+{
+    "led_busses": [
+        {
+            "name": "dome",
+            "uids": [1, 2, 3],
+            "device": "/dev/ttyUSB0",
+            "baudrate": 250000
+        },
+        {
+            "name": "trunk",
+            "uids": [101],
+            "device": "/dev/ttyUSB1",
+            "baudrate": 250000
+        },
+        {
+            "name": "eyes_ears_tusks",
+            "uids": [116, 127, 154, 155],
+            "device": "/dev/ttyUSB2",
+            "baudrate": 250000
+        },
+        {
+            "name": "head_rings",
+            "uids": [151, 153, 158],
+            "device": "/dev/ttyUSB3",
+            "baudrate": 250000
+        },
+        {
+            "name": "head_top",
+            "uids": [152, 156, 157],
+            "device": "/dev/ttyUSB4",
+            "baudrate": 250000
+        },
+        {
+            "name": "leg_back_right",
+            "uids": [201, 202, 203, 204, 205, 206, 207, 208, 209],
+            "device": "/dev/ttyUSB5",
+            "baudrate": 250000
+        }, 
+        {
+            "name": "leg_front_right",
+            "uids": [210, 211, 212, 213, 214, 215, 216],
+            "device": "/dev/ttyUSB6",
+            "baudrate": 250000
+        },
+        {
+            "name": "leg_back_left",
+            "uids": [217, 218, 219, 220, 221, 222, 223, 224, 225],
+            "device": "/dev/ttyUSB7",
+            "baudrate": 250000
+        },
+        {
+            "name": "leg_front_left",
+            "uids": [226, 227, 228, 229, 230, 231, 232],
+            "device": "/dev/ttyUSB8",
+            "baudrate": 250000
+        }
+    ]
+}

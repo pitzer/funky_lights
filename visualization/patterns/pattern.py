@@ -12,10 +12,9 @@ class Pattern:
         self.segments = []
 
     def prepareSegments(self, led_config):
-        for bus in led_config['busses']:
-            for s in bus['led_segments']:
-                segment = Segment(s['uid'], s['num_leds'], s['led_positions'])
-                self.segments.append(segment)
+        for s in led_config['led_segments']:
+            segment = Segment(s['uid'], s['num_leds'], s['led_positions'])
+            self.segments.append(segment)
 
     def initialize(self):
         pass
