@@ -1,6 +1,6 @@
 .DS_Store
 .vscode
-visualization/media/full
+controller/media/full
 *.pyc
 bootloader/build
 funky_ligths.egg-info
