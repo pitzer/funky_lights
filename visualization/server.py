@@ -128,10 +128,10 @@ class PatternGenerator:
 
 async def main():
     # led_config_file = './visualization/led_config.json'
-    led_config_file = 'led_config.json'
+    led_config_file = '../config/led_config.json'
     if len(sys.argv) > 1:
         led_config_file = sys.argv[1]
-    bus_config_file = 'bus_config.json'
+    bus_config_file = '../config/bus_config.json'
     if len(sys.argv) > 2:
         bus_config_file = sys.argv[2]
 
