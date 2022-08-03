@@ -8,9 +8,9 @@ def main():
     uid = messages.BROADCAST_UID
 
     if len(sys.argv) > 1:
-        baudrate = int(sys.argv[1])
+        tty_device = sys.argv[1]
     if len(sys.argv) > 2:
-        tty_device = sys.argv[2]
+        baudrate = int(sys.argv[2])
     if len(sys.argv) > 3:
         uid = int(sys.argv[3])
 
