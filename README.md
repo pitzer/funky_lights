@@ -10,7 +10,26 @@ https://photos.app.goo.gl/gXQorENS9bhVreZ16
 3D Mesh files for the Funkadelephant art car:
 https://drive.google.com/drive/folders/1XdZmZc8DAyeh26kRkMO6nCtN7fgZzTzO?usp=sharing
 
-## attiny85 board
+## Setup and installation
+To start with funky_lights, first download the code using git:
+
+``` 
+git clone https://github.com/pitzer/funky_lights.git
+``` 
+Before running any of the tools, we have to install required dependencies and the funky_lights package with common Python modules. All of this can be done by navigating to the main code directory and run setup.py using the following command:
+``` 
+cd funky_lights
+pip install -e .
+``` 
+The -e runs the package installing in editable mode (dynamically) which automatically detects any changes you make to the code when developing, avoiding the need to continually re-install the package.
+
+Once installed, you can check that it was successfully installed by running:
+``` 
+pip list
+``` 
+You should now see the funky_lights package as well as those listed in the requirements.txt in the listed packages.
+
+## LED boards
 Each LED segment is controlled by a small attiny85 based board. The software for the board is in [attiny/attiny.ino](attiny/attiny.ino) file.
 
 For the board to function correctly, we need to set fuses with the correct values to set the clock to 16Mhz internal and to enable Brown-out detection. There is a way to set the correct clock with the Arduino IDE, but it doesn’t enable the brown out detector. We also program the UID into the EEPROM and lock it using the EESAVE fuse to it persists when we update the application firmware. 
@@ -30,7 +49,6 @@ The board uses a simple bootloader that will enable us to update the main applic
 ``` 
 serial_port = connection.InitializeController(tty_device, baudrate=250000)
 ``` 
-
 ### Program bootloader, set fuses, and UID
 To get a board ready for use, we need to program the bootloader, set fuses, and burn the UID to EEPROM. All of this can be done using the [burn.sh](bootloader/burn.sh) script. With the USB programmer still attached burn the bootloader using the following commands:
 ``` 
@@ -43,7 +61,6 @@ If all looks good, disconnect the USB ISP programmer.
 
 ### Program main application 
 The main application is in [attiny.ino](attiny/attiny.ino) and the compiled hex file is in [build/attiny.hex](attiny/build/attiny.hex). If the ino file is changed a new hex file can be generated using the [make.sh](attiny/make.sh) command.
-
 ``` 
 cd attiny
 ./make.sh
@@ -57,24 +74,23 @@ python flash_application.py
 ``` 
 Note, flash_application will update the main application on all boards connected to the bus by default. Change the UID if only one boards should be updated.
 
+## Light controller
+The light conroller is the main app that generates patterns and distributes them to the LED boards over multiple serial connections. The light controller also sends the LED patterns over websockets to a visualization (see below).
 
-## Visualization
-
-The visualization consists of two parts right now. A server that serves LED control packets over websockets and a 3D visualizer written in javasript and three.js.
-
-Note: the websockets server is currently not connected and reimplementing funky_lights.py. This should change. Either the two programs should become one or the websockets server should be able to listen to the serial coms created by funky_lights.py.
-
-To start the websockets server:
+To start the light controller:
 ``` 
 cd visualization
 python server.py
 ``` 
+## Visualization
 
-To start a webserver for the 3D visualizer run in the same folder:
+To rapidly develop light patterns without any HW, we can use a 3D visualizer written in javasript and three.js. This web visualizer receives LED patterns from the light controller over websockets.
+
+Run the 3D visualizer by starting a web server in the visualization folder:
 ``` 
+cd visualization
 python -m http.server
 ``` 
-
 Now point a browser to http://localhost:8000/three.js/editor 
 
-Video of the prototype: https://youtu.be/v4KDhiCZiSY
+Video of the visualization: https://youtu.be/v4KDhiCZiSY
