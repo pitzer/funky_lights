@@ -115,7 +115,7 @@
 
 	
 			// Load LED config from JSON
-			const requestURL = '../../led_config.json';
+			const requestURL = '../../../config/led_config.json';
 			const request = new Request(requestURL);
 			const response = await fetch(request);
 			const ledConfigData = await response.json();

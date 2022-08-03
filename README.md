@@ -78,18 +78,16 @@ The light conroller is the main app that generates patterns and distributes them
 
 To start the light controller:
 ``` 
-cd visualization
-python server.py
+cd controller
+python main.py
 ``` 
 ## Visualization
-
 To rapidly develop light patterns without any HW, we can use a 3D visualizer written in javasript and three.js. This web visualizer receives LED patterns from the light controller over websockets.
 
-Run the 3D visualizer by starting a web server in the visualization folder:
+Run the 3D visualizer by starting a web server root directory of the code repository:
 ``` 
-cd visualization
 python -m http.server
 ``` 
-Now point a browser to http://localhost:8000/three.js/editor 
+Now point a browser to http://localhost:8000/visualization/three.js/editor 
 
 Video of the visualization: https://youtu.be/v4KDhiCZiSY
