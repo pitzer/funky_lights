@@ -82,9 +82,82 @@ cd controller
 python main.py
 ``` 
 
-### Adding patterns
+### Adding basic patterns
 
-Adding new patterns is very simple and involves creating a new Pattern class and adding it to the Light controller's configuration.
+Adding new patterns is very simple and involves creating a new Pattern class and adding it to the Light controller's configuration. Start by adding a new Python file with class derived from `Pattern` to the [controller/patterns](controller/patterns) directory. Here is an example of a pattern that cycles through a fixed palette of colors at a set rate and sets all segments to use this color.
+
+```python 
+from patterns.pattern import Pattern
+import numpy as np
+
+PALETTE_TROPICAL = np.array(
+    [[242, 207, 51], [245, 112, 76], [32, 158, 179], [240, 167, 141]])
+
+
+class SolidColorBlinkPattern(Pattern):
+    def __init__(self):
+        super().__init__()
+
+        # The following members are options that can be overwritten when adding the pattern
+        # to the pattern config.
+
+        # Color palette to cycle through
+        self.palette = PALETTE_TROPICAL
+
+        # Frequency of color change (in Hz)
+        self.fps = 0.5
+
+    def initialize(self):
+        """ This method gets called once when the pattern is first instantiated."""
+        self.cumulative_delta = 1000  # set to an arbitrary high value
+        self.current_color_index = 0
+        pass
+
+    def animate(self, delta):
+        """ animate is called at every timestep the lights are updated. Here is where the colors 
+            of the desired segments in self.segments should be updated.
+        Args:
+            delta: time in seconds since the last animation
+        """
+
+        # First check if it is time to cycle to the next color in the palette
+        self.cumulative_delta += delta
+        if self.cumulative_delta < 1 / self.fps:
+            return
+
+        # Cycle to the next color
+        self.current_color_index = (
+            self.current_color_index + 1) % self.palette.shape[0]
+        # Update segments to use the new color
+        for segment in self.segments:
+            for color in segment.colors:
+                np.copyto(color, self.palette[self.current_color_index])
+
+        # Reset time
+        self.cumulative_delta = 0
+``` 
+
+Next add the pattern to the `DEFAULT_CONFIG` in [controller/patterns/pattern_config.py](controller/patterns/pattern_config.py). The `dict()` option allows you to overwrite any parameter members defined in `__init__`.
+
+```python
+from patterns.solid_color_blink import SolidColorBlinkPattern, PALETTE_TROPICAL
+
+DEFAULT_CONFIG = [
+    (SolidColorBlinkPattern, dict(palette=PALETTE_TROPICAL))
+]
+```
+
+Run the light controller with the commands above and use the Visualization to see how it looks!
+
+### Adding UV mapped patterns
+
+Another cool way of defining patterns is by creating an animation in a 2D frame and UV map the lights into this frame using their 3D positions. This essentially results in an effect where the lights are treated as a screen and the animation projects images onto the screen. 
+
+Here is an example of this using the `FirePatternUV` pattern implemented in https://github.com/pitzer/funky_lights/pull/16
+ 
+![Screen Shot 2022-08-03 at 11 06 51 PM](https://user-images.githubusercontent.com/1485919/182775005-9145cae8-6b32-494b-ab35-ff427949321b.png)
+
+Another example is the `VideoPattern` in [controller/patterns/video_pattern.py](controller/patterns/video_pattern.py)
 
 
 ## Visualization
@@ -96,4 +169,6 @@ python -m http.server
 ``` 
 Now point a browser to http://localhost:8000/visualization/three.js/editor 
 
-Video of the visualization: https://youtu.be/v4KDhiCZiSY
+Video of the visualization in action:
+
+[![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/MJFyqkiHWJo/0.jpg)](http://www.youtube.com/watch?v=MJFyqkiHWJo)
