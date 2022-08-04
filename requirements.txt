@@ -1,0 +1,10 @@
+adsk
+crc8
+intelhex
+matplotlib
+numpy
+opencv_python==4.5.5.62
+pyserial
+pyserial_asyncio
+setuptools
+websockets

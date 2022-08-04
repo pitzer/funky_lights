@@ -1,3 +1,15 @@
 .DS_Store
-visualization/media/full
+.vscode
+controller/media/full
 *.pyc
+bootloader/build
+funky_ligths.egg-info
+attiny/build/attiny.bin
+attiny/build/attiny.eep
+attiny/build/attiny.elf
+attiny/build/attiny.hex.sizeok
+attiny/build/attiny.ino.d
+attiny/build/attiny.ino.o
+attiny/build/libcore.a
+attiny/build/core
+attiny/build/userlibs
