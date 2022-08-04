@@ -115,7 +115,7 @@
 
 	
 			// Load LED config from JSON
-			const requestURL = '../../led_config.json';
+			const requestURL = '../../../config/led_config.json';
 			const request = new Request(requestURL);
 			const response = await fetch(request);
 			const ledConfigData = await response.json();
@@ -134,8 +134,8 @@
             var baseGeometry = new THREE.BoxGeometry(cubeWidth, cubeWidth, cubeWidth);
             var cubes = [];
             var index = 0;
-			for (var segment of ledConfigData.led_segments) {
-				for (var led_positions of segment.led_positions) {
+            for (var segment of ledConfigData.led_segments) {
+                for (var led_positions of segment.led_positions) {
                     var geometry = baseGeometry.clone();
                     geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(led_positions[0], led_positions[1], led_positions[2]));
                     // Colors are in order of the LED config. The texture is sized to a power of 2 for more efficient processing by the GPU.
@@ -148,8 +148,8 @@
                     }
                     cubes.push(geometry);
                     index = index + 1;
-				}
-			}
+                }
+            }
             // Merge all geometries into one buffer for fast rendering.
             const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(cubes, false);
             const size = textureWidth * textureHeight;
