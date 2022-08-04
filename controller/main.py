@@ -82,7 +82,7 @@ class PatternGenerator:
     async def run(self):
         ANIMATION_RATE = 20
         FPS_UPDATE_RATE = 1
-        PATTERN_DURATION = 10
+        PATTERN_DURATION = 120
 
         prev_animation_time = time.time() - 1.0 / ANIMATION_RATE
         prev_pattern_time = time.time()
@@ -119,7 +119,6 @@ class PatternGenerator:
 
 
 async def main():
-    # led_config_file = './visualization/led_config.json'
     led_config_file = '../config/led_config.json'
     if len(sys.argv) > 1:
         led_config_file = sys.argv[1]
