@@ -84,7 +84,7 @@ python main.py
 
 ### Adding patterns
 
-Adding new patterns 
+Adding new patterns is very simple and involves creating a new Pattern class and adding it to the Light controller's configuration.
 
 
 ## Visualization
