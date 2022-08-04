@@ -9,6 +9,7 @@ import time
 
 from funky_lights import connection, messages
 from patterns.rg_transition_pattern import RGTRansitionPattern
+from patterns.fire_pattern import FirePattern, FirePatternUV
 from patterns.video_pattern import VideoPattern, Rect
 
 WEB_SOCKET_PORT = 5678
@@ -67,6 +68,7 @@ class PatternGenerator:
     def __init__(self, led_config):
         self.result = asyncio.Future()
         config = [
+            (FirePatternUV, dict()),
             (VideoPattern, dict(file='media/butter_churn.mp4', fps=20, crop=Rect(60, 60, 60, 60))),
             (VideoPattern, dict(file='media/psychill1.mp4', fps=20, crop=Rect(60, 130, 60, 60))),
             (VideoPattern, dict(file='media/psychill2.mp4', fps=20, crop=Rect(60, 130, 60, 60))),
@@ -90,7 +92,7 @@ class PatternGenerator:
     async def run(self):
         ANIMATION_RATE = 20
         FPS_UPDATE_RATE = 1
-        PATTERN_DURATION = 10
+        PATTERN_DURATION = 120
 
         prev_animation_time = time.time() - 1.0 / ANIMATION_RATE
         prev_pattern_time = time.time()
@@ -127,7 +129,6 @@ class PatternGenerator:
 
 
 async def main():
-    # led_config_file = './visualization/led_config.json'
     led_config_file = '../config/led_config.json'
     if len(sys.argv) > 1:
         led_config_file = sys.argv[1]
