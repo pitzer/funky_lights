@@ -1,15 +1,6 @@
 # Funkadelephant Lights
 This project develops a new light system for the Funkadelephant art car. 
 
-Design doc:
-https://docs.google.com/document/d/193zCBdZJQ2zM1hZOcOoi2PbTF1X6veQUsoNvbH2qYzI/edit#heading=h.bk4r5cyiqgef
-
-Photos of Funkadelephant BEFORE the lights upgrades:
-https://photos.app.goo.gl/gXQorENS9bhVreZ16
-
-3D Mesh files for the Funkadelephant art car:
-https://drive.google.com/drive/folders/1XdZmZc8DAyeh26kRkMO6nCtN7fgZzTzO?usp=sharing
-
 ## Setup and installation
 To start with funky_lights, first download the code using git:
 
@@ -128,7 +119,20 @@ class SolidColorBlinkPattern(Pattern):
         # Cycle to the next color
         self.current_color_index = (
             self.current_color_index + 1) % self.palette.shape[0]
-        # Update segments to use the new color
+  
+        # Update segments to use the new color. 
+        # 
+        # Each "Segment" represents a single LED light strip on the art car. We are planning to have
+        # on the order 80 segments in the final configuration. The segments are configure in the 
+        # light controller using the config/led_config.json files. self.segments is populated from this
+        # file when the Pattern is initialized.
+        # 
+        # The color array in each Segment has one RGB entry per LED on the light strip. The main purpose 
+        # the animate method is updating the color array. The Segment also has a unique id. This can be 
+        # used to only update certain segments during the animation. The CSV files in the config directory 
+        # and the https://docs.google.com/spreadsheets/d/1Ga7npntoar6uwUSJpEfCIg9-kc4bZ1iFmo08Xg21sjo
+        # and config/bus_config.all.json can be helpful to understand which segments belong to which part 
+        # of the elephant, e.g. [1, 2, 3] are the three long strips going over the dome front to back.
         for segment in self.segments:
             for color in segment.colors:
                 np.copyto(color, self.palette[self.current_color_index])
@@ -172,3 +176,9 @@ Now point a browser to http://localhost:8000/visualization/three.js/editor
 Video of the visualization in action:
 
 [![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/MJFyqkiHWJo/0.jpg)](http://www.youtube.com/watch?v=MJFyqkiHWJo)
+
+## Other docs
+
+* Design doc: https://docs.google.com/document/d/193zCBdZJQ2zM1hZOcOoi2PbTF1X6veQUsoNvbH2qYzI/edit#heading=h.bk4r5cyiqgef
+* Photos of Funkadelephant BEFORE the lights upgrades: https://photos.app.goo.gl/gXQorENS9bhVreZ16
+* 3D Mesh files for the Funkadelephant art car: https://drive.google.com/drive/folders/1XdZmZc8DAyeh26kRkMO6nCtN7fgZzTzO?usp=sharing
