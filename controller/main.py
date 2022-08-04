@@ -8,9 +8,8 @@ import functools
 import time
 
 from funky_lights import connection, messages
-from patterns.rg_transition_pattern import RGTRansitionPattern
-from patterns.fire_pattern import FirePattern, FirePatternUV
-from patterns.video_pattern import VideoPattern, Rect
+from patterns import pattern_config
+
 
 WEB_SOCKET_PORT = 5678
 TEXTURE_WIDTH = 128
@@ -67,18 +66,9 @@ class SerialWriter(asyncio.Protocol):
 class PatternGenerator:
     def __init__(self, led_config):
         self.result = asyncio.Future()
-        config = [
-            (FirePatternUV, dict()),
-            (VideoPattern, dict(file='media/butter_churn.mp4', fps=20, crop=Rect(60, 60, 60, 60))),
-            (VideoPattern, dict(file='media/psychill1.mp4', fps=20, crop=Rect(60, 130, 60, 60))),
-            (VideoPattern, dict(file='media/psychill2.mp4', fps=20, crop=Rect(60, 130, 60, 60))),
-            (RGTRansitionPattern, dict()),
-            (VideoPattern, dict(file='media/milkdrop.mp4', fps=20, crop=Rect(60, 130, 60, 60)))
-        ]
-
         self.patterns = []
         self.current_pattern_index = 0
-        for cls, params in config:
+        for cls, params in pattern_config.DEFAULT_CONFIG:
             pattern = cls()
             for key in params:
                 setattr(pattern, key, params[key])
