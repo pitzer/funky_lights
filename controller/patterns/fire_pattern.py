@@ -84,6 +84,9 @@ class FirePattern(Pattern):
 class FirePatternUV(Pattern):
     def __init__(self):
         super().__init__()
+        self.palette = PALETTE_FIRE
+        self.width = 2
+        self.height = 100
 
     def generateUVCoordinates(self, width, height):
         max_x = max_y = max_z = sys.float_info.min
@@ -114,12 +117,7 @@ class FirePatternUV(Pattern):
             segment.uv = np.array(uv)
 
     def initialize(self):
-        # Initialize array if necessary
-        self.heat = {}
-        self.palette = PALETTE_FIRE
         self.palette_size = self.palette.shape[0]
-        self.width = 2
-        self.height = 100
         self.frame = np.zeros((self.height, self.width, 3), np.uint8)
         self.heat = [np.array([0 for i in range(self.height)])
                      for i in range(self.width)]
