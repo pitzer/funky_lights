@@ -159,7 +159,7 @@ Another cool way of defining patterns is by creating an animation in a 2D frame 
 
 Here is an example of this using the `FirePatternUV` pattern implemented in https://github.com/pitzer/funky_lights/pull/16
  
-![Screen Shot 2022-08-03 at 11 06 51 PM](https://user-images.githubusercontent.com/1485919/182775005-9145cae8-6b32-494b-ab35-ff427949321b.png)
+![fire_pattern](https://user-images.githubusercontent.com/1485919/182999222-eed04d7c-95c7-4b86-8c46-eeb4cd6c2708.gif)
 
 Another example is the `VideoPattern` in [controller/patterns/video_pattern.py](controller/patterns/video_pattern.py)
 
