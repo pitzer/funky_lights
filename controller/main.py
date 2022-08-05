@@ -152,7 +152,7 @@ class PatternGenerator:
     async def run(self):
         ANIMATION_RATE = 20
         FPS_UPDATE_RATE = 1
-        MAX_PATTERN_DURATION = 5
+        MAX_PATTERN_DURATION = 120
 
         prev_animation_time = time.time() - 1.0 / ANIMATION_RATE
         prev_pattern_time = time.time()
