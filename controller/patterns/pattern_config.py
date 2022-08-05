@@ -6,7 +6,7 @@ from patterns.video_pattern import VideoPattern, Rect
 
 
 DEFAULT_CONFIG = [
-    ('0x0', FirePatternUV, dict(palette=PALETTE_FIRE, width=2, height=100)),
+    ('0x0', FirePatternUV, dict(palette=palettes.FIRE, width=2, height=100)),
     ('1x0', CrossfadePattern, dict()),
     ('0x1', VideoPattern, dict(file='media/butter_churn.mp4', fps=20, crop=Rect(60, 60, 60, 60))),
     ('1x1', VideoPattern, dict(file='media/psychill1.mp4', fps=20, crop=Rect(60, 130, 60, 60))),
