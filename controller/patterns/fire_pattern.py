@@ -1,4 +1,5 @@
 from patterns.pattern import Pattern
+import patterns.palettes as palettes
 import math
 import numpy as np
 import random
@@ -13,16 +14,6 @@ COOLING = 600
 # Higher chance = more roaring fire.  Lower chance = more flickery fire.
 # Default 120, suggested range 50-200.
 SPARKING = 120
-
-# Approximate "black body radiation" palette, akin to the FastLED 'HeatColor' function. 
-# Recommend that you use values 0-240 rather than the usual 0-255, as the last 15 colors 
-# will be 'wrapping around' from the hot end to the cold end, which looks wrong.
-PALETTE_HEAT = np.array(
-    [(0x00, 0x00, 0x00), (0xFF, 0x00, 0x00), (0xFF, 0xFF, 0x00), (0xFF, 0xFF, 0xCC)])
-PALETTE_FIRE = np.array([(0x00, 0x00, 0x00), (0x22, 0x00, 0x00), (
-    0x88, 0x00, 0x00), (0xFF, 0x00, 0x00), (0xFF, 0x66, 0x00), (0xFF, 0xCC, 0x00)])
-PALETTE_COOL = np.array(
-    [(0x00, 0x00, 0xFF), (0x00, 0x99, 0xDD), (0x44, 0x44, 0x88), (0x99, 0x00, 0xDD)])
 
 
 def interpolate(color1, color2, x):
@@ -65,7 +56,7 @@ class FirePattern(Pattern):
     def initialize(self):
         # Initialize array if necessary
         self.heat = {}
-        self.palette = PALETTE_FIRE
+        self.palette = palettes.FIRE
         for segment in self.segments:
             self.heat[segment] = np.array([0 for i in range(segment.num_leds)])
 
@@ -84,7 +75,7 @@ class FirePattern(Pattern):
 class FirePatternUV(Pattern):
     def __init__(self):
         super().__init__()
-        self.palette = PALETTE_FIRE
+        self.palette = palettes.FIRE
         self.width = 2
         self.height = 100
 
