@@ -45,7 +45,7 @@ class VideoPattern(Pattern):
             uv = []
             for p in segment.led_positions:
                 pm = np.multiply(p[1:] + offset, scale).astype(int)
-                u = int(height) - 1 - pm[0] + self.crop.u
+                u = int(height) - 1 - pm[0] + self.params.crop.u
                 v = pm[1] + self.params.crop.v
                 def clamp(minimum, x, maximum):
                     return max(minimum, min(x, maximum))
@@ -56,7 +56,7 @@ class VideoPattern(Pattern):
     
     def animate(self, delta):
         delta = delta + self.prev_delta
-        frame_delta = int(self.fps * delta)
+        frame_delta = int(self.params.fps * delta)
         self.prev_delta = delta - frame_delta / (self.params.fps)
         if frame_delta <= 0:
             return

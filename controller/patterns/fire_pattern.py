@@ -101,29 +101,29 @@ class FirePatternUV(Pattern):
 
                 def clamp(minimum, x, maximum):
                     return max(minimum, min(x, maximum))
-                u = clamp(0, u, self.height)
-                v = clamp(0, v, self.width)
+                u = clamp(0, u, self.params.height)
+                v = clamp(0, v, self.params.width)
                 uv.append(np.array([u, v]))
             segment.uv = np.array(uv)
 
     def initialize(self):
-        self.palette_size = self.palette.shape[0]
-        self.frame = np.zeros((self.height, self.width, 3), np.uint8)
-        self.heat = [np.array([0 for i in range(self.height)])
-                     for i in range(self.width)]
-        self.generateUVCoordinates(self.width, self.height)
+        self.palette_size = self.params.palette.shape[0]
+        self.frame = np.zeros((self.params.height, self.params.width, 3), np.uint8)
+        self.heat = [np.array([0 for i in range(self.params.height)])
+                     for i in range(self.params.width)]
+        self.generateUVCoordinates(self.params.width, self.params.height)
 
     def animate(self, delta):
-        for i in range(self.width):
+        for i in range(self.params.width):
             heat = self.heat[i]
             # Update heat
             updateHeat(heat)
             # Map from heat cells to LED colors
-            for j in range(self.height):
+            for j in range(self.params.height):
                 color_index = (float)(heat[j] * (self.palette_size - 1)) / 256
-                color = getPalColor(self.palette, color_index)
+                color = getPalColor(self.params.palette, color_index)
                 # Mirror along horizontal axis so fire starts from the bottom
-                self.frame[self.height - 1 - j, i] = color
+                self.frame[self.params.height - 1 - j, i] = color
 
         # Copy to segments
         for segment in self.segments:
