@@ -3,10 +3,12 @@ from patterns.crossfade_pattern import CrossfadePattern
 import patterns.palettes as palettes
 from patterns.rg_transition_pattern import RGTRansitionPattern
 from patterns.sweep_pattern import SweepPattern
+from patterns.theater_chase_pattern import TheaterChasePattern
 from patterns.video_pattern import VideoPattern, Rect
 
 
 DEFAULT_CONFIG = [
+    (TheaterChasePattern, dict()),
     (SweepPattern, dict()),
     (FirePatternUV, dict(palette=palettes.FIRE, width=2, height=100)),
     (CrossfadePattern, dict()),
