@@ -20,8 +20,9 @@ class SweepPattern(Pattern):
     def initialize(self):
         self.pattern_segments = []
         for segment in self.segments:
-            self.pattern_segments.append(
-                SweepPatternSegment(segment, self.params))
+            pattern_segment = SweepPatternSegment(segment, self.params)
+            pattern_segment.initialize()
+            self.pattern_segments.append(pattern_segment)
 
     def animate(self, delta):
         for pattern_segment in self.pattern_segments:
