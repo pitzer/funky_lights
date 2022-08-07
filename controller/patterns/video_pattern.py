@@ -1,9 +1,8 @@
-from sqlalchemy import between
 from patterns.pattern import Pattern
+from patterns import utils
 import cv2 
 import numpy as np
 import sys
-import matplotlib.pyplot as plt
 
 class Rect():
     def __init__(self, u, v, width, height):
@@ -47,10 +46,8 @@ class VideoPattern(Pattern):
                 pm = np.multiply(p[1:] + offset, scale).astype(int)
                 u = int(height) - 1 - pm[0] + self.params.crop.u
                 v = pm[1] + self.params.crop.v
-                def clamp(minimum, x, maximum):
-                    return max(minimum, min(x, maximum))
-                u = clamp(0, u, self.video_height)
-                v = clamp(0, v, self.video_width)
+                u = utils.clamp(0, u, self.video_height)
+                v = utils.clamp(0, v, self.video_width)
                 uv.append(np.array([u, v]))
             segment.uv = np.array(uv)
     
