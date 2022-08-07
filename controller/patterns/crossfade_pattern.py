@@ -5,16 +5,15 @@ import numpy as np
 class CrossfadePattern(Pattern):
     def __init__(self):
         super().__init__()
-        self.palette = palettes.BLUES
-        self.palette_rotated = np.roll(self.palette, 2, axis=0)
-
-        self.SEG_LEN = 100
-        self.DOWN = 1
-
+        self.params.palette = palettes.BLUES
         # Frequency of segment length change (in Hz)
-        self.fps = 25
+        self.params.fps = 25
 
     def initialize(self):
+        self.palette = np.copy(self.params.palette)
+        self.palette_rotated = np.roll(self.palette, 2, axis=0)
+        self.SEG_LEN = 100
+        self.DOWN = 1
         self.segment_delta = 1000  # set to an arbitrary high value
         self.current_color_index = 0
         for segment in self.segments:
@@ -29,7 +28,7 @@ class CrossfadePattern(Pattern):
     def animate(self, delta):
 
         self.segment_delta += delta
-        if self.segment_delta < 1 / self.fps:
+        if self.segment_delta < 1 / self.params.fps:
             return
 
         for segment in self.segments:
