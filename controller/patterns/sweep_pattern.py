@@ -1,11 +1,7 @@
 from patterns.pattern import Pattern
+from patterns import utils
 import numpy as np
 import random
-
-
-def clamp(minimum, x, maximum):
-    return max(minimum, min(x, maximum))
-
 
 class SweepPattern(Pattern):
     def __init__(self):
@@ -47,7 +43,7 @@ class SweepPatternSegment(Pattern):
                 self.current_sweep_fraction = 0
             return
 
-        new_sweep_fraction = clamp(
+        new_sweep_fraction = utils.clamp(
             0.0, self.current_sweep_fraction + delta * self.params.sweep_speed, 1.0)
         new_index = int(new_sweep_fraction * self.segment.num_leds)
 
