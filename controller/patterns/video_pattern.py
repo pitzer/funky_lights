@@ -15,18 +15,19 @@ class Rect():
 class VideoPattern(Pattern):
     def __init__(self):
         super().__init__()
-        self.file = ''
-        self.crop = None
+        self.params.file = ''
+        self.params.crop = None
+        self.params.fps = 20
 
     def initialize(self):
-        self.video = cv2.VideoCapture(self.file)
+        self.video = cv2.VideoCapture(self.params.file)
         self.video_width  = self.video.get(cv2.CAP_PROP_FRAME_WIDTH)
         self.video_height = self.video.get(cv2.CAP_PROP_FRAME_HEIGHT)
         self.current_frame = 0
         self.prev_delta = 0
 
-        width = min(self.video_width, self.crop.width)
-        height = min(self.video_height, self.crop.height)
+        width = min(self.video_width, self.params.crop.width)
+        height = min(self.video_height, self.params.crop.height)
         max_x = max_y = max_z = sys.float_info.min
         min_x = min_y = min_z = sys.float_info.max
         for segment in self.segments:
@@ -45,7 +46,7 @@ class VideoPattern(Pattern):
             for p in segment.led_positions:
                 pm = np.multiply(p[1:] + offset, scale).astype(int)
                 u = int(height) - 1 - pm[0] + self.crop.u
-                v = pm[1] + self.crop.v
+                v = pm[1] + self.params.crop.v
                 def clamp(minimum, x, maximum):
                     return max(minimum, min(x, maximum))
                 u = clamp(0, u, self.video_height)
@@ -56,7 +57,7 @@ class VideoPattern(Pattern):
     def animate(self, delta):
         delta = delta + self.prev_delta
         frame_delta = int(self.fps * delta)
-        self.prev_delta = delta - frame_delta / (self.fps)
+        self.prev_delta = delta - frame_delta / (self.params.fps)
         if frame_delta <= 0:
             return
 

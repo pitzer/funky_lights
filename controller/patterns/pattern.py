@@ -8,8 +8,12 @@ class Segment:
         self.led_positions = np.array(led_positions)
 
 class Pattern:
+    class PatternParameters:
+        pass
+
     def __init__(self):
         self.segments = []
+        self.params = self.PatternParameters()
 
     def prepareSegments(self, led_config):
         for s in led_config['led_segments']:

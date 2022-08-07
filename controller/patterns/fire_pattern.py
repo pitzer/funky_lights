@@ -52,11 +52,10 @@ def updateHeat(heat):
 class FirePattern(Pattern):
     def __init__(self):
         super().__init__()
+        self.params.palette = palettes.FIRE
 
     def initialize(self):
-        # Initialize array if necessary
         self.heat = {}
-        self.palette = palettes.FIRE
         for segment in self.segments:
             self.heat[segment] = np.array([0 for i in range(segment.num_leds)])
 
@@ -68,16 +67,16 @@ class FirePattern(Pattern):
             # Map from heat cells to LED colors
             for j in range(segment.num_leds):
                 colorindex = (float)(
-                    heat[j] * (self.palette.shape[0] - 1)) / 256
-                segment.colors[j] = getPalColor(self.palette, colorindex)
+                    heat[j] * (self.params.palette.shape[0] - 1)) / 256
+                segment.colors[j] = getPalColor(self.params.palette, colorindex)
 
 
 class FirePatternUV(Pattern):
     def __init__(self):
         super().__init__()
-        self.palette = palettes.FIRE
-        self.width = 2
-        self.height = 100
+        self.params.palette = palettes.FIRE
+        self.params.width = 2
+        self.params.height = 100
 
     def generateUVCoordinates(self, width, height):
         max_x = max_y = max_z = sys.float_info.min
