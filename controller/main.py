@@ -139,7 +139,7 @@ class PatternGenerator:
         for i, (button, cls, params) in enumerate(pattern_config.DEFAULT_CONFIG):
             pattern = cls()
             for key in params:
-                setattr(pattern, key, params[key])
+                setattr(pattern.params, key, params[key])
             pattern.prepareSegments(led_config)
             pattern.initialize()
             self.patterns.append(pattern)
