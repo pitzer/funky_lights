@@ -16,10 +16,12 @@ DEFAULT_CONFIG = [
     (SweepPattern, dict(color=np.array([255, 255, 255]), decay_param=0.5, sweep_speed=0.3)),
     (FirePatternUV, dict(palette=palettes.FIRE, width=2, height=100)),
     (CrossfadePattern, dict(palette=palettes.BLUES, fps=25)),
-    (VideoPattern, dict(file='media/butter_churn.mp4', fps=20, crop=Rect(60, 60, 60, 60))),
-    (VideoPattern, dict(file='media/psychill1.mp4', fps=20, crop=Rect(60, 130, 60, 60))),
-    (VideoPattern, dict(file='media/psychill2.mp4', fps=20, crop=Rect(60, 130, 60, 60))),
-    (VideoPattern, dict(file='media/milkdrop.mp4', fps=20, crop=Rect(60, 130, 60, 60))),
+    (VideoPattern, dict(file='media/shifter_escape.mp4')),
+    (VideoPattern, dict(file='media/radial_beams.mp4', crop=Rect(0, 0, 850, 720))),
+    (VideoPattern, dict(file='media/butter_churn.mp4', crop=Rect(60, 60, 60, 60))),
+    (VideoPattern, dict(file='media/psychill1.mp4', fps=10)),
+    (VideoPattern, dict(file='media/psychill1.mp4', crop=Rect(60, 130, 60, 60))),
+    (VideoPattern, dict(file='media/psychill2.mp4', crop=Rect(60, 130, 60, 60))),
     (RGTRansitionPattern, dict()),
 ]
 
