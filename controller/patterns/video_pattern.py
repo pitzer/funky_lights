@@ -1,4 +1,3 @@
-from re import U
 from patterns.pattern import PatternUV
 import cv2
 import numpy as np
