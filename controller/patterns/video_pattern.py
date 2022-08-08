@@ -1,8 +1,8 @@
-from patterns.pattern import Pattern
-from patterns import utils
-import cv2 
+from re import U
+from patterns.pattern import PatternUV
+import cv2
 import numpy as np
-import sys
+
 
 class Rect():
     def __init__(self, u, v, width, height):
@@ -11,65 +11,61 @@ class Rect():
         self.width = width
         self.height = height
 
-class VideoPattern(Pattern):
+
+class VideoPattern(PatternUV):
     def __init__(self):
         super().__init__()
         self.params.file = ''
         self.params.crop = None
-        self.params.fps = 20
+        self.params.fps = None
 
     def initialize(self):
         self.video = cv2.VideoCapture(self.params.file)
-        self.video_width  = self.video.get(cv2.CAP_PROP_FRAME_WIDTH)
-        self.video_height = self.video.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        video_width = self.video.get(cv2.CAP_PROP_FRAME_WIDTH)
+        video_height = self.video.get(cv2.CAP_PROP_FRAME_HEIGHT)
         self.current_frame = 0
         self.prev_delta = 0
 
-        width = min(self.video_width, self.params.crop.width)
-        height = min(self.video_height, self.params.crop.height)
-        max_x = max_y = max_z = sys.float_info.min
-        min_x = min_y = min_z = sys.float_info.max
-        for segment in self.segments:
-            for p in segment.led_positions:
-                max_x = max(max_x, p[0])
-                min_x = min(min_x, p[0])
-                max_y = max(max_y, p[1])
-                min_y = min(min_y, p[1])
-                max_z = max(max_z, p[2])
-                min_z = min(min_z, p[2])
+        if self.params.crop:
+            if self.params.crop.u + self.params.crop.height > video_height:
+                raise ValueError('Crop window out of bounds (height)')
 
-        offset = np.array([-min_y, -min_z])
-        scale = np.array([(self.crop.height - 1) / (max_y - min_y), (self.crop.width - 1) / (max_z - min_z)]) 
-        for segment in self.segments:
-            uv = []
-            for p in segment.led_positions:
-                pm = np.multiply(p[1:] + offset, scale).astype(int)
-                u = int(height) - 1 - pm[0] + self.params.crop.u
-                v = pm[1] + self.params.crop.v
-                u = utils.clamp(0, u, self.video_height)
-                v = utils.clamp(0, v, self.video_width)
-                uv.append(np.array([u, v]))
-            segment.uv = np.array(uv)
-    
+            if self.params.crop.v + self.params.crop.width > video_width:
+                raise ValueError('Crop window out of bounds (width)')
+
+            width = self.params.crop.width
+            height = self.params.crop.height
+            offset_u = self.params.crop.u
+            offset_v = self.params.crop.v
+        else:
+            width = video_width
+            height = video_height
+            offset_u = 0
+            offset_v = 0
+
+        self.generateUVCoordinates(width, height, offset_u, offset_v)
+
     def animate(self, delta):
-        # delta = delta + self.prev_delta
-        # frame_delta = int(self.params.fps * delta)
-        # self.prev_delta = delta - frame_delta / (self.params.fps)
-        # if frame_delta <= 0:
-        #     return
-        frame_delta = 1
+        # Slow down or speed up frame processing if fps is set
+        if self.params.fps:
+            delta = delta + self.prev_delta
+            frame_delta = int(self.params.fps * delta)
+            self.prev_delta = delta - frame_delta / (self.params.fps)
+            if frame_delta <= 0:
+                return
+            self.current_frame = self.current_frame + frame_delta
+            self.video.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame)
+        else:
+            self.current_frame += 1
 
-        self.current_frame = self.current_frame + frame_delta
-        self.video.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame)
-        ret,frame = self.video.read() 
+        ret, frame = self.video.read()
         if ret == False:
-            print('rewinding')
             self.video.set(cv2.CAP_PROP_POS_FRAMES, 0)
             self.current_frame = 0
             return
-            
+
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        for segment in self.segments:  
+        for segment in self.segments:
             i = 0
             for color in segment.colors:
                 np.copyto(color, frame[segment.uv[i][0], segment.uv[i][1]])

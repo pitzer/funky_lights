@@ -1,4 +1,4 @@
-from patterns.pattern import Pattern
+from patterns.pattern import Pattern, PatternUV
 import patterns.palettes as palettes
 import math
 import numpy as np
@@ -71,40 +71,12 @@ class FirePattern(Pattern):
                 segment.colors[j] = getPalColor(self.params.palette, colorindex)
 
 
-class FirePatternUV(Pattern):
+class FirePatternUV(PatternUV):
     def __init__(self):
         super().__init__()
         self.params.palette = palettes.FIRE
         self.params.width = 2
         self.params.height = 100
-
-    def generateUVCoordinates(self, width, height):
-        max_x = max_y = max_z = sys.float_info.min
-        min_x = min_y = min_z = sys.float_info.max
-        for segment in self.segments:
-            for p in segment.led_positions:
-                max_x = max(max_x, p[0])
-                min_x = min(min_x, p[0])
-                max_y = max(max_y, p[1])
-                min_y = min(min_y, p[1])
-                max_z = max(max_z, p[2])
-                min_z = min(min_z, p[2])
-        offset = np.array([-min_y, -min_z])
-        scale = np.array([(height - 1) / (max_y - min_y),
-                         (width - 1) / (max_z - min_z)])
-        for segment in self.segments:
-            uv = []
-            for p in segment.led_positions:
-                pm = np.multiply(p[1:] + offset, scale).astype(int)
-                u = int(height) - 1 - pm[0]
-                v = pm[1]
-
-                def clamp(minimum, x, maximum):
-                    return max(minimum, min(x, maximum))
-                u = clamp(0, u, self.params.height)
-                v = clamp(0, v, self.params.width)
-                uv.append(np.array([u, v]))
-            segment.uv = np.array(uv)
 
     def initialize(self):
         self.palette_size = self.params.palette.shape[0]
