@@ -18,10 +18,12 @@ DEFAULT_CONFIG = [
     ('3x0', SweepPattern, dict(color=np.array([255, 255, 255]), decay_param=0.5, sweep_speed=0.3)),
     
     # Video patterns
-    ('0x1', VideoPattern, dict(file='media/butter_churn.mp4', fps=20, crop=Rect(60, 60, 60, 60))),
-    ('1x1', VideoPattern, dict(file='media/psychill1.mp4', fps=20, crop=Rect(60, 130, 60, 60))),
-    ('2x1', VideoPattern, dict(file='media/psychill2.mp4', fps=20, crop=Rect(60, 130, 60, 60))),
-    ('3x1', VideoPattern, dict(file='media/milkdrop.mp4', fps=20, crop=Rect(60, 130, 60, 60))),
+    ('0x1', VideoPattern, dict(file='media/shifter_escape.mp4')),
+    ('1x1', VideoPattern, dict(file='media/radial_beams.mp4', crop=Rect(0, 0, 850, 720))),
+    ('2x1', VideoPattern, dict(file='media/butter_churn.mp4', crop=Rect(60, 60, 60, 60))),
+    ('3x1', VideoPattern, dict(file='media/psychill1.mp4', fps=10)),
+    ('4x1', VideoPattern, dict(file='media/psychill1.mp4', crop=Rect(60, 130, 60, 60))),
+    ('5x1', VideoPattern, dict(file='media/psychill2.mp4', crop=Rect(60, 130, 60, 60))),
     
     # Effect patterns
     ('0x2', SparklePattern, dict(color=np.array([255, 255, 255]), sparkle_probability=0.001, decay_param=0.95)),
