@@ -14,8 +14,8 @@ DEFAULT_CONFIG = [
     # Standard patterns
     ('0x0', FirePatternUV, dict(palette=palettes.FIRE, width=2, height=100)),
     ('1x0', CrossfadePattern, dict()),
-    ('3x0', TheaterChasePattern, dict(color=np.array([255, 255, 255]), sparkle_probability=0.001, decay_param=0.95)),
-    ('4x0', SweepPattern, dict(color=np.array([255, 255, 255]), decay_param=0.5, sweep_speed=0.3)),
+    ('2x0', TheaterChasePattern, dict(color=np.array([255, 255, 255]), sparkle_probability=0.001, decay_param=0.95)),
+    ('3x0', SweepPattern, dict(color=np.array([255, 255, 255]), decay_param=0.5, sweep_speed=0.3)),
     
     # Video patterns
     ('0x1', VideoPattern, dict(file='media/butter_churn.mp4', fps=20, crop=Rect(60, 60, 60, 60))),
@@ -24,5 +24,5 @@ DEFAULT_CONFIG = [
     ('3x1', VideoPattern, dict(file='media/milkdrop.mp4', fps=20, crop=Rect(60, 130, 60, 60))),
     
     # Effect patterns
-    ('0x1', SparklePattern, dict(color=np.array([255, 255, 255]), sparkle_probability=0.001, decay_param=0.95)),
+    ('0x2', SparklePattern, dict(color=np.array([255, 255, 255]), sparkle_probability=0.001, decay_param=0.95)),
 ]
