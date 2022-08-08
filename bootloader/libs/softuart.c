@@ -103,8 +103,6 @@ void softuart_tx(uint8_t c)
     CLKPR = (1 << CLKPCE); // Prescaler enable
     CLKPR = (1 << CLKPS2); // Clock division factor 16 (00100)
 
-    PORTB |= 1 << PORTB3; // DE high (tx mode, MAX485)
-
     PORTB |= 1 << UART_TX;
     DDRB |= 1 << UART_TX;
 
