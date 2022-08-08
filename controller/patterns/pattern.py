@@ -7,6 +7,8 @@ class Segment:
         self.colors = np.array([[255, 0, 0] for i in range(num_leds)])
         self.led_positions = np.array(led_positions)
 
+
+#Allows direct control of Segments
 class Pattern:
     def __init__(self):
         self.segments = []
