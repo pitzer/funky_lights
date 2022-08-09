@@ -2,13 +2,13 @@ import json
 import time
 import sys
 import asyncio
-import lpminimk3 
 import serial_asyncio
 import websockets
 import functools
 import time
 
 from funky_lights import connection, messages
+from core.pattern_selector import PatternSelector
 from patterns import pattern_config
 
 
@@ -27,15 +27,6 @@ def PrepareTextureMsg(segments):
     # Added padding to the end of the buffer to fill the full texture
     msg += [0] * (texture_size - len(msg))
     return bytearray(msg)
-
-
-def run_in_executor(f):
-    @functools.wraps(f)
-    def inner(*args, **kwargs):
-        loop = asyncio.get_running_loop()
-        return loop.run_in_executor(None, lambda: f(*args, **kwargs))
-
-    return inner
 
 
 async def ws_serve(websocket, generator):
@@ -74,120 +65,25 @@ class SerialWriter(asyncio.Protocol):
                         messages.PrepareLedMsg(segment.uid, segment.colors))
 
 
-class LaunchPadHandler:
-    def __init__(self):
-        self.lp = None
-        self.buttons_active = []
-        self.buttons_pressed = []
-        self.LED_COLOR_ACTIVE = 100
-        self.LED_COLOR_INACTIVE = 0
-
-    def activate_button(self, button_name):
-        if not self.lp: 
-            return
-        button_group = self.lp.panel.buttons(button_name)
-        for button in button_group:
-            button.led.color = self.LED_COLOR_ACTIVE
-            if not button in self.buttons_active:
-                self.buttons_active.append(button)
-    
-    def deactivate_button(self, button_name):
-        if not self.lp:
-            return
-        button_group = self.lp.panel.buttons(button_name)
-        for button in button_group:
-            button.led.color = self.LED_COLOR_INACTIVE
-            if button in self.buttons_active:
-                self.buttons_active.remove(button)
-
-    def handle_event(self, button_event):
-        if button_event and button_event.type == lpminimk3.ButtonEvent.PRESS:
-            self.buttons_pressed.append(button_event.button.name)
-        elif button_event and button_event.type == lpminimk3.ButtonEvent.RELEASE:
-            pass
-
-    @run_in_executor
-    def poll(self):
-        self.handle_event(self.lp.panel.buttons().poll_for_event())
-
-    async def run(self):
-        available_lps = lpminimk3.find_launchpads()
-        if available_lps:
-            self.lp = available_lps[0]  # Use the first available launchpad
-            self.lp.open()  # Open device for reading and writing on MIDI interface (by default)
-            self.lp.mode = lpminimk3.Mode.PROG  # Switch to the programmer mode
-        else:
-            print(f"No launchpad found.")
-            return
-
-        for button in self.lp.panel.buttons():
-            button.led.color = self.LED_COLOR_INACTIVE
-        while True:
-            # Wait for a button press/release
-            await self.poll()
-
-
 class PatternGenerator:
-    def __init__(self, led_config, launchpad):
-        self.launchpad = launchpad
+    def __init__(self, patter_selector):
+        self.patter_selector = patter_selector
         self.result = asyncio.Future()
-        self.patterns = []
-        self.current_pattern_index = 0
-        self.button_to_pattern_index_map = {}
-        self.pattern_index_to_button_map = {}
 
-        for i, (button, cls, params) in enumerate(pattern_config.DEFAULT_CONFIG):
-            pattern = cls()
-            for key in params:
-                setattr(pattern.params, key, params[key])
-            pattern.prepareSegments(led_config)
-            pattern.initialize()
-            self.patterns.append(pattern)
-            self.button_to_pattern_index_map[button] = i
-            self.pattern_index_to_button_map[i] = button
+        self._ANIMATION_RATE = 20
+        self._FPS_UPDATE_RATE = 1
 
     async def tick(self, pattern, delta):
         pattern.animate(delta)
 
     async def run(self):
-        ANIMATION_RATE = 20
-        FPS_UPDATE_RATE = 1
-        MAX_PATTERN_DURATION = 120
-
-        prev_animation_time = time.time() - 1.0 / ANIMATION_RATE
-        prev_pattern_time = time.time()
+        self.patter_selector.initializePatterns()
+        prev_animation_time = time.time() - 1.0 / self._ANIMATION_RATE
         start_time = time.time()
         counter = 0
         while True:
             cur_animation_time = time.time()
-
-            # Check if a button was pressed on launchpad to change the pattern
-            if self.launchpad.buttons_pressed:
-                button = self.launchpad.buttons_pressed[-1]
-                if button in self.button_to_pattern_index_map:
-                    # Deactivate button corresponding to previous pattern
-                    self.launchpad.deactivate_button(
-                        self.pattern_index_to_button_map[self.current_pattern_index])
-                    # Update pattern index based on button press
-                    self.current_pattern_index = self.button_to_pattern_index_map[button]
-                    prev_pattern_time = cur_animation_time
-                self.launchpad.buttons_pressed.clear()
-            
-            # Check if max pattern time is exceeded
-            if (cur_animation_time - prev_pattern_time) > MAX_PATTERN_DURATION:
-                # Deactivate button corresponding to previous pattern
-                self.launchpad.deactivate_button(
-                    self.pattern_index_to_button_map[self.current_pattern_index])
-                # Rotate patterns
-                self.current_pattern_index = (
-                    self.current_pattern_index + 1) % len(self.patterns)
-                prev_pattern_time = cur_animation_time
-
-            # Activate button corresponding to current pattern
-            self.launchpad.activate_button(
-                self.pattern_index_to_button_map[self.current_pattern_index])
-
-            pattern = self.patterns[self.current_pattern_index]
+            pattern = self.patter_selector.update(cur_animation_time)
 
             # Process animation
             await self.tick(pattern, cur_animation_time - prev_animation_time)
@@ -199,11 +95,11 @@ class PatternGenerator:
 
             # Sleep for the remaining time
             processing_time = time.time() - cur_animation_time
-            await asyncio.sleep(max(0, 1.0/ANIMATION_RATE - processing_time))
+            await asyncio.sleep(max(0, 1.0/self._ANIMATION_RATE - processing_time))
 
             # Output update rate to console
             counter += 1
-            if (time.time() - start_time) > 1.0 / FPS_UPDATE_RATE:
+            if (time.time() - start_time) > 1.0 / self._FPS_UPDATE_RATE:
                 print("Animation FPS: %.1f" % (counter / (time.time() - start_time)))
                 counter = 0
                 start_time = time.time()
@@ -223,11 +119,11 @@ async def main():
         bus_config = json.load(f)
 
     # Launchpad handler
-    launchpad_handler = LaunchPadHandler()
-    asyncio.create_task(launchpad_handler.run())
+    pattern_selector = PatternSelector(pattern_config.DEFAULT_CONFIG, led_config)
+    asyncio.create_task(pattern_selector.launchpadListener())
 
     # Start pattern generator
-    pattern_generator = PatternGenerator(led_config, launchpad_handler)
+    pattern_generator = PatternGenerator(pattern_selector)
     asyncio.create_task(pattern_generator.run())
     
     # Start WS server
