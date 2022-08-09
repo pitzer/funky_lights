@@ -11,10 +11,10 @@ class SolidColorBlinkPattern(Pattern):
         # to the pattern config.
 
         # Color palette to cycle through
-        self.palette = palettes.TROPICAL
+        self.params.palette = palettes.TROPICAL
 
         # Frequency of color change (in Hz)
-        self.fps = 0.5
+        self.params.fps = 0.5
 
     def initialize(self):
         """ This method gets called once when the pattern is first instantiated."""
@@ -31,12 +31,12 @@ class SolidColorBlinkPattern(Pattern):
 
         # First check if it is time to cycle to the next color in the palette
         self.cumulative_delta += delta
-        if self.cumulative_delta < 1 / self.fps:
+        if self.cumulative_delta < 1 / self.params.fps:
             return
 
         # Cycle to the next color
         self.current_color_index = (
-            self.current_color_index + 1) % self.palette.shape[0]
+            self.current_color_index + 1) % self.params.palette.shape[0]
   
         # Update segments to use the new color. 
         # 
@@ -53,7 +53,7 @@ class SolidColorBlinkPattern(Pattern):
         # of the elephant, e.g. [1, 2, 3] are the three long strips going over the dome front to back.
         for segment in self.segments:
             for color in segment.colors:
-                np.copyto(color, self.palette[self.current_color_index])
+                np.copyto(color, self.params.palette[self.current_color_index])
 
         # Reset time
         self.cumulative_delta = 0
