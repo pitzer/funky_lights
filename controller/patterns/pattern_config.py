@@ -1,10 +1,9 @@
 import numpy as np
 
 import patterns.palettes as palettes
-from patterns.sparkle_pattern import SparklePattern
-from patterns.fire_pattern import FirePatternUV
+from patterns.color_roll_pattern import ColorRollPattern
 from patterns.crossfade_pattern import CrossfadePattern
-from patterns.rg_transition_pattern import RGTRansitionPattern
+from patterns.fire_pattern import FirePatternUV
 from patterns.sparkle_pattern import SparklePattern
 from patterns.sweep_pattern import SweepPattern
 from patterns.theater_chase_pattern import TheaterChasePattern
@@ -16,7 +15,7 @@ DEFAULT_CONFIG = [
     ('1x0', CrossfadePattern, dict()),
     ('2x0', TheaterChasePattern, dict(color=np.array([255, 255, 255]), sparkle_probability=0.001, decay_param=0.95)),
     ('3x0', SweepPattern, dict(color=np.array([255, 255, 255]), decay_param=0.5, sweep_speed=0.3)),
-    ('4x0', RGTRansitionPattern, dict()),
+    ('4x0', ColorRollPattern, dict()),
 
     # Video patterns
     ('0x1', VideoPattern, dict(file='media/shifter_escape.mp4')),

@@ -1,7 +1,7 @@
 from patterns.pattern import Pattern
 import numpy as np
 
-class RGTRansitionPattern(Pattern):
+class ColorRollPattern(Pattern):
     def __init__(self):
         super().__init__()
 
