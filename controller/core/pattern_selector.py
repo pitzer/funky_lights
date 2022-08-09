@@ -71,6 +71,9 @@ class PatternSelector:
             # Rotate patterns
             self.current_pattern_index = (
                 self.current_pattern_index + 1) % len(self.patterns)
+            # Activate button corresponding to current pattern
+            self.activateButton(
+                self.pattern_index_to_button_map[self.current_pattern_index])
             self.pattern_start_time = pattern_time
 
         return self.patterns[self.current_pattern_index]
