@@ -2,8 +2,7 @@ from patterns.pattern import Pattern
 import patterns.palettes as palettes
 import numpy as np
 import sys
-
-palette = palettes.BLUES
+import math
 
 
 #Create a class that acts as a 2D abstraction on the elephant
@@ -11,32 +10,54 @@ class Grid():
     def __init__(self, width, height):
         self.width = width
         self.height = height
-        self.coordinates = [[[0,0,0] for j in range(height)] for i in range(width)]
+        self.coordinates = [[[0,0,0] for j in range(self.height)] for i in range(self.width)]
     
-    def update (self, x1, x2, y1, y2, color):
-        for x in range(x2-x1):
-            if x1 + x < self.width:
-                for y in range(y2-y1):
-                    if y1 + y < self.height:
-                        self.coordinates[x1 + x][y1 + y] = color
-        return self
+    def _paint(self, x, y, color):  
+        x, y = int(x), int(y)
+        if x < self.width and y < self.height:
+            self.coordinates[x][y] = color
+    
+    def _paintmesh(self, mesh, color):
+        positions = np.array(mesh).reshape(2,-1).T
+        for e in positions:
+            self._paint(e[0], e[1], color)
+    
+    #Paint a defined area of the grid one color
+    #TODO: extend to allow passing an array of colors
+    def colorArea(self, x1, x2, y1, y2, color):
+        x1, x2, y1, y2 = int(x1), int(x2), int(y1), int(y2)
+        x_range = np.arange(x1, x2, 1)
+        y_range = np.arange(y1, y2, 1)
+        #create grid of positions, translate back into list of coordinates
+        self._paintmesh(np.meshgrid(x_range, y_range), color)
+
+    #Paint a circle with a defined radius and center points
+    #WARNING: memory intensive and given the number of LEDs, we really can't see the edges of the circle. Use colorArea instead.
+    def colorCircle(self, x, y, r, color):
+        x_range = np.arange(x-r, x+r, 1)
+        y_range = np.arange(y-r, y+r, 1)
+        grid = np.meshgrid(x_range, y_range)
+        circle = np.sqrt(((grid[0]-r)**2 + (grid[1]-r)**2))
+        self._paintmesh(circle, color)
 
     #Apply one color to entire grid
     def colorAll(self, color):
         self.coordinates = [[color for j in range(self.height)] for i in range(self.width)]
-        return self
     
 #Apply grid color map to Segments
 def applyGrid(segments, grid):
     for segment in segments:
         for i, color in enumerate(segment.colors):
             uv = segment.uv[i]
-            np.copyto(color, grid.coordinates[uv[0]][uv[1]])
+            np.copyto(color, grid.coordinates[uv[1]][uv[0]])
 
 class GridPattern(Pattern):
     def  __init__(self):
         super().__init__()
-        self.test_int = 1
+        self.width = 100
+        self.height = 100
+        self.grid = Grid(self.width, self.height)
+
 
     def generateCoordinates(self, width=100, height=100):
         max_x = max_y = max_z = sys.float_info.min
@@ -61,24 +82,20 @@ class GridPattern(Pattern):
 
                 def clamp(minimum, x, maximum):
                     return max(minimum, min(x, maximum))
-                u = clamp(0, u, self.height)
-                v = clamp(0, v, self.width)
+                u = clamp(0, u, self.width)
+                v = clamp(0, v, self.height)
                 uv.append(np.array([u, v]))
             segment.uv = np.array(uv)
     
-    def initialize(self, startingGrid=None):
-        self.palette_size = palette.shape[0]
-        
+    def initialize(self, startingGrid=None):        
         self.generateCoordinates(self.width, self.height)
         if startingGrid:
             self.grid = startingGrid  
-        else:
-            self.grid = Grid(self.width, self.height)
-        applyGrid(self.segments, self.grid)
+            applyGrid(self.segments, self.grid)
  
+    def colorArea(self, x1, x2, y1, y2, color):
+        self.grid.update(x1, x2, y1, y2, color)
     
-    def animate(self, delta):
-        self.grid = self.grid.update(0, self.test_int, 0, self.test_int, [255,255,0])
-        # Copy to segments
+
+    def animate(self):
         applyGrid(self.segments, self.grid)
-        self.test_int +=1

@@ -163,6 +163,8 @@ Here is an example of this using the `FirePatternUV` pattern implemented in http
 
 Another example is the `VideoPattern` in [controller/patterns/video_pattern.py](controller/patterns/video_pattern.py)
 
+To assist in building mapped patterns, the `Pattern` class has been extended to to allow for a `GridPattern`, which has a number of class functions available to allow painting on an x/y coordinate grid without worrying about which segment belongs where. An example of GridPatterns in action is the `Rainbow` pattern in [controller/patterns/rainbow_pattern.py](controller/patterns/rainbow_pattern.py)
+
 
 ## Visualization
 To rapidly develop light patterns without any HW, we can use a 3D visualizer written in javasript and three.js. This web visualizer receives LED patterns from the light controller over websockets.
