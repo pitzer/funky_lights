@@ -2,7 +2,7 @@ import sys
 import time
 from funky_lights import connection, messages
 
-NUM_LEDS = 30
+NUM_LEDS = 230
 
 
 def main():

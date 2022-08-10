@@ -4,13 +4,16 @@ import time
 
 from . import messages
 
-START_BAUDRATE = 9600
-LED_BAUDRATE = 250000
-DEFAULT_TTY_DEVICE = '/dev/tty.usbserial-14210'
+BOOTLOADER_BAUDRATE = 9600
+START_BAUDRATE = 200000
+LED_BAUDRATE = 500000
+DEFAULT_TTY_DEVICE = '/dev/tty.usbserial-AB64M485'
 
 def InitializeController(tty_device, baudrate=LED_BAUDRATE, uid=messages.BROADCAST_UID):
-    serial_port = SetupSerial(tty_device, baudrate=START_BAUDRATE)
+    serial_port = SetupSerial(tty_device, baudrate=BOOTLOADER_BAUDRATE)
     serial_port.write(messages.PrepareStartLedControllerMsg(uid))
+    time.sleep(0.5)
+    serial_port = SetupSerial(tty_device, baudrate=START_BAUDRATE)
     time.sleep(0.5)
 
     if baudrate != START_BAUDRATE:
@@ -43,10 +46,11 @@ def ChangeBaudrate(serial_port, new_baudrate):
      Returns:
       A new serial object
     """
-    prescaler = int(16000000 / new_baudrate / 8)
-    new_baudrate = int(16000000 / (8 * prescaler))
+    prescaler = int(16000000 / new_baudrate)
+    new_baudrate = int(16000000 / (prescaler))
     # We are already initialized. We should send a message to the LEDs to
     #  change baudrate
+    print("Sending new prescaler %d to the board" % prescaler)
     devive = serial_port.name
     serial_port.write(messages.PrepareBaudrateMsg(messages.BROADCAST_UID, prescaler))
     time.sleep(0.1)

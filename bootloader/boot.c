@@ -100,7 +100,7 @@ int main(void)
         "  out   0x3e, r29                           \n\t"
         "  out   0x3d, r28                           \n\t");
 
-    softuart_tx_string("\n\nBOOTLOADER\n");
+    softuart_tx_string("\n\r\n\rBOOTLOADER\n\r");
 
     // fetch uid from EEPROM
     uint8_t uid = eeprom_read_byte(&IDModbus);

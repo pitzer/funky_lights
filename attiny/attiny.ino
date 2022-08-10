@@ -8,13 +8,13 @@
 #include <TXOnlySerial.h>
 #include <CRC.h>
 #include <EEPROM.h>
+#include "usi_serial.h"
 
 #define VERBOSE 0
 #define DEBUG_SERIAL 0
 #define LEDS_PIN 1
 #define RX_PIN 0
 #define TX_DEBUG_PIN 2
-#define TIMER_DEBUG_PIN 4
 
 #define MAX_NUM_LEDS 230
 
@@ -23,7 +23,7 @@
 
 #define BROADCAST_UID 0
 
-#define INITIAL_SERIAL_PRESCALER 208 // 9600 Baud
+#define INITIAL_SERIAL_BAUDRATE 200000
 
 #define UID_UNDEFINED 0xFF
 
@@ -154,141 +154,6 @@ void PrintBinary(uint8_t data, bool line_feed)
     }
 }
 
-// Toggle pin 3 (I/O B4) very quickly. This can be used to get a timing reference on an oscilloscope
-// This assumes that the state of the other IOs is know (B0 = 0, B1 = 0, B2 = 1, B3 = 0)
-inline void ToggleB4()
-{
-    PORTB = 0x14;
-    PORTB = 0x04;
-}
-
-uint32_t PrescalerToBauds(uint8_t prescaler)
-{
-    return 16000000 / (8 * static_cast<uint32_t>(prescaler));
-}
-
-// Configure TIMER0 and the Universal Serial Interface (USI) for a specific baudrate
-// The actual baudrate will be given by the formula:
-//   baudrate = 16Mhz / (8 * prescaler)
-// Speeds up to 400Kb (prescaler = 5) were tested
-void InitSerial(uint8_t prescaler)
-{
-    // Timer 0 configuration
-    GTCCR = 1 << TSM; // Stop the timer while we are configuring
-    OCR0A = prescaler - 1;
-    OCR0B = 1;
-    TCCR0A = (3 << WGM00);  // Fast PWM mode
-    TCCR0B = (1 << WGM02) | // Fast PWM mode
-             (1 << CS00);   // Use clock input directly (no prescaler)
-    GTCCR = 0 << TSM;       // Start the timer
-
-    // USI configuration register
-    USICR = 0 << USISIE | // No start detection interrupt (used for I2C)
-            0 << USIOIE | // Overflow interrupt disable
-            0 << USIWM0 | // No fancy SPI or I2C mode
-            1 << USICS0 | // Use Timer 0 as clock
-            0 << USICLK;  // No clock strobe
-    USISR = 0;            // Clear all interrupts and counter
-
-    interrupts();
-    debug_serial.print("Current serial input baudrate: ");
-    debug_serial.print(PrescalerToBauds(prescaler));
-    debug_serial.println(" Baud");
-    noInterrupts();
-}
-
-// This implements a software UART which uses the built-in hardware deserializer.
-//  We use 8x oversampling. For each bit that we expect from the serial port, we take
-//  8 samples. This will allow us to choose the proper sampling phase, based on the phase
-//  of the start bit transition.
-inline uint8_t GetSerialByte()
-{
-    uint8_t sample_index = 0;
-    uint8_t serial_data = 0;
-    uint8_t num_samples = 0;
-    uint8_t sampling_mask = 0;
-
-    ToggleB4();
-
-    // We use polling instead of interrupts. This could be changed to an interrupt handler if needed.
-    while (true)
-    {
-        // Poll the USI counter interrupt bit
-        if (USISR & (1 << USIOIF))
-        {
-            USISR = 1 << USIOIF | // Clear interrupt flag
-                    8;            // Set counter to 8 (will overflow at 16, after 8 samples)
-            uint8_t sample = USIDR;
-            if (sample_index == 0)
-            {
-                if (sample != 0xFF)
-                {
-                    sample_index++;
-                    // Build a one-hot mask where the 1 bit corresponds to the bit 3 samples later than the
-                    //  first 0 in the input byte. Optimized for speed, use the AVR's SBRC instruction.
-                    if (!(sample & 0x80))
-                    {
-                        num_samples = 9;
-                        sampling_mask = 0b00010000;
-                    }
-                    else if (!(sample & 0x40))
-                    {
-                        num_samples = 9;
-                        sampling_mask = 0b00001000;
-                    }
-                    else if (!(sample & 0x20))
-                    {
-                        num_samples = 9;
-                        sampling_mask = 0b00000100;
-                    }
-                    else if (!(sample & 0x10))
-                    {
-                        num_samples = 9;
-                        sampling_mask = 0b00000010;
-                    }
-                    else if (!(sample & 0x08))
-                    {
-                        num_samples = 9;
-                        sampling_mask = 0b00000001;
-                    }
-                    else if (!(sample & 0x04))
-                    {
-                        num_samples = 10;
-                        sampling_mask = 0b10000000;
-                    }
-                    else if (!(sample & 0x02))
-                    {
-                        num_samples = 10;
-                        sampling_mask = 0b01000000;
-                    }
-                    else
-                    {
-                        sampling_mask = 0b00100000;
-                        num_samples = 10;
-                    }
-                    serial_data = 0;
-                }
-            }
-            else
-            {
-                sample_index++;
-                if (sample_index <= num_samples)
-                {
-                    serial_data >>= 1;
-                    if (sample & sampling_mask)
-                    {
-                        serial_data |= 0x80;
-                    }
-                }
-                else
-                {
-                    return serial_data;
-                }
-            }
-        }
-    }
-}
-
 void startBootloader()
 {
   // jump LOADER
@@ -319,7 +184,6 @@ void setup()
     
     // IO directions
     pinMode(RX_PIN, INPUT);
-    pinMode(TIMER_DEBUG_PIN, OUTPUT);
 
     // Setup the LED strip
     if (uid == UID_UNDEFINED) 
@@ -348,7 +212,7 @@ void setup()
     }
     
     // Setup the input serial port
-    InitSerial(INITIAL_SERIAL_PRESCALER);
+    InitSerial(BaudsToPrescaler(INITIAL_SERIAL_BAUDRATE));
 
     noInterrupts();
 }
@@ -357,7 +221,7 @@ void loop()
 {
 
     // Wait for messages
-    uint8_t c = GetSerialByte();
+    uint8_t c = GetSerialByte(state == CRC);
     switch (state)
     {
     case IDLE:
@@ -391,6 +255,7 @@ void loop()
                 debug_serial.println(c);
                 noInterrupts();
             }
+            FlushSerial();
             state = IDLE;
         }
         break;
@@ -416,6 +281,7 @@ void loop()
                 noInterrupts();
             }
             state = IDLE;
+            FlushSerial();
             break;
         }
         break;
@@ -425,6 +291,7 @@ void loop()
         {
           // Ignore commands that have too many LEDs
           state = IDLE;
+          FlushSerial();
         }
         else
         {
