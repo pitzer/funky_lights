@@ -1,6 +1,7 @@
 adsk
 crc8
 intelhex
+lpminimk3@git+https://github.com/pitzer/lpminimk3.git@macos_fix
 matplotlib
 numpy
 opencv_python==4.5.5.62

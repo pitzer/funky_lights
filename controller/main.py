@@ -8,6 +8,7 @@ import functools
 import time
 
 from funky_lights import connection, messages
+from core.pattern_selector import PatternSelector
 from patterns import pattern_config
 
 
@@ -63,40 +64,26 @@ class SerialWriter(asyncio.Protocol):
                     self.transport.serial.write(
                         messages.PrepareLedMsg(segment.uid, segment.colors))
 
+
 class PatternGenerator:
-    def __init__(self, led_config):
+    def __init__(self, patter_selector):
+        self.patter_selector = patter_selector
         self.result = asyncio.Future()
-        self.patterns = []
-        self.current_pattern_index = 0
-        for cls, params in pattern_config.DEFAULT_CONFIG:
-            pattern = cls()
-            for key in params:
-                setattr(pattern.params, key, params[key])
-            pattern.prepareSegments(led_config)
-            pattern.initialize()
-            self.patterns.append(pattern)
+
+        self._ANIMATION_RATE = 20
+        self._FPS_UPDATE_RATE = 1
 
     async def tick(self, pattern, delta):
         pattern.animate(delta)
 
     async def run(self):
-        ANIMATION_RATE = 20
-        FPS_UPDATE_RATE = 1
-        PATTERN_DURATION = 120
-
-        prev_animation_time = time.time() - 1.0 / ANIMATION_RATE
-        prev_pattern_time = time.time()
+        self.patter_selector.initializePatterns()
+        prev_animation_time = time.time() - 1.0 / self._ANIMATION_RATE
         start_time = time.time()
         counter = 0
         while True:
             cur_animation_time = time.time()
-
-            # Rotate patterns
-            if (cur_animation_time - prev_pattern_time) > PATTERN_DURATION:
-                self.current_pattern_index = (
-                    self.current_pattern_index + 1) % len(self.patterns)
-                prev_pattern_time = cur_animation_time
-            pattern = self.patterns[self.current_pattern_index]
+            pattern = self.patter_selector.update(cur_animation_time)
 
             # Process animation
             await self.tick(pattern, cur_animation_time - prev_animation_time)
@@ -108,12 +95,12 @@ class PatternGenerator:
 
             # Sleep for the remaining time
             processing_time = time.time() - cur_animation_time
-            await asyncio.sleep(max(0, 1.0/ANIMATION_RATE - processing_time))
+            await asyncio.sleep(max(0, 1.0/self._ANIMATION_RATE - processing_time))
 
             # Output update rate to console
             counter += 1
-            if (time.time() - start_time) > 1.0 / FPS_UPDATE_RATE:
-                print("Animation FPS: ", counter / (time.time() - start_time))
+            if (time.time() - start_time) > 1.0 / self._FPS_UPDATE_RATE:
+                print("Animation FPS: %.1f" % (counter / (time.time() - start_time)))
                 counter = 0
                 start_time = time.time()
 
@@ -130,11 +117,15 @@ async def main():
         led_config = json.load(f)
     with open(bus_config_file, 'r') as f:
         bus_config = json.load(f)
-        
-    # Start pattern generator
-    pattern_generator = PatternGenerator(led_config)
-    asyncio.create_task(pattern_generator.run())
 
+    # Launchpad handler
+    pattern_selector = PatternSelector(pattern_config.DEFAULT_CONFIG, led_config)
+    asyncio.create_task(pattern_selector.launchpadListener())
+
+    # Start pattern generator
+    pattern_generator = PatternGenerator(pattern_selector)
+    asyncio.create_task(pattern_generator.run())
+    
     # Start WS server
     ws_serve_handler = functools.partial(ws_serve, generator=pattern_generator)
     await websockets.serve(ws_serve_handler, '127.0.0.1', WEB_SOCKET_PORT)

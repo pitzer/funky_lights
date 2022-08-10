@@ -19,6 +19,6 @@ low_fuse='0x5f'
 high_fuse='0xd5'
 extended_fuse='0xfe'
 
-avrdude_cmd="$avrdude_binary -C$avrdude_conf -pattiny85 -cusbtiny -U efuse:w:${extended_fuse}:m -U hfuse:w:${high_fuse}:m -U lfuse:w:${low_fuse}:m -U flash:w:$bootloader_hex_file -Ueeprom:w:0x$(printf "%.2x" $1):m"
+avrdude_cmd="$avrdude_binary -C$avrdude_conf -pattiny85 -cusbtiny -e -U efuse:w:${extended_fuse}:m -U hfuse:w:${high_fuse}:m -U lfuse:w:${low_fuse}:m -U flash:w:$bootloader_hex_file -Ueeprom:w:0x$(printf "%.2x" $1):m"
 echo $avrdude_cmd
 eval $avrdude_cmd
