@@ -172,7 +172,7 @@
 			
 			// Start listening to websockets for LED updates
             function connect() {
-                var ws = new WebSocket("ws://127.0.0.1:5678/");
+                var ws = new WebSocket("ws://" + window.location.hostname + ":5678/");
                 ws.binaryType = 'arraybuffer';
                 ws.onmessage = function (event) {
                     const data = new Uint8Array(event.data);

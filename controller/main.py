@@ -128,7 +128,7 @@ async def main():
     
     # Start WS server
     ws_serve_handler = functools.partial(ws_serve, generator=pattern_generator)
-    await websockets.serve(ws_serve_handler, '127.0.0.1', WEB_SOCKET_PORT)
+    await websockets.serve(ws_serve_handler, '0.0.0.0', WEB_SOCKET_PORT)
 
     # Start serial
     loop = asyncio.get_event_loop()
