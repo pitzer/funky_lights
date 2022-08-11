@@ -79,16 +79,16 @@ class PatternSelector:
         return self.patterns[self.current_pattern_index]
 
     def activateButton(self, button_name):
-        if not button in self.buttons_active:
-            self.buttons_active.append(button)
-        if not self.launchpad:
+        if not button_name in self.buttons_active:
+            self.buttons_active.append(button_name)
+        if self.launchpad:
             button_group = self.launchpad.panel.buttons(button_name)
             for button in button_group:
                 button.led.color = self.LED_COLOR_ACTIVE
 
     def deactivateButton(self, button_name):
-        if button in self.buttons_active:
-            self.buttons_active.remove(button)
+        if button_name in self.buttons_active:
+            self.buttons_active.remove(button_name)
         if self.launchpad:
             button_group = self.launchpad.panel.buttons(button_name)
             for button in button_group:
