@@ -6,6 +6,7 @@ import serial_asyncio
 import websockets
 import functools
 import time
+import traceback
 
 from funky_lights import connection, messages
 from core.pattern_selector import PatternSelector
@@ -118,17 +119,19 @@ async def main():
     with open(bus_config_file, 'r') as f:
         bus_config = json.load(f)
 
+    futures = []
+
     # Launchpad handler
     pattern_selector = PatternSelector(pattern_config.DEFAULT_CONFIG, led_config)
-    asyncio.create_task(pattern_selector.launchpadListener())
+    futures.append(pattern_selector.launchpadListener())
 
     # Start pattern generator
     pattern_generator = PatternGenerator(pattern_selector)
-    asyncio.create_task(pattern_generator.run())
+    futures.append(pattern_generator.run())
     
     # Start WS server
     ws_serve_handler = functools.partial(ws_serve, generator=pattern_generator)
-    await websockets.serve(ws_serve_handler, '0.0.0.0', WEB_SOCKET_PORT)
+    futures.append(websockets.serve(ws_serve_handler, '0.0.0.0', WEB_SOCKET_PORT))
 
     # Start serial
     loop = asyncio.get_event_loop()
@@ -140,11 +143,19 @@ async def main():
         # Start async serial handlers
         serial_serve_handler = functools.partial(
             SerialWriter, generator=pattern_generator, uids=bus['uids'])
-        await serial_asyncio.create_serial_connection(
-            loop, serial_serve_handler, bus['device'], baudrate=bus['baudrate'])
+        futures.append(serial_asyncio.create_serial_connection(
+            loop, serial_serve_handler, bus['device'], baudrate=bus['baudrate']))
     
     # Wait forever
-    await asyncio.Event().wait()
+    try:
+        results = await asyncio.gather(
+            *futures,
+            return_exceptions=False
+        )
+        print(results)
+    except Exception as e:
+        print('An exception has occured.')
+        print(traceback.format_exc())
 
 
 asyncio.run(main())
