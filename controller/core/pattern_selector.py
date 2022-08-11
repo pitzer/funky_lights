@@ -84,7 +84,7 @@ class PatternSelector:
         if self.launchpad:
             button_group = self.launchpad.panel.buttons(button_name)
             for button in button_group:
-                button.led.color = self.LED_COLOR_ACTIVE
+                button.led.color = self._LED_COLOR_ACTIVE
 
     def deactivateButton(self, button_name):
         if button_name in self.buttons_active:
@@ -92,7 +92,7 @@ class PatternSelector:
         if self.launchpad:
             button_group = self.launchpad.panel.buttons(button_name)
             for button in button_group:
-                button.led.color = self.LED_COLOR_INACTIVE
+                button.led.color = self._LED_COLOR_INACTIVE
 
     @run_in_executor
     def poll(self):
@@ -115,7 +115,7 @@ class PatternSelector:
             return
 
         for button in self.launchpad.panel.buttons():
-            button.led.color = self.LED_COLOR_INACTIVE
+            button.led.color = self._LED_COLOR_INACTIVE
         while True:
             # Wait for a button press/release
             await self.poll()
