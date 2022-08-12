@@ -3,7 +3,7 @@ import patterns.palettes as palettes
 import numpy as np
 import colorsys as colorsys
 
-class RainbowPattern(PatternUV):
+class RainbowWavesPattern(PatternUV):
     def __init__(self, width=100, height=100):
         super().__init__()
         # Frequency of color change (in Hz)
@@ -11,6 +11,7 @@ class RainbowPattern(PatternUV):
         self.offset = 0
         self.width = width
         self.height = height
+        self.center = [self.width/2, self.height/2]
     
     def initialize(self):
         self.generateUVCoordinates(self.width, self.height)
@@ -25,11 +26,12 @@ class RainbowPattern(PatternUV):
         if self.cumulative_delta < 1 / self.fps:
             return
 
-        for x1 in range(self.width):
-            rgb = colorsys.hsv_to_rgb((x1*self.spectrum[x1]/self.width), 1, 0.8)
-            rgb_int = (np.array(rgb)*255).astype(int)
-            for y in range(self.height):
-                self.grid.coordinates[x1][y] = rgb_int
+        for u in range(self.width):
+            for v in range(self.height):
+                d = np.sqrt((u-self.center[0])**2 + (v-self.center[1])**2)
+                rgb = colorsys.hsv_to_rgb((self.spectrum[int(d)]), 1, 0.8)
+                rgb_int = (np.array(rgb)*255).astype(int)
+                self.grid.coordinates[u][v] = rgb_int
         
         self.spectrum = np.roll(self.spectrum, 1)  
         self.applyGrid(self.grid)

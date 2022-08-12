@@ -17,13 +17,13 @@ class BouncingBlocksPattern(PatternUV):
         self.palette = palettes.COOL
         # Frequency of color change (in Hz)
         self.fps = 30
-        self.num_blocks = 30
+        self.num_blocks = 10
         #starting positions
         self.u1 = 50
         self.v1 = 1
         self.u_inc = 1
         self.v_inc = 0.5
-        self.size = 5
+        self.size = 10
         self.width = 100
         self.height = 100
     
