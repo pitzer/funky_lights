@@ -1,9 +1,9 @@
 uid,name,num_leds,length
-151,head/ring1,129,4.32
-152,head/center,100,3.34
-153,head/ring2,230,7.69
-154,head/left_ear,134,4.48
-155,head/right_ear,134,4.48
-156,head/left,186,6.22
-157,head/right,185,6.19
-158,head/ring3,216,7.21
+151,head/ring1,104,3.49
+152,head/center,85,2.86
+153,head/ring2,186,6.23
+154,head/left_ear,118,3.96
+155,head/right_ear,118,3.96
+156,head/left,163,5.43
+157,head/right,162,5.43
+158,head/ring3,185,6.19
