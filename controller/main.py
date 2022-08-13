@@ -60,12 +60,21 @@ class SerialWriter(asyncio.Protocol):
         print('Writer closed')
 
     async def serve(self):
+        start_time = time.time()
+        counter = 0
         while True:
             segments = await asyncio.shield(self.generator.result)
             for segment in segments:
                 if segment.uid in self.uids:
                     self.transport.serial.write(
                         messages.PrepareLedMsg(segment.uid, segment.colors))
+            # Output update rate to console
+            counter += 1
+            if (time.time() - start_time) > 1.0:
+                print("Serial FPS: %.1f" %
+                      (counter / (time.time() - start_time)))
+                counter = 0
+                start_time = time.time()
 
 
 class PatternGenerator:
