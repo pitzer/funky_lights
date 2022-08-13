@@ -1,3 +1,4 @@
+from .rainbow_pattern import RainbowPattern
 import numpy as np
 
 import patterns.palettes as palettes
@@ -7,6 +8,9 @@ from patterns.fire_pattern import FirePatternUV
 from patterns.sparkle_pattern import SparklePattern
 from patterns.sweep_pattern import SweepPattern
 from patterns.theater_chase_pattern import TheaterChasePattern
+from patterns.rainbow_pattern import RainbowPattern
+from patterns.rainbow_waves_pattern import RainbowWavesPattern
+from patterns.bouncing_blocks_pattern import BouncingBlocksPattern
 from patterns.video_pattern import VideoPattern, Rect
 
 DEFAULT_CONFIG = [
@@ -16,6 +20,8 @@ DEFAULT_CONFIG = [
     ('2x0', TheaterChasePattern, dict(color=np.array([255, 255, 255]), sparkle_probability=0.001, decay_param=0.95)),
     ('3x0', SweepPattern, dict(color=np.array([255, 255, 255]), decay_param=0.5, sweep_speed=0.3)),
     ('4x0', ColorRollPattern, dict()),
+    ('4x0', RainbowWavesPattern, dict()),
+    ('4x0', BouncingBlocksPattern, dict()),
 
     # Video patterns
     ('0x1', VideoPattern, dict(file='media/shifter_escape.mp4')),
