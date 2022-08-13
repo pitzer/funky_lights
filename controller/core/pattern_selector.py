@@ -3,6 +3,7 @@ import functools
 import lpminimk3
 import time
 
+from core.pattern_cache import PatternCache
 
 def run_in_executor(f):
     @functools.wraps(f)
@@ -14,9 +15,11 @@ def run_in_executor(f):
 
 
 class PatternSelector:
-    def __init__(self, pattern_config, led_config):
+    def __init__(self, pattern_config, led_config, args, pattern_cache):
         self.pattern_config = pattern_config
         self.led_config = led_config
+        self.enable_cache = args.enable_cache
+        self.pattern_cache = pattern_cache
 
         # Selected patterns
         self.patterns = []
@@ -33,18 +36,24 @@ class PatternSelector:
         # Constants
         self._LED_COLOR_ACTIVE = 100
         self._LED_COLOR_INACTIVE = 0
-        self._MAX_PATTERN_DURATION = 600
+        self._MAX_PATTERN_DURATION = 5
+
 
     def initializePatterns(self):
+        if self.enable_cache:
+            self.patterns = self.pattern_cache.build_cache(self._MAX_PATTERN_DURATION)
+        else:
+            for button, cls, params in self.pattern_config:
+                pattern = cls()
+                for key in params:
+                    setattr(pattern.params, key, params[key])
+                pattern.prepareSegments(self.led_config)
+                pattern.initialize()
+                self.patterns.append(pattern)
+        
         for i, (button, cls, params) in enumerate(self.pattern_config):
-            pattern = cls()
-            for key in params:
-                setattr(pattern.params, key, params[key])
-            pattern.prepareSegments(self.led_config)
-            pattern.initialize()
-            self.patterns.append(pattern)
             self.button_to_pattern_index_map[button] = i
-            self.pattern_index_to_button_map[i] = button
+            self.pattern_index_to_button_map[i] = button   
 
     def update(self, pattern_time):
         # Check if any launchpad button was pressed to change the pattern

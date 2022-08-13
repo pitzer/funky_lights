@@ -1,3 +1,4 @@
+import argparse
 import json
 import time
 import sys
@@ -9,6 +10,7 @@ import time
 import traceback
 
 from funky_lights import connection, messages
+from core.pattern_cache import PatternCache
 from core.pattern_selector import PatternSelector
 from patterns import pattern_config
 
@@ -107,22 +109,29 @@ class PatternGenerator:
 
 
 async def main():
-    led_config_file = '../config/led_config.json'
-    if len(sys.argv) > 1:
-        led_config_file = sys.argv[1]
-    bus_config_file = '../config/bus_config.json'
-    if len(sys.argv) > 2:
-        bus_config_file = sys.argv[2]
+    # Parse command line arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-l", "--led_config", type=argparse.FileType('r'),
+                        default="../config/led_config.json", help="LED config file")
+    parser.add_argument("-b", "--bus_config", type=argparse.FileType('r'),
+                        default="../config/bus_config.json", help="Bus config file")
+    parser.add_argument("-c", "--enable_cache", action='store_true', help="Enable pattern caching")
+    parser.add_argument("-a", "--animation_rate", type=int, default=20, help="The target animation rate in Hz")
+    args = parser.parse_args()
 
-    with open(led_config_file, 'r') as f:
-        led_config = json.load(f)
-    with open(bus_config_file, 'r') as f:
-        bus_config = json.load(f)
+    led_config = json.load(args.led_config)
+    bus_config = json.load(args.bus_config)
 
     futures = []
 
     # Launchpad handler
-    pattern_selector = PatternSelector(pattern_config.DEFAULT_CONFIG, led_config)
+    if args.enable_cache:
+        pattern_cache = PatternCache(pattern_config.DEFAULT_CONFIG, led_config, args)
+    else:
+        pattern_cache = None
+
+    pattern_selector = PatternSelector(
+        pattern_config.DEFAULT_CONFIG, led_config, args, pattern_cache)
     futures.append(pattern_selector.launchpadListener())
 
     # Start pattern generator
