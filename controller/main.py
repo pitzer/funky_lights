@@ -77,8 +77,9 @@ class SerialWriter(asyncio.Protocol):
 
 
 class PatternGenerator:
-    def __init__(self, patter_selector):
+    def __init__(self, patter_selector, color_selector=None):
         self.patter_selector = patter_selector
+        self.color_selector = color_selector
         self.result = asyncio.Future()
 
         self._ANIMATION_RATE = 20
@@ -132,8 +133,8 @@ async def main():
 
     futures = []
 
-    # Pattern selector
-    pattern_selector = PatternSelector(pattern_config.DEFAULT_CONFIG, led_config, args)
+    # Launchpad handler
+    pattern_selector = PatternSelector(pattern_config.DEFAULT_CONFIG, led_config)
     futures.append(pattern_selector.launchpadListener())
 
     # Start pattern generator
