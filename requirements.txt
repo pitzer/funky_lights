@@ -9,3 +9,6 @@ pyserial
 pyserial_asyncio
 setuptools
 websockets
+colorsys
+libusb1
+pyusb
