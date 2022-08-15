@@ -17,11 +17,10 @@ DEFAULT_CONFIG = [
     # Standard patterns
     ('0x0', FirePatternUV, dict(palette=palettes.FIRE, width=2, height=100)),
     ('1x0', CrossfadePattern, dict()),
-    ('2x0', TheaterChasePattern, dict(color=np.array([255, 255, 255]), sparkle_probability=0.001, decay_param=0.95)),
+    ('2x0', TheaterChasePattern, dict(color=np.array([255, 255, 2]), sparkle_probability=0.001, decay_param=0.95)),
     ('3x0', SweepPattern, dict(color=np.array([255, 255, 255]), decay_param=0.5, sweep_speed=0.3)),
     ('4x0', ColorRollPattern, dict()),
-    ('4x0', RainbowWavesPattern, dict()),
-    ('4x0', BouncingBlocksPattern, dict()),
+ 
 
     # Video patterns
     ('0x1', VideoPattern, dict(file='media/shifter_escape.mp4')),
@@ -33,4 +32,6 @@ DEFAULT_CONFIG = [
     
     # Effect patterns
     ('0x2', SparklePattern, dict(color=np.array([255, 255, 255]), sparkle_probability=0.001, decay_param=0.95)),
-]
+    ('1x2', RainbowWavesPattern, dict()),
+    ('1x3', BouncingBlocksPattern, dict())
+] 
