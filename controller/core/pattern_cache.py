@@ -15,7 +15,7 @@ def hash_led_config(led_config):
 
 
 def cache_pattern_folder(led_config_hash, pattern_index): 
-    return os.path.join('/tmp', 'pattern_cache', str(led_config_hash), str(pattern_index))
+    return os.path.join('pattern_cache', str(led_config_hash), str(pattern_index))
 
 
 def cache_file_path(led_config_hash, pattern_index, animation_index):
