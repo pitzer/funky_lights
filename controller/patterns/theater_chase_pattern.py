@@ -17,9 +17,9 @@ class TheaterChasePattern(Pattern):
             pattern_segment.initialize()
             self.pattern_segments.append(pattern_segment)
 
-    def animate(self, delta):
+    async def animate(self, delta):
         for pattern_segment in self.pattern_segments:
-            pattern_segment.animate(delta)
+            await pattern_segment.animate(delta)
 
 
 class TheaterChasePatternSegment(Pattern):
