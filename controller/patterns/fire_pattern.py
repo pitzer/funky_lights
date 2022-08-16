@@ -60,7 +60,7 @@ class FirePattern(Pattern):
             self.heat[segment] = np.array(
                 [0 for i in range(segment.num_leds)], np.uint8)
 
-    def animate(self, delta):
+    async def animate(self, delta):
         for segment in self.segments:
             heat = self.heat[segment]
             # Update heat
@@ -86,7 +86,7 @@ class FirePatternUV(PatternUV):
                      for i in range(self.params.width)]
         self.generateUVCoordinates(self.params.width, self.params.height)
 
-    def animate(self, delta):
+    async def animate(self, delta):
         for i in range(self.params.width):
             heat = self.heat[i]
             # Update heat

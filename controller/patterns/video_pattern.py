@@ -44,7 +44,7 @@ class VideoPattern(PatternUV):
 
         self.generateUVCoordinates(width, height, offset_u, offset_v)
 
-    def animate(self, delta):
+    async def animate(self, delta):
         # Slow down or speed up frame processing if fps is set
         if self.params.fps:
             delta = delta + self.prev_delta

@@ -26,6 +26,6 @@ class ColorRollPattern(Pattern):
                 col = 0
                 segment.colors[i] = [col, 255 - col, 0]
 
-    def animate(self, delta):
+    async def animate(self, delta):
         for segment in self.segments:
             segment.colors = np.roll(segment.colors, 1, axis=0)
