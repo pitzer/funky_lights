@@ -89,7 +89,7 @@ class PatternGenerator:
         await pattern.animate(delta)
 
     async def run(self):
-        await self.patter_selector.initialize_patterns()
+        await self.patter_selector.initializePatterns()
         prev_animation_time = time.time() - 1.0 / self._ANIMATION_RATE
         start_time = time.time()
         counter = 0

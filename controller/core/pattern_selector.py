@@ -38,7 +38,7 @@ class PatternSelector:
         self._LED_COLOR_INACTIVE = 0
         self._MAX_PATTERN_DURATION = 600
 
-    async def initialize_patterns(self):
+    async def initializePatterns(self):
         for i, (button, cls, params) in enumerate(self.pattern_config):
             pattern = cls()
             for key in params:
