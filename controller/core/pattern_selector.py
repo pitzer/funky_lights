@@ -3,6 +3,7 @@ import functools
 import lpminimk3
 import time
 
+from core.pattern_cache import PatternCache
 
 def run_in_executor(f):
     @functools.wraps(f)
@@ -14,11 +15,16 @@ def run_in_executor(f):
 
 
 class PatternSelector:
-    def __init__(self, pattern_config, led_config, args, pattern_cache):
+    def __init__(self, pattern_config, led_config, args):
         self.pattern_config = pattern_config
         self.led_config = led_config
         self.enable_cache = args.enable_cache
-        self.pattern_cache = pattern_cache
+
+        # Pattern cache
+        if args.enable_cache:
+            self.pattern_cache = PatternCache(pattern_config, led_config, args)
+        else:
+            self.pattern_cache = None
 
         # Selected patterns
         self.patterns = []

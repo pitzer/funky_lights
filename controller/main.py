@@ -10,7 +10,6 @@ import time
 import traceback
 
 from funky_lights import connection, messages
-from core.pattern_cache import PatternCache
 from core.pattern_selector import PatternSelector
 from patterns import pattern_config
 
@@ -133,14 +132,8 @@ async def main():
 
     futures = []
 
-    # Launchpad handler
-    if args.enable_cache:
-        pattern_cache = PatternCache(pattern_config.DEFAULT_CONFIG, led_config, args)
-    else:
-        pattern_cache = None
-
-    pattern_selector = PatternSelector(
-        pattern_config.DEFAULT_CONFIG, led_config, args, pattern_cache)
+    # Pattern selector
+    pattern_selector = PatternSelector(pattern_config.DEFAULT_CONFIG, led_config, args)
     futures.append(pattern_selector.launchpadListener())
 
     # Start pattern generator
