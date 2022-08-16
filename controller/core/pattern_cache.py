@@ -24,7 +24,7 @@ def cache_file_path(led_config_hash, pattern_index, animation_index):
     animation_index_folder = '%06d-%06d' % (animation_index_low, animation_index_high)
     filename = '%06d.p' % animation_index
     return os.path.join(
-        cache_pattern_folder(led_config_hash), animation_index_folder, filename)
+        cache_pattern_folder(led_config_hash, pattern_index), animation_index_folder, filename)
 
 
 class CachedPattern(Pattern):
