@@ -5,8 +5,8 @@ import numpy as np
 class TheaterChasePattern(Pattern):
     def __init__(self):
         super().__init__()
-        self.params.foreground_color = np.array([255, 0, 0])
-        self.params.background_color = np.array([0, 0, 0])
+        self.params.foreground_color = np.array([255, 0, 0], dtype=np.uint8)
+        self.params.background_color = np.array([0, 0, 0], dtype=np.uint8)
         self.params.speed = 1.5
         self.params.step_size = 3
 

@@ -6,8 +6,8 @@ import random
 class SparklePattern(Pattern):
     def __init__(self):
         super().__init__()
-        self.params.color = np.array([255, 255, 255])
-        self.params.background_color = np.array([0, 0, 0])
+        self.params.color = np.array([255, 255, 255], dtype=np.uint8)
+        self.params.background_color = np.array([0, 0, 0], dtype=np.uint8)
         self.params.sparkle_probability = 0.001
         self.params.decay_param = 0.95
 

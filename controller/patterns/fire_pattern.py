@@ -57,7 +57,8 @@ class FirePattern(Pattern):
     def initialize(self):
         self.heat = {}
         for segment in self.segments:
-            self.heat[segment] = np.array([0 for i in range(segment.num_leds)])
+            self.heat[segment] = np.array(
+                [0 for i in range(segment.num_leds)], np.uint8)
 
     def animate(self, delta):
         for segment in self.segments:

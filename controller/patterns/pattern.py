@@ -32,7 +32,7 @@ class UVGrid():
     def __init__(self, width, height):
         self.width = width
         self.height = height
-        self.coordinates = [[[0,0,0] for j in range(self.height)] for i in range(self.width)]
+        self.coordinates = np.array([[[0,0,0] for j in range(self.height)] for i in range(self.width)], dtype=np.uint8)
         #self.mesh = np.meshgrid(np.arange(self.width), np.arange(self.height), [0,0,0])
     
     def paintPoint(self, u, v, color):  
