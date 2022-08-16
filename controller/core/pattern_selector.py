@@ -18,9 +18,9 @@ class PatternSelector:
     def __init__(self, pattern_config, led_config, args):
         self.pattern_config = pattern_config
         self.led_config = led_config
-        self.enable_cache = args.enable_cache
 
         # Pattern cache
+        self.enable_cache = args.enable_cache
         if args.enable_cache:
             self.pattern_cache = PatternCache(pattern_config, led_config, args)
         else:
@@ -55,6 +55,7 @@ class PatternSelector:
             self.pattern_index_to_button_map[i] = button   
 
         if self.enable_cache:
+            # This replaces all patterns by a cached version of themselves
             self.patterns = await self.pattern_cache.build_cache(self.patterns, self._MAX_PATTERN_DURATION)
 
     def update(self, pattern_time):
