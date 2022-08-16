@@ -36,23 +36,21 @@ class PatternSelector:
         # Constants
         self._LED_COLOR_ACTIVE = 100
         self._LED_COLOR_INACTIVE = 0
-        self._MAX_PATTERN_DURATION = 600
+        self._MAX_PATTERN_DURATION = 5
 
-    def initializePatterns(self):
-        if self.enable_cache:
-            self.patterns = self.pattern_cache.build_cache(self._MAX_PATTERN_DURATION)
-        else:
-            for button, cls, params in self.pattern_config:
-                pattern = cls()
-                for key in params:
-                    setattr(pattern.params, key, params[key])
-                pattern.prepareSegments(self.led_config)
-                pattern.initialize()
-                self.patterns.append(pattern)
-        
+    async def initialize_patterns(self):
         for i, (button, cls, params) in enumerate(self.pattern_config):
+            pattern = cls()
+            for key in params:
+                setattr(pattern.params, key, params[key])
+            pattern.prepareSegments(self.led_config)
+            pattern.initialize()
+            self.patterns.append(pattern)
             self.button_to_pattern_index_map[button] = i
             self.pattern_index_to_button_map[i] = button   
+
+        if self.enable_cache:
+            self.patterns = await self.pattern_cache.build_cache(self.patterns, self._MAX_PATTERN_DURATION)
 
     def update(self, pattern_time):
         # Check if any launchpad button was pressed to change the pattern

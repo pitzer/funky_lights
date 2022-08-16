@@ -86,10 +86,10 @@ class PatternGenerator:
         self._FPS_UPDATE_RATE = 1
 
     async def tick(self, pattern, delta):
-        pattern.animate(delta)
+        await pattern.animate(delta)
 
     async def run(self):
-        self.patter_selector.initializePatterns()
+        await self.patter_selector.initialize_patterns()
         prev_animation_time = time.time() - 1.0 / self._ANIMATION_RATE
         start_time = time.time()
         counter = 0
