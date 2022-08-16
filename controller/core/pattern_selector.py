@@ -3,7 +3,6 @@ import functools
 import lpminimk3
 import time
 
-from core.pattern_cache import PatternCache
 
 def run_in_executor(f):
     @functools.wraps(f)
