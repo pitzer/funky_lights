@@ -22,7 +22,7 @@ class SolidColorBlinkPattern(Pattern):
         self.current_color_index = 0
         pass
 
-    def animate(self, delta):
+    async def animate(self, delta):
         """ animate is called at every timestep the lights are updated. Here is where the colors 
             of the desired segments in self.segments should be updated.
         Args:

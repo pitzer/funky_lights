@@ -6,7 +6,7 @@ class Segment:
     def __init__(self, uid, num_leds, led_positions):
         self.uid = uid
         self.num_leds = num_leds
-        self.colors = np.array([[255, 0, 0] for i in range(num_leds)])
+        self.colors = np.array([[255, 0, 0] for i in range(num_leds)], dtype=np.ubyte)
         self.led_positions = np.array(led_positions)
 
 class Pattern:
@@ -25,14 +25,14 @@ class Pattern:
     def initialize(self):
         pass
         
-    def animate(self, delta):
+    async def animate(self, delta):
         pass
 
 class UVGrid():
     def __init__(self, width, height):
         self.width = width
         self.height = height
-        self.coordinates = [[[0,0,0] for j in range(self.height)] for i in range(self.width)]
+        self.coordinates = np.array([[[0,0,0] for j in range(self.height)] for i in range(self.width)], dtype=np.uint8)
         #self.mesh = np.meshgrid(np.arange(self.width), np.arange(self.height), [0,0,0])
     
     def paintPoint(self, u, v, color):  
@@ -100,7 +100,7 @@ class PatternUV(Pattern):
     def initialize(self):
         pass
         
-    def animate(self, delta):
+    async def animate(self, delta):
         pass
 
 
@@ -154,5 +154,5 @@ class GridPattern(Pattern):
         self.grid.update(x1, x2, y1, y2, color)
     
 
-    def animate(self):
+    async  def animate(self):
         applyGrid(self.segments, self.grid)

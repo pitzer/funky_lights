@@ -3,6 +3,7 @@ import functools
 import lpminimk3
 import time
 
+from core.pattern_cache import PatternCache
 
 def run_in_executor(f):
     @functools.wraps(f)
@@ -14,9 +15,16 @@ def run_in_executor(f):
 
 
 class PatternSelector:
-    def __init__(self, pattern_config, led_config):
+    def __init__(self, pattern_config, led_config, args):
         self.pattern_config = pattern_config
         self.led_config = led_config
+
+        # Pattern cache
+        self.enable_cache = args.enable_cache
+        if args.enable_cache:
+            self.pattern_cache = PatternCache(pattern_config, led_config, args)
+        else:
+            self.pattern_cache = None
 
         # Selected patterns
         self.patterns = []
@@ -35,7 +43,7 @@ class PatternSelector:
         self._LED_COLOR_INACTIVE = 0
         self._MAX_PATTERN_DURATION = 600
 
-    def initializePatterns(self):
+    async def initializePatterns(self):
         for i, (button, cls, params) in enumerate(self.pattern_config):
             pattern = cls()
             for key in params:
@@ -44,7 +52,11 @@ class PatternSelector:
             pattern.initialize()
             self.patterns.append(pattern)
             self.button_to_pattern_index_map[button] = i
-            self.pattern_index_to_button_map[i] = button
+            self.pattern_index_to_button_map[i] = button   
+
+        if self.enable_cache:
+            # This replaces all patterns by a cached version of themselves
+            self.patterns = await self.pattern_cache.build_cache(self.patterns, self._MAX_PATTERN_DURATION)
 
     def update(self, pattern_time):
         # Check if any launchpad button was pressed to change the pattern

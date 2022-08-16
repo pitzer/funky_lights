@@ -6,8 +6,8 @@ import random
 class SweepPattern(Pattern):
     def __init__(self):
         super().__init__()
-        self.params.color = np.array([255, 255, 255])
-        self.params.background_color = np.array([0, 0, 0])
+        self.params.color = np.array([255, 255, 255], dtype=np.uint8)
+        self.params.background_color = np.array([0, 0, 0], dtype=np.uint8)
         self.params.decay_random = True
         self.params.decay_param = 0.5
         self.params.sweep_speed = 0.3
@@ -20,9 +20,9 @@ class SweepPattern(Pattern):
             pattern_segment.initialize()
             self.pattern_segments.append(pattern_segment)
 
-    def animate(self, delta):
+    async def animate(self, delta):
         for pattern_segment in self.pattern_segments:
-            pattern_segment.animate(delta)
+            await pattern_segment.animate(delta)
 
 
 class SweepPatternSegment(Pattern):
@@ -35,7 +35,7 @@ class SweepPatternSegment(Pattern):
         np.copyto(self.segment.colors, np.array(
             [self.params.background_color for i in range(self.segment.num_leds)]))    
 
-    def animate(self, delta):
+    async def animate(self, delta):
         current_index = int(self.current_sweep_fraction *
                             self.segment.num_leds)
         if current_index == self.segment.num_leds:

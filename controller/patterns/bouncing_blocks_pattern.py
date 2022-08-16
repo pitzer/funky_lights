@@ -50,7 +50,7 @@ class BouncingBlocksPattern(PatternUV):
         self.applyGrid(self.grid)
     
 
-    def animate(self, delta):
+    async def animate(self, delta):
         self.cumulative_delta += delta
         if self.cumulative_delta < 1 / self.fps:
             return
