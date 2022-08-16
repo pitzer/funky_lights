@@ -3,7 +3,7 @@
         {
             "name": "one_segment_test",
             "uids": [1],
-            "device": "/dev/tty.usbserial-14240",
+            "device": "/dev/tty.usbserial-14110",
             "baudrate": 250000
         }
     ]
