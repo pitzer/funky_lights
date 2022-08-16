@@ -14,13 +14,18 @@ def hash_led_config(led_config):
     return hashlib.sha256(led_config_bytes).hexdigest()
 
 
+def cache_pattern_folder(led_config_hash, pattern_index): 
+    return os.path.join('/tmp', 'pattern_cache', str(led_config_hash), str(pattern_index))
+
+
 def cache_file_path(led_config_hash, pattern_index, animation_index):
-    index_low = math.floor(animation_index / 1000) * 1000
-    index_high = math.floor(animation_index / 1000 + 1) * 1000 - 1
-    index_folder = '%06d-%06d' % (index_low, index_high)
+    animation_index_low = math.floor(animation_index / 1000) * 1000
+    animation_index_high = math.floor(animation_index / 1000 + 1) * 1000 - 1
+    animation_index_folder = '%06d-%06d' % (animation_index_low, animation_index_high)
     filename = '%06d.p' % animation_index
     return os.path.join(
-        '/tmp', 'pattern_cache', str(led_config_hash), str(pattern_index), index_folder, filename)
+        cache_pattern_folder(led_config_hash), animation_index_folder, filename)
+
 
 class CachedPattern(Pattern):
     def __init__(self, num_animation_steps, led_config_hash, pattern_index):
@@ -63,18 +68,20 @@ class PatternCache:
             cached_pattern = CachedPattern(num_animation_steps, self.led_config_hash, pattern_index)
             cached_pattern.prepareSegments(self.led_config)
         
-            for animation_index in range(num_animation_steps):
-                await pattern.animate(delta)
-                segment_colors = []
-                for segment in pattern.segments:
-                    segment_colors.append(deepcopy(segment.colors))
+            # Update only patterns that are not already cached
+            if not os.path.exists(cache_pattern_folder(self.led_config_hash, pattern_index)):
+                for animation_index in range(num_animation_steps):
+                    await pattern.animate(delta)
+                    segment_colors = []
+                    for segment in pattern.segments:
+                        segment_colors.append(deepcopy(segment.colors))
 
-                cache_file = cache_file_path(
-                    self.led_config_hash, pattern_index, animation_index)
-                os.makedirs(os.path.dirname(cache_file), exist_ok=True)
-                async with async_open(cache_file, 'wb') as afp:
-                    bytes = pickle.dumps(segment_colors)
-                    await afp.write(bytes)
+                    cache_file = cache_file_path(
+                        self.led_config_hash, pattern_index, animation_index)
+                    os.makedirs(os.path.dirname(cache_file), exist_ok=True)
+                    async with async_open(cache_file, 'wb') as afp:
+                        bytes = pickle.dumps(segment_colors)
+                        await afp.write(bytes)
 
             # Add to cache and sync
             cached_patterns.append(cached_pattern)
