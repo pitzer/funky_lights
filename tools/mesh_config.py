@@ -7,8 +7,8 @@ mesh_configs = [
     MeshConfig(
         mesh='../controller/mesh/dome.obj',
         cluster_eps=0.03,
-        start_offset=0.10,
-        end_offset=0.10,
+        start_offset=0.15,
+        end_offset=0.05,
         uid_offset=1,
         modelled_csv='../config/dome_modelled.csv',
         actual_csv='../config/dome_actual.csv'
@@ -25,7 +25,7 @@ mesh_configs = [
     MeshConfig(
         mesh='../controller/mesh/head.obj',
         cluster_eps=0.03,
-        start_offset=0.05,
+        start_offset=0.15,
         end_offset=0.05,
         uid_offset=60,
         modelled_csv='../config/head_modelled.csv',
@@ -34,7 +34,7 @@ mesh_configs = [
     MeshConfig(
         mesh='../controller/mesh/legs.obj',
         cluster_eps=0.03,
-        start_offset=0.05,
+        start_offset=0.15,
         end_offset=0.05,
         uid_offset=80,
         modelled_csv='../config/legs_modelled.csv',
