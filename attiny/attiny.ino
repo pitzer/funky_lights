@@ -339,7 +339,6 @@ void loop()
                     debug_serial.print(" -> ");
                     debug_serial.println(new_num_leds);
                     noInterrupts();
-                    sendPixelsSolidColor(MAX_NUM_LEDS, grb_black);
                     num_leds = new_num_leds;
                 }
                 sendPixelsR5G6B5(num_leds, led_colors);

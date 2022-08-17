@@ -1,7 +1,5 @@
-from math import floor
 from patterns.pattern import Pattern
 from aiofile import async_open
-from copy import deepcopy
 import hashlib
 import json
 import math
@@ -55,7 +53,7 @@ class PatternCache:
         self.led_config_hash = hash_led_config(led_config)
         print("LED config hash: " + str(self.led_config_hash))
 
-    async def build_cache(self, patterns, max_pattern_duration):
+    async def build_cache(self, patterns, max_pattern_duration, force_update=False):
         cached_patterns = []
         delta = 1.0 / self.animation_rate
         num_animation_steps = int(max_pattern_duration * self.animation_rate)
@@ -64,17 +62,17 @@ class PatternCache:
             pattern = patterns[pattern_index]
 
             # Animate pattern and cache color arrays for each step
-            print("Caching pattern %d of type %s" % (pattern_index, type(pattern).__name__))
             cached_pattern = CachedPattern(num_animation_steps, self.led_config_hash, pattern_index)
             cached_pattern.prepareSegments(self.led_config)
         
             # Update only patterns that are not already cached
-            if not os.path.exists(cache_pattern_folder(self.led_config_hash, pattern_index)):
+            if (not os.path.exists(cache_pattern_folder(self.led_config_hash, pattern_index)) or force_update):
+                print("Caching pattern %d of type %s" % (pattern_index, type(pattern).__name__))
                 for animation_index in range(num_animation_steps):
                     await pattern.animate(delta)
                     segment_colors = []
                     for segment in pattern.segments:
-                        segment_colors.append(deepcopy(segment.colors))
+                        segment_colors.append(segment.colors)
 
                     cache_file = cache_file_path(
                         self.led_config_hash, pattern_index, animation_index)
