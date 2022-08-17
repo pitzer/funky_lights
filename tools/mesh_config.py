@@ -1,7 +1,7 @@
 from collections import namedtuple
 
 MeshConfig = namedtuple(
-    'MeshConfig', ['mesh', 'cluster_eps', 'start_offset', 'end_offset', 'uid_offset', 'output_csv'])
+    'MeshConfig', ['mesh', 'cluster_eps', 'start_offset', 'end_offset', 'uid_offset', 'modelled_csv', 'actual_csv'])
 
 mesh_configs = [
     MeshConfig(
@@ -10,7 +10,8 @@ mesh_configs = [
         start_offset=0.10,
         end_offset=0.10,
         uid_offset=1,
-        output_csv='../config/dome.csv'
+        modelled_csv='../config/dome_modelled.csv',
+        actual_csv='../config/dome_actual.csv'
     ),
     MeshConfig(
         mesh='../controller/mesh/trunk.obj',
@@ -18,7 +19,8 @@ mesh_configs = [
         start_offset=0.01,
         end_offset=0.01,
         uid_offset=10,
-        output_csv='../config/trunk.csv'
+        modelled_csv='../config/trunk_modelled.csv',
+        actual_csv='../config/trunk_actual.csv'
     ),
     MeshConfig(
         mesh='../controller/mesh/head.obj',
@@ -26,7 +28,8 @@ mesh_configs = [
         start_offset=0.05,
         end_offset=0.05,
         uid_offset=60,
-        output_csv='../config/head.csv'
+        modelled_csv='../config/head_modelled.csv',
+        actual_csv='../config/head_actual.csv'
     ),
     MeshConfig(
         mesh='../controller/mesh/legs.obj',
@@ -34,6 +37,7 @@ mesh_configs = [
         start_offset=0.05,
         end_offset=0.05,
         uid_offset=80,
-        output_csv='../config/legs.csv'
+        modelled_csv='../config/legs_modelled.csv',
+        actual_csv='../config/legs_actual.csv'
     )
 ]
