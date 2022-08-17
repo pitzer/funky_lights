@@ -9,7 +9,7 @@ mesh_configs = [
         cluster_eps=0.03,
         start_offset=0.10,
         end_offset=0.10,
-        uid_offset=0,
+        uid_offset=1,
         output_csv='../config/dome.csv'
     ),
     MeshConfig(
@@ -17,7 +17,7 @@ mesh_configs = [
         cluster_eps=0.005,
         start_offset=0.01,
         end_offset=0.01,
-        uid_offset=100,
+        uid_offset=10,
         output_csv='../config/trunk.csv'
     ),
     MeshConfig(
@@ -25,7 +25,7 @@ mesh_configs = [
         cluster_eps=0.03,
         start_offset=0.05,
         end_offset=0.05,
-        uid_offset=150,
+        uid_offset=60,
         output_csv='../config/head.csv'
     ),
     MeshConfig(
@@ -33,7 +33,7 @@ mesh_configs = [
         cluster_eps=0.03,
         start_offset=0.05,
         end_offset=0.05,
-        uid_offset=200,
+        uid_offset=80,
         output_csv='../config/legs.csv'
     )
 ]
