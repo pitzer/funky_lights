@@ -56,7 +56,7 @@ def load_obj(filename: str, default_mtl='default_mtl', triangulate=False) -> Wav
             if not toks:
                 continue
             if toks[0] == 'g':
-                cur_group = WavefrontGroup(name=toks[1])
+                cur_group = WavefrontGroup(name=' '.join(toks[1:]))
                 obj.groups.append(cur_group)
             if toks[0] == 'v':
                 cur_group.vertices.append([float(v) for v in toks[1:]])
