@@ -54,8 +54,7 @@ function Viewport( editor ) {
 	grid.add( grid2 );
 
 	const viewHelper = new ViewHelper( camera, container );
-	// const vr = new VR( editor );
-
+	
 	//
 
 	const box = new THREE.Box3();
