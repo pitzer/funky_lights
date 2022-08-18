@@ -1,6 +1,5 @@
 import asyncio
 import functools
-from re import findall
 import lpminimk3
 import time
 import serial
@@ -55,7 +54,6 @@ class PatternSelector:
         #DMX
         self.dmx = None
         self.channels = bytearray(DMX_SIZE)
-        self.prior_channels = bytearray(DMX_SIZE)
         self.color = np.array([0, 0, 0])
 
         # Constants
@@ -126,28 +124,29 @@ class PatternSelector:
                 button.led.color = self._LED_COLOR_INACTIVE
 
     @run_in_executor
-    def poll(self):
-        
-        if self.dmx:
-            #Check for waiting messages from DMX controller
-            if self.dmx.inWaiting() > 0:
-                signals = bytearray()
-                count = 0
-                while self.dmx.inWaiting() > 0:
-                    bytes = self.dmx.read_until(expected = DMX_START)
-                    while self.dmx.inWaiting() > 0:
-                        self.channels = self.dmx.read_until(expected = DMX_END)
-                    self.color = parse_dmx(self.channels, self.color)
-                       
+    def controllerPoll(self):
         
         if self.launchpad:
             button_event = self.launchpad.panel.buttons().poll_for_event()
             if button_event and button_event.type == lpminimk3.ButtonEvent.PRESS:
                 self.buttons_pressed.append(button_event.button.name)
             elif button_event and button_event.type == lpminimk3.ButtonEvent.RELEASE:
-                pass
+                pass               
+    
+    @run_in_executor
+    def dmxPoll(self): 
+        
+        if self.dmx:
+            #Check for waiting messages from DMX controller
+            if self.dmx.inWaiting() > 0:
+                bytes = self.dmx.read_until(expected = DMX_START)
+                while self.dmx.inWaiting() > 0:
+                    self.channels = self.dmx.read_until(expected = DMX_END)
+                self.color = parse_dmx(self.channels, self.color)
+            else:
+                pass    
 
-    async def controllerListener(self):
+    async def launchpadListener(self):
         
         available_lps = lpminimk3.find_launchpads()
         if available_lps:
@@ -162,6 +161,12 @@ class PatternSelector:
             for button in self.launchpad.panel.buttons():
                 button.led.color = self._LED_COLOR_INACTIVE
         
+        while True:
+            # Wait for a controller event
+            await self.controllerPoll()
+        
+        
+    async def dmxListener(self):
         #Check for connected DMX controller
         try:
             self.dmx = serial.Serial(DMX_ADDR, baudrate=57600, stopbits=2)
@@ -172,5 +177,5 @@ class PatternSelector:
         
         while True:
             # Wait for a controller event
-            await self.poll()
+            await self.dmxPoll()
             
