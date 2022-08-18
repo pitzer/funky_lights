@@ -77,9 +77,8 @@ class SerialWriter(asyncio.Protocol):
 
 
 class PatternGenerator:
-    def __init__(self, patter_selector, color_selector=None):
+    def __init__(self, patter_selector):
         self.patter_selector = patter_selector
-        self.color_selector = color_selector
         self.result = asyncio.Future()
 
         self._ANIMATION_RATE = 20

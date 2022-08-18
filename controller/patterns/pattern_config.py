@@ -31,6 +31,6 @@ DEFAULT_CONFIG = [
     
     # # Effect patterns
     ('0x2', SparklePattern, dict(color=np.array([255, 255, 255]), sparkle_probability=0.001, decay_param=0.95)),
-    ('1x2', RainbowWavesPattern, dict()),
-    ('1x3', BouncingBlocksPattern, dict())
+    ('2x2', RainbowWavesPattern, dict()),
+    ('2x3', BouncingBlocksPattern, dict())
 ] 
