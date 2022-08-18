@@ -133,9 +133,16 @@ async def main():
 
     futures = []
 
-    # Launchpad handler
+    
     pattern_selector = PatternSelector(pattern_config.DEFAULT_CONFIG, led_config)
+<<<<<<< HEAD
     futures.append(pattern_selector.launchpadListener())
+=======
+    # Launchpad handler
+    futures.append(pattern_selector.launchpadListener())
+    #DMX handler
+    futures.append(pattern_selector.dmxListener())
+>>>>>>> 946076f (Move dmx controller to its own subroutine)
 
     # Start pattern generator
     pattern_generator = PatternGenerator(pattern_selector)
