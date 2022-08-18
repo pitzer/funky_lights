@@ -20,8 +20,6 @@ DEFAULT_CONFIG = [
     ('2x0', TheaterChasePattern, dict(color=np.array([255, 255, 255], dtype=np.uint8), sparkle_probability=0.001, decay_param=0.95)),
     ('3x0', SweepPattern, dict(color=np.array([255, 255, 255], dtype=np.uint8), decay_param=0.5, sweep_speed=0.3)),
     ('4x0', ColorRollPattern, dict()),
-    ('4x0', RainbowWavesPattern, dict()),
-    ('4x0', BouncingBlocksPattern, dict()),
 
     # Video patterns
     ('0x1', VideoPattern, dict(file='media/shifter_escape.mp4')),
@@ -33,4 +31,6 @@ DEFAULT_CONFIG = [
     
     # # Effect patterns
     ('0x2', SparklePattern, dict(color=np.array([255, 255, 255]), sparkle_probability=0.001, decay_param=0.95)),
-]
+    ('2x2', RainbowWavesPattern, dict()),
+    ('2x3', BouncingBlocksPattern, dict())
+] 

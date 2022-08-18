@@ -2,6 +2,9 @@ import asyncio
 import functools
 import lpminimk3
 import time
+import serial
+import numpy as np
+
 
 from core.pattern_cache import PatternCache
 
@@ -13,21 +16,30 @@ def run_in_executor(f):
 
     return inner
 
+def parse_dmx(channels, size, color = np.array([0,0,0])):
+    offset = 4
+    assigned_ch = 1
+    all = np.array([])
+    parse_ch = assigned_ch + offset
+    for x in range(size):
+        try:
+            color[x-1] = channels[parse_ch + x]
+        except:
+            continue
+    return color
+    
+
 
 class PatternSelector:
-    def __init__(self, pattern_config, led_config, args):
+    def __init__(self, pattern_config, led_config, dmx_config, args):
         self.pattern_config = pattern_config
         self.led_config = led_config
-
-        # Pattern cache
-        self.enable_cache = args.enable_cache
-        if args.enable_cache:
-            self.pattern_cache = PatternCache(pattern_config, led_config, args)
-        else:
-            self.pattern_cache = None
+        self.dmx_config = dmx_config
+        self.args = args
 
         # Selected patterns
         self.patterns = []
+        self.palettes = []
         self.current_pattern_index = 0
         self.pattern_start_time = time.time()
 
@@ -37,6 +49,11 @@ class PatternSelector:
         self.launchpad = None
         self.buttons_active = []
         self.buttons_pressed = []
+
+        #DMX
+        self.dmx = None
+        self.channels = bytearray(dmx_config['universe_size'])
+        self.color = np.array([0, 0, 0])
 
         # Constants
         self._LED_COLOR_ACTIVE = 100
@@ -54,7 +71,7 @@ class PatternSelector:
             self.button_to_pattern_index_map[button] = i
             self.pattern_index_to_button_map[i] = button   
 
-        if self.enable_cache:
+        if self.args.enable_cache:
             # This replaces all patterns by a cached version of themselves
             self.patterns = await self.pattern_cache.build_cache(self.patterns, self._MAX_PATTERN_DURATION)
 
@@ -87,7 +104,10 @@ class PatternSelector:
             self.activateButton(
                 self.pattern_index_to_button_map[self.current_pattern_index])
             self.pattern_start_time = pattern_time
-
+        
+        if self.dmx:
+            self.patterns[self.current_pattern_index].params.color = self.color
+        
         return self.patterns[self.current_pattern_index]
 
     def activateButton(self, button_name):
@@ -107,14 +127,30 @@ class PatternSelector:
                 button.led.color = self._LED_COLOR_INACTIVE
 
     @run_in_executor
-    def poll(self):
-        button_event = self.launchpad.panel.buttons().poll_for_event()
-        if button_event and button_event.type == lpminimk3.ButtonEvent.PRESS:
-            self.buttons_pressed.append(button_event.button.name)
-        elif button_event and button_event.type == lpminimk3.ButtonEvent.RELEASE:
-            pass
+    def controllerPoll(self):
+        
+        if self.launchpad:
+            button_event = self.launchpad.panel.buttons().poll_for_event()
+            if button_event and button_event.type == lpminimk3.ButtonEvent.PRESS:
+                self.buttons_pressed.append(button_event.button.name)
+            elif button_event and button_event.type == lpminimk3.ButtonEvent.RELEASE:
+                pass               
+    
+    @run_in_executor
+    def dmxPoll(self): 
+        
+        if self.dmx:
+            #Check for waiting messages from DMX controller
+            if self.dmx.inWaiting() > 0:
+                bytes = self.dmx.read_until(expected = bytearray([self.dmx_config['start_byte']]))
+                while self.dmx.inWaiting() > 0:
+                    self.channels = self.dmx.read_until(expected = bytearray([self.dmx_config['stop_byte']]))
+                self.color = parse_dmx(self.channels, self.dmx_config['universe_size'], self.color)
+            else:
+                pass    
 
     async def launchpadListener(self):
+        
         available_lps = lpminimk3.find_launchpads()
         if available_lps:
             # Use the first available launchpad
@@ -124,10 +160,25 @@ class PatternSelector:
             self.launchpad.mode = lpminimk3.Mode.PROG  # Switch to the programmer mode
         else:
             print(f"No launchpad found.")
-            return
-
-        for button in self.launchpad.panel.buttons():
-            button.led.color = self._LED_COLOR_INACTIVE
+        if self.launchpad:
+            for button in self.launchpad.panel.buttons():
+                button.led.color = self._LED_COLOR_INACTIVE
+        
         while True:
-            # Wait for a button press/release
-            await self.poll()
+            # Wait for a controller event
+            await self.controllerPoll()
+        
+        
+    async def dmxListener(self):
+        #Check for connected DMX controller
+        try:
+            self.dmx = serial.Serial(self.dmx_config['device'], baudrate = self.dmx_config['baudrate'], stopbits = self.dmx_config['stop_bits'])
+        except:
+            print("DMX controller not found")
+        if self.dmx:
+            self.dmx.isOpen()
+        
+        while True:
+            # Wait for a controller event
+            await self.dmxPoll()
+            

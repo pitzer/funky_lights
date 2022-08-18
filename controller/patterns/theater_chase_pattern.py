@@ -12,12 +12,16 @@ class TheaterChasePattern(Pattern):
 
     def initialize(self):
         self.pattern_segments = []
+        if hasattr(self.params, 'color'):
+            self.params.foreground_color = self.params.color
         for segment in self.segments:
             pattern_segment = TheaterChasePatternSegment(segment, self.params)
             pattern_segment.initialize()
             self.pattern_segments.append(pattern_segment)
 
     async def animate(self, delta):
+        if hasattr(self.params, 'color'):
+            self.params.foreground_color = self.params.color
         for pattern_segment in self.pattern_segments:
             await pattern_segment.animate(delta)
 
