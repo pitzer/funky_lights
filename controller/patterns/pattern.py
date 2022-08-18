@@ -45,7 +45,6 @@ class UVGrid():
             self.paintPoint(e[0], e[1], color)
     
     #Paint a defined area of the grid one color
-    #TODO: extend to allow passing an array of colors
     def paintArea(self, u, v, color):
         u_range = np.arange(int(u[0]), int(u[1]), 1)
         v_range = np.arange(int(v[0]), int(v[1]), 1)
