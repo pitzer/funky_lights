@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-    <title>three.js editor</title>
+    <title>Funky Lights</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link rel="apple-touch-icon" href="images/icon.png">
@@ -69,6 +69,8 @@
         import { Menubar } from './js/Menubar.js';
         import { Resizer } from './js/Resizer.js';
         import { AddObjectCommand } from './js/commands/AddObjectCommand.js';
+        import { SetPositionCommand } from './js/commands/SetPositionCommand.js';
+        import { SetRotationCommand } from './js/commands/SetRotationCommand.js';
         import * as BufferGeometryUtils from './js/BufferGeometryUtils.js';
 
         window.URL = window.URL || window.webkitURL;
@@ -122,11 +124,7 @@
 
         // Remove and existing instantiation of the LED group
         const ledObjectName = 'LED lights';
-        var ledLights = editor.scene.getObjectByName(ledObjectName);
-        if (ledLights !== undefined) {
-            editor.execute(new RemoveObjectCommand(editor, ledLights));
-        }
-
+        
         // Create a 3D cube for each LED
         const textureWidth = 128;
         const textureHeight = 128;
@@ -169,6 +167,13 @@
 
         // Add mesh to scene graph
         editor.execute(new AddObjectCommand(editor, ledLights));
+
+        // Update position and orientation
+        var ledLights = editor.scene.getObjectByName(ledObjectName);
+        const newPosition = new THREE.Vector3(5, 1.1, 0);
+        editor.execute(new SetPositionCommand(editor, ledLights, newPosition));
+        const newRotation = new THREE.Euler(0, 90 * THREE.MathUtils.DEG2RAD, 0);
+        editor.execute(new SetRotationCommand(editor, ledLights, newRotation));
 
         // Start listening to websockets for LED updates
         function connect() {
