@@ -1,0 +1,10 @@
+{
+    "name": "Enttec DMX USB Pro",
+    "device": "/dev/tty.usbserial-EN356968",
+    "baudrate": 57600,
+    "universe_size": 512,
+    "stop_bits": 2,
+    "start_byte:": 126,
+    "stop_byte": 231
+}
+

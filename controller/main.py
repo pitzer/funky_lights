@@ -126,15 +126,19 @@ async def main():
                         default="../config/bus_config.json", help="Bus config file")
     parser.add_argument("-c", "--enable_cache", action='store_true', help="Enable pattern caching")
     parser.add_argument("-a", "--animation_rate", type=int, default=20, help="The target animation rate in Hz")
+    parser.add_argument("-d", "--dmx_config", type=argparse.FileType('r'),
+                        default="../config/dmx_config_enttec.json", help="DMX config file")
+    
     args = parser.parse_args()
 
     led_config = json.load(args.led_config)
     bus_config = json.load(args.bus_config)
+    dmx_config = json.load(args.dmx_config)
 
     futures = []
 
     # Pattern selector
-    pattern_selector = PatternSelector(pattern_config.DEFAULT_CONFIG, led_config, args)
+    pattern_selector = PatternSelector(pattern_config.DEFAULT_CONFIG, led_config, dmx_config, args)
     futures.append(pattern_selector.launchpadListener())
     #DMX handler
     futures.append(pattern_selector.dmxListener())

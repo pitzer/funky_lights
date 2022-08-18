@@ -1,9 +1,0 @@
-{
-    "enttec_dmx_mac": [
-        {
-            "name": "Enttec DMX USB Pro",
-            "device": "/dev/tty.usbserial-EN356968",
-            "baudrate": 57600
-        }
-    ]
-}
