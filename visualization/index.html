@@ -66,6 +66,7 @@
         import { Editor } from './js/Editor.js';
         import { Viewport } from './js/Viewport.js';
         import { Toolbar } from './js/Toolbar.js';
+        import { Sidebar } from './js/Sidebar.js';
         import { Menubar } from './js/Menubar.js';
         import { Resizer } from './js/Resizer.js';
         import { AddObjectCommand } from './js/commands/AddObjectCommand.js';
@@ -94,6 +95,9 @@
 
         const toolbar = new Toolbar(editor);
         document.body.appendChild(toolbar.dom);
+
+        const sidebar = new Sidebar(editor);
+        document.body.appendChild(sidebar.dom);
 
         const menubar = new Menubar(editor);
         document.body.appendChild(menubar.dom);
