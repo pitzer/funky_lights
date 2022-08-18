@@ -1,3 +1,4 @@
+import argparse
 import json
 import time
 import sys
@@ -58,12 +59,21 @@ class SerialWriter(asyncio.Protocol):
         print('Writer closed')
 
     async def serve(self):
+        start_time = time.time()
+        counter = 0
         while True:
             segments = await asyncio.shield(self.generator.result)
             for segment in segments:
                 if segment.uid in self.uids:
                     self.transport.serial.write(
                         messages.PrepareLedMsg(segment.uid, segment.colors))
+            # Output update rate to console
+            counter += 1
+            if (time.time() - start_time) > 1.0:
+                print("Serial FPS: %.1f" %
+                      (counter / (time.time() - start_time)))
+                counter = 0
+                start_time = time.time()
 
 
 class PatternGenerator:
@@ -76,10 +86,10 @@ class PatternGenerator:
         self._FPS_UPDATE_RATE = 1
 
     async def tick(self, pattern, delta):
-        pattern.animate(delta)
+        await pattern.animate(delta)
 
     async def run(self):
-        self.patter_selector.initializePatterns()
+        await self.patter_selector.initializePatterns()
         prev_animation_time = time.time() - 1.0 / self._ANIMATION_RATE
         start_time = time.time()
         counter = 0
@@ -108,23 +118,23 @@ class PatternGenerator:
 
 
 async def main():
-    led_config_file = '../config/led_config.json'
-    if len(sys.argv) > 1:
-        led_config_file = sys.argv[1]
-    bus_config_file = '../config/bus_config.json'
-    if len(sys.argv) > 2:
-        bus_config_file = sys.argv[2]
+    # Parse command line arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-l", "--led_config", type=argparse.FileType('r'),
+                        default="../config/led_config.json", help="LED config file")
+    parser.add_argument("-b", "--bus_config", type=argparse.FileType('r'),
+                        default="../config/bus_config.json", help="Bus config file")
+    parser.add_argument("-c", "--enable_cache", action='store_true', help="Enable pattern caching")
+    parser.add_argument("-a", "--animation_rate", type=int, default=20, help="The target animation rate in Hz")
+    args = parser.parse_args()
 
-    with open(led_config_file, 'r') as f:
-        led_config = json.load(f)
-    with open(bus_config_file, 'r') as f:
-        bus_config = json.load(f)
+    led_config = json.load(args.led_config)
+    bus_config = json.load(args.bus_config)
 
     futures = []
 
-    
-    pattern_selector = PatternSelector(pattern_config.DEFAULT_CONFIG, led_config)
-    # Launchpad handler
+    # Pattern selector
+    pattern_selector = PatternSelector(pattern_config.DEFAULT_CONFIG, led_config, args)
     futures.append(pattern_selector.launchpadListener())
     #DMX handler
     futures.append(pattern_selector.dmxListener())

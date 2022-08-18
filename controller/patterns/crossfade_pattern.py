@@ -25,7 +25,7 @@ class CrossfadePattern(Pattern):
                     np.copyto(color, self.palette_rotated[self.current_color_index]) 
         pass
 
-    def animate(self, delta):
+    async def animate(self, delta):
 
         self.segment_delta += delta
         if self.segment_delta < 1 / self.params.fps:

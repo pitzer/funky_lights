@@ -13,3 +13,4 @@ attiny/build/attiny.ino.o
 attiny/build/libcore.a
 attiny/build/core
 attiny/build/userlibs
+controller/pattern_cache

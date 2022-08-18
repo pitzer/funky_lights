@@ -9,6 +9,7 @@ DMX_ADDR = '/dev/tty.usbserial-EN356968'
 DMX_START = bytearray([0x7E])
 DMX_END = bytearray([0xE7])
 DMX_SIZE = 512
+from core.pattern_cache import PatternCache
 
 def run_in_executor(f):
     @functools.wraps(f)
@@ -33,10 +34,9 @@ def parse_dmx(channels, color = np.array([0,0,0])):
 
 
 class PatternSelector:
-    def __init__(self, pattern_config, led_config):
+    def __init__(self, pattern_config, led_config, args):
         self.pattern_config = pattern_config
         self.led_config = led_config
-        self.palette_selector = None
 
         # Selected patterns
         self.patterns = []
@@ -61,7 +61,7 @@ class PatternSelector:
         self._LED_COLOR_INACTIVE = 0
         self._MAX_PATTERN_DURATION = 600
 
-    def initializePatterns(self):
+    async def initializePatterns(self):
         for i, (button, cls, params) in enumerate(self.pattern_config):
             pattern = cls()
             for key in params:
@@ -70,7 +70,11 @@ class PatternSelector:
             pattern.initialize()
             self.patterns.append(pattern)
             self.button_to_pattern_index_map[button] = i
-            self.pattern_index_to_button_map[i] = button
+            self.pattern_index_to_button_map[i] = button   
+
+        if self.enable_cache:
+            # This replaces all patterns by a cached version of themselves
+            self.patterns = await self.pattern_cache.build_cache(self.patterns, self._MAX_PATTERN_DURATION)
 
     def update(self, pattern_time):
         # Check if any launchpad button was pressed to change the pattern
