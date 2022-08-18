@@ -5,8 +5,6 @@ import time
 import serial
 import numpy as np
 
-DMX_START = bytearray([0x7E])
-DMX_END = bytearray([0xE7])
 
 from core.pattern_cache import PatternCache
 
@@ -144,10 +142,10 @@ class PatternSelector:
         if self.dmx:
             #Check for waiting messages from DMX controller
             if self.dmx.inWaiting() > 0:
-                bytes = self.dmx.read_until(expected = DMX_START)
+                bytes = self.dmx.read_until(expected = bytearray([self.dmx_config['start_byte']]))
                 while self.dmx.inWaiting() > 0:
-                    self.channels = self.dmx.read_until(expected = DMX_END)
-                self.color = parse_dmx(self.channels, self.color)
+                    self.channels = self.dmx.read_until(expected = bytearray([self.dmx_config['stop_byte']]))
+                self.color = parse_dmx(self.channels, self.dmx_config['universe_size'], self.color)
             else:
                 pass    
 
@@ -174,7 +172,7 @@ class PatternSelector:
     async def dmxListener(self):
         #Check for connected DMX controller
         try:
-            self.dmx = serial.Serial(self.dmx_config['device'], self.dmx_config['baudrate'], self.dmx_config['stop_bits'])
+            self.dmx = serial.Serial(self.dmx_config['device'], baudrate = self.dmx_config['baudrate'], stopbits = self.dmx_config['stop_bits'])
         except:
             print("DMX controller not found")
         if self.dmx:
