@@ -5,6 +5,13 @@ import time
 import serial
 import numpy as np
 
+<<<<<<< HEAD
+=======
+DMX_START = bytearray([0x7E])
+DMX_END = bytearray([0xE7])
+
+from core.pattern_cache import PatternCache
+>>>>>>> cdad1ed (dmx config file)
 
 def run_in_executor(f):
     @functools.wraps(f)
@@ -14,12 +21,12 @@ def run_in_executor(f):
 
     return inner
 
-def parse_dmx(channels, color = np.array([0,0,0])):
+def parse_dmx(channels, size, color = np.array([0,0,0])):
     offset = 4
     assigned_ch = 1
     all = np.array([])
     parse_ch = assigned_ch + offset
-    for x in range(DMX_SIZE):
+    for x in range(size):
         try:
             color[x-1] = channels[parse_ch + x]
         except:
@@ -29,9 +36,11 @@ def parse_dmx(channels, color = np.array([0,0,0])):
 
 
 class PatternSelector:
-    def __init__(self, pattern_config, led_config, args):
+    def __init__(self, pattern_config, led_config, dmx_config, args):
         self.pattern_config = pattern_config
         self.led_config = led_config
+        self.dmx_config = dmx_config
+        self.args = args
 
         # Selected patterns
         self.patterns = []
@@ -48,7 +57,7 @@ class PatternSelector:
 
         #DMX
         self.dmx = None
-        self.channels = bytearray(DMX_SIZE)
+        self.channels = bytearray(dmx_config['universe_size'])
         self.color = np.array([0, 0, 0])
 
         # Constants
@@ -67,7 +76,7 @@ class PatternSelector:
             self.button_to_pattern_index_map[button] = i
             self.pattern_index_to_button_map[i] = button   
 
-        if self.enable_cache:
+        if self.args.enable_cache:
             # This replaces all patterns by a cached version of themselves
             self.patterns = await self.pattern_cache.build_cache(self.patterns, self._MAX_PATTERN_DURATION)
 
@@ -168,7 +177,7 @@ class PatternSelector:
     async def dmxListener(self):
         #Check for connected DMX controller
         try:
-            self.dmx = serial.Serial(DMX_ADDR, baudrate=57600, stopbits=2)
+            self.dmx = serial.Serial(self.dmx_config['device'], self.dmx_config['baudrate'], self.dmx_config['stop_bits'])
         except:
             print("DMX controller not found")
         if self.dmx:
