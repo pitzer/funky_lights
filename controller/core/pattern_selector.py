@@ -50,6 +50,13 @@ class PatternSelector:
         self.dmx_config = dmx_config
         self.args = args
 
+        # Pattern cache
+        self.enable_cache = args.enable_cache
+        if args.enable_cache:
+            self.pattern_cache = PatternCache(pattern_config, led_config, args)
+        else:
+            self.pattern_cache = None
+
         # Selected patterns
         self.patterns = []
         self.palettes = []
