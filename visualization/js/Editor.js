@@ -15,6 +15,11 @@ function Editor() {
 
 	this.signals = {
 
+        // launchpad
+
+        launchpadButtonPressed: new Signal(),
+        launchpadMessageReceived: new Signal(),
+
 		// script
 
 		editScript: new Signal(),
