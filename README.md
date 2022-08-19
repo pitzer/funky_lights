@@ -173,7 +173,7 @@ Run the 3D visualizer by starting a web server root directory of the code reposi
 ``` 
 python -m http.server
 ``` 
-Now point a browser to http://localhost:8000/visualization/three.js/editor 
+Now point a browser to http://localhost:8000/visualization
 
 Video of the visualization in action:
 
