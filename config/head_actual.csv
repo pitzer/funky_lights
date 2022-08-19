@@ -1,0 +1,9 @@
+uid,name,num_leds,length,reversed,sub_component,num_adressable_leds,bus,status
+60,head/ring1,99,3.5,FALSE,head,99,head_rings,
+61,head/center,80,2.9,TRUE,head,80,head_top,
+62,head/ring2,181,6.2,TRUE,head,181,head_rings,
+63,head/left_ear,113,4.0,FALSE,ear_left,113,head_top,
+64,head/right_ear,113,4.0,FALSE,ear_right,113,head_top,
+65,head/left,157,5.4,FALSE,head,157,head_top,
+66,head/right,157,5.4,TRUE,head,157,head_top,
+67,head/ring3,180,6.2,TRUE,head,180,head_rings,

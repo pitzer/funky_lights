@@ -1,0 +1,4 @@
+uid,name,num_leds,length,reversed
+1,dome/center,214,7.145672473287484,False
+2,dome/left,205,6.839579095538882,False
+3,dome/right,205,6.8395790955388875,False
