@@ -11,33 +11,8 @@ import traceback
 
 from funky_lights import connection, messages
 from core.pattern_selector import PatternSelector
+from core.websockets import TextureWebSocketsServer
 from patterns import pattern_config
-
-
-WEB_SOCKET_PORT = 5678
-TEXTURE_WIDTH = 128
-TEXTURE_HEIGHT = 128
-TEXTURE_SIZE = TEXTURE_WIDTH * TEXTURE_HEIGHT * 4
-
-
-def PrepareTextureMsg(segments):
-    msg = []
-    texture_size = TEXTURE_SIZE
-    for segment in segments:
-        for color in segment.colors:
-            msg += [color[0], color[1], color[2], 255]
-    # Added padding to the end of the buffer to fill the full texture
-    msg += [0] * (texture_size - len(msg))
-    return bytearray(msg)
-
-
-async def ws_serve(websocket, generator):
-    while True:
-        segments = await asyncio.shield(generator.result)
-        try:
-            await websocket.send(PrepareTextureMsg(segments))
-        except websockets.ConnectionClosed as exc:
-            break
 
 
 class SerialWriter(asyncio.Protocol):
@@ -127,6 +102,8 @@ async def main():
     parser.add_argument("-a", "--animation_rate", type=int, default=20, help="The target animation rate in Hz")
     parser.add_argument("-d", "--dmx_config", type=argparse.FileType('r'),
                         default="../config/dmx_config_enttec.json", help="DMX config file")
+    parser.add_argument("-t", "--ws_port_texture", type=int, default=5678, help="The WebSockets port for the texture server")
+    parser.add_argument("-p", "--ws_port_launchpad", type=int, default=5679, help="The WebSockets port for the launchpad server")
     
     args = parser.parse_args()
 
@@ -146,9 +123,12 @@ async def main():
     pattern_generator = PatternGenerator(pattern_selector)
     futures.append(pattern_generator.run())
     
-    # Start WS server
-    ws_serve_handler = functools.partial(ws_serve, generator=pattern_generator)
-    futures.append(websockets.serve(ws_serve_handler, '0.0.0.0', WEB_SOCKET_PORT))
+    # Start WS servers
+    ws_texture = TextureWebSocketsServer(pattern_generator)
+    futures.append(websockets.serve(ws_texture.serve,
+                   '0.0.0.0', args.ws_port_texture))
+    futures.append(websockets.serve(pattern_selector.launchpadWSListener,
+                   '0.0.0.0', args.ws_port_launchpad))
 
     # Start serial
     loop = asyncio.get_event_loop()

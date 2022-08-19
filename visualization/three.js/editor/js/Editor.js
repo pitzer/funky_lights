@@ -18,6 +18,8 @@ function Editor() {
 
 	this.signals = {
 
+
+
 		// script
 
 		editScript: new Signal(),
