@@ -209,10 +209,10 @@
                 const message = event.data;
                 editor.signals.launchpadMessageReceived.dispatch(message);
             };
-            function onLaunchpadButtonPressed(button) {
+            function onLaunchpadButtonPressed(button_name) {
                 const event = {
                     type: 'button_pressed',
-                    data: button,
+                    button: button_name,
                 };
                 ws.send(JSON.stringify(event));
             };
