@@ -1,9 +1,11 @@
 import asyncio
 import functools
+import json
 import lpminimk3
 import time
 import serial
 import numpy as np
+<<<<<<< HEAD
 
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -12,6 +14,9 @@ DMX_START = bytearray([0x7E])
 DMX_END = bytearray([0xE7])
 =======
 >>>>>>> c388583 (Cleanup)
+=======
+import websockets
+>>>>>>> 1373a79 (Adds first prototype of a launchpad websocket controller)
 
 from core.pattern_cache import PatternCache
 >>>>>>> cdad1ed (dmx config file)
@@ -146,7 +151,7 @@ class PatternSelector:
     
     @run_in_executor
     def dmxPoll(self): 
-        
+
         if self.dmx:
             #Check for waiting messages from DMX controller
             if self.dmx.inWaiting() > 0:
@@ -176,7 +181,16 @@ class PatternSelector:
             # Wait for a controller event
             await self.controllerPoll()
         
-        
+    async def launchpadWSListener(self, websocket, path):
+        while True:
+            try:
+                res = await websocket.recv()
+                event = json.loads(res)
+                if event["type"] == "button_pressed":
+                    self.buttons_pressed.append(event["button"])
+            except websockets.ConnectionClosed as exc:
+                break
+
     async def dmxListener(self):
         #Check for connected DMX controller
         try:

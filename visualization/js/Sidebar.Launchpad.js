@@ -1,11 +1,11 @@
-import { UIPanel, UIRow, UISelect, UISpan, UIText } from './libs/ui.js';
+import { UIPanel, UIRow, UIButton, UISpan, UIText } from './libs/ui.js';
 
 
 function SidebarLaunchpad( editor ) {
 
 	const config = editor.config;
 	const strings = editor.strings;
-
+    const signals = editor.signals;
 	const container = new UISpan();
 
 	const settings = new UIPanel();
@@ -15,34 +15,27 @@ function SidebarLaunchpad( editor ) {
 
 	// language
 
-	const options = {
-		en: 'English',
-		fr: 'Français',
-		zh: '中文'
-	};
+    const row1 = new UIRow().setPaddingLeft('30px');
+    
+    const button0x0 = new UIButton('');
+    button0x0.onClick(function () {
+        signals.launchpadButtonPressed.dispatch('0x0');
+    });
+    row1.add(button0x0);
 
-	const languageRow = new UIRow();
-	const language = new UISelect().setWidth( '150px' );
-	language.setOptions( options );
+    const button1x0 = new UIButton('').setMarginLeft('7px')
+    button1x0.onClick(function () {
+        signals.launchpadButtonPressed.dispatch('1x0');
+    });
+    row1.add(button1x0);
 
-	if ( config.getKey( 'language' ) !== undefined ) {
+    const button2x0 = new UIButton('2x0').setMarginLeft('7px')
+    button2x0.onClick(function () {
+        signals.launchpadButtonPressed.dispatch('2x0');
+    });
+    row1.add(button2x0);
 
-		language.setValue( config.getKey( 'language' ) );
-
-	}
-
-	language.onChange( function () {
-
-		const value = this.getValue();
-
-		editor.config.setKey( 'language', value );
-
-	} );
-
-	languageRow.add( new UIText( strings.getKey( 'sidebar/settings/language' ) ).setWidth( '90px' ) );
-	languageRow.add( language );
-
-	settings.add( languageRow );
+    settings.add(row1);
 
 
 	return container;

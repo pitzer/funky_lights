@@ -1,13 +1,16 @@
 import * as THREE from 'three';
 
 import { Config } from './Config.js';
+import { Loader } from './Loader.js';
 import { History as _History } from './History.js';
 import { Strings } from './Strings.js';
+import { Storage as _Storage } from './Storage.js';
+import { Selector } from './Viewport.Selector.js';
 
 var _DEFAULT_CAMERA = new THREE.PerspectiveCamera( 50, 1, 0.01, 1000 );
 _DEFAULT_CAMERA.name = 'Camera';
-_DEFAULT_CAMERA.position.set( 0.5, 2, 11 );
-_DEFAULT_CAMERA.lookAt(new THREE.Vector3(0.5, 2, 0) );
+_DEFAULT_CAMERA.position.set( 0, 5, 10 );
+_DEFAULT_CAMERA.lookAt( new THREE.Vector3() );
 
 function Editor() {
 
@@ -15,10 +18,7 @@ function Editor() {
 
 	this.signals = {
 
-        // launchpad
 
-        launchpadButtonPressed: new Signal(),
-        launchpadMessageReceived: new Signal(),
 
 		// script
 
@@ -95,11 +95,11 @@ function Editor() {
 
 	this.config = new Config();
 	this.history = new _History( this );
-	// this.storage = new _Storage();
+	this.storage = new _Storage();
 	this.strings = new Strings( this.config );
-	// this.selector = new Selector( this );
+	this.selector = new Selector( this );
 
-	// this.loader = new Loader( this );
+	this.loader = new Loader( this );
 
 	this.camera = _DEFAULT_CAMERA.clone();
 
@@ -541,7 +541,7 @@ Editor.prototype = {
 
 	select: function ( object ) {
 
-		// this.selector.select( object );
+		this.selector.select( object );
 
 	},
 
@@ -576,7 +576,7 @@ Editor.prototype = {
 
 	deselect: function () {
 
-		// this.selector.deselect();
+		this.selector.deselect();
 
 	},
 
@@ -599,7 +599,7 @@ Editor.prototype = {
 	clear: function () {
 
 		this.history.clear();
-		// this.storage.clear();
+		this.storage.clear();
 
 		this.camera.copy( _DEFAULT_CAMERA );
 		this.signals.cameraResetted.dispatch();
@@ -634,7 +634,63 @@ Editor.prototype = {
 
 	},
 
+	//
 
+	fromJSON: async function ( json ) {
+
+		var loader = new THREE.ObjectLoader();
+		var camera = await loader.parseAsync( json.camera );
+
+		this.camera.copy( camera );
+		this.signals.cameraResetted.dispatch();
+
+		this.history.fromJSON( json.history );
+		this.scripts = json.scripts;
+
+		this.setScene( await loader.parseAsync( json.scene ) );
+
+	},
+
+	toJSON: function () {
+
+		// scripts clean up
+
+		var scene = this.scene;
+		var scripts = this.scripts;
+
+		for ( var key in scripts ) {
+
+			var script = scripts[ key ];
+
+			if ( script.length === 0 || scene.getObjectByProperty( 'uuid', key ) === undefined ) {
+
+				delete scripts[ key ];
+
+			}
+
+		}
+
+		//
+
+		return {
+
+			metadata: {},
+			project: {
+				shadows: this.config.getKey( 'project/renderer/shadows' ),
+				shadowType: this.config.getKey( 'project/renderer/shadowType' ),
+				vr: this.config.getKey( 'project/vr' ),
+				physicallyCorrectLights: this.config.getKey( 'project/renderer/physicallyCorrectLights' ),
+				toneMapping: this.config.getKey( 'project/renderer/toneMapping' ),
+				toneMappingExposure: this.config.getKey( 'project/renderer/toneMappingExposure' )
+			},
+			camera: this.camera.toJSON(),
+			scene: this.scene.toJSON(),
+			scripts: this.scripts,
+			history: this.history.toJSON()
+
+		};
+
+	},
 
 	objectByUuid: function ( uuid ) {
 
