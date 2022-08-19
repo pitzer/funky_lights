@@ -22,12 +22,21 @@ DEFAULT_CONFIG = [
     ('4x0', ColorRollPattern, dict()),
 
     # Video patterns
+    ('5x1', VideoPattern, dict(file='media/spiral_fireworks.mp4')),
+    ('5x1', VideoPattern, dict(file='media/hearts.mp4')),
+    ('5x1', VideoPattern, dict(file='media/sparkling_ring.mp4')),
+    ('5x1', VideoPattern, dict(file='media/space_warp.mp4')),
+    ('5x1', VideoPattern, dict(file='media/blue_horizon.mp4')),
+    ('5x1', VideoPattern, dict(file='media/blue_lines.mp4')),
+    
+    ('5x1', VideoPattern, dict(file='media/rising_beams.mp4')),
     ('0x1', VideoPattern, dict(file='media/shifter_escape.mp4')),
     ('1x1', VideoPattern, dict(file='media/radial_beams.mp4', crop=Rect(0, 0, 850, 720))),
     ('2x1', VideoPattern, dict(file='media/butter_churn.mp4', crop=Rect(60, 60, 60, 60))),
     ('3x1', VideoPattern, dict(file='media/psychill1.mp4', fps=10)),
     ('4x1', VideoPattern, dict(file='media/psychill1.mp4', crop=Rect(60, 130, 60, 60))),
     ('5x1', VideoPattern, dict(file='media/psychill2.mp4', crop=Rect(60, 130, 60, 60))),
+    
     
     # # Effect patterns
     ('0x2', SparklePattern, dict(color=np.array([255, 255, 255]), sparkle_probability=0.001, decay_param=0.95)),
