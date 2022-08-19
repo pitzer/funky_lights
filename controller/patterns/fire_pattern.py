@@ -4,6 +4,7 @@ import math
 import numpy as np
 import random
 import sys
+import colorsys as colorsys
 
 # COOLING: How much does the air cool as it rises?
 # Less cooling = taller flames.  More cooling = shorter flames.
@@ -14,6 +15,18 @@ COOLING = 600
 # Higher chance = more roaring fire.  Lower chance = more flickery fire.
 # Default 120, suggested range 50-200.
 SPARKING = 120
+
+
+
+def convert_color(hsv):
+    rgb = colorsys.hsv_to_rgb(hsv[0], hsv[1], hsv[2])
+    return [int(rgb[0]*255), int(rgb[1]*255), int(rgb[2]*255)]
+
+def extrapolate_color(rgb):
+    hsv = colorsys.rgb_to_hsv(rgb[0]/255, rgb[1]/255, rgb[2]/255)
+    h = hsv[0]
+    palette = [[0,0,0], [h,1,0.13], [h, 1, 0.53], [h, 1, 1], [(h+0.066)%1,1,1], [(h+0.03)%1,0.2,1]]
+    return np.array([convert_color(i) for i in palette], dtype=np.uint8)
 
 
 def interpolate(color1, color2, x):
@@ -52,7 +65,6 @@ def updateHeat(heat):
 class FirePattern(Pattern):
     def __init__(self):
         super().__init__()
-        self.params.palette = palettes.FIRE
 
     def initialize(self):
         self.heat = {}
@@ -75,11 +87,17 @@ class FirePattern(Pattern):
 class FirePatternUV(PatternUV):
     def __init__(self):
         super().__init__()
-        self.params.palette = palettes.FIRE
+        if hasattr(self.params, 'color'):
+            self.params.palette = extrapolate_color(self.params.color)
+        else:
+            self.params.palette = palettes.FIRE
+        print(self.params.palette)
         self.params.width = 2
         self.params.height = 100
 
     def initialize(self):
+        if hasattr(self.params, 'color'):
+            self.params.palette = extrapolate_color(self.params.color)
         self.palette_size = self.params.palette.shape[0]
         self.frame = np.zeros((self.params.height, self.params.width, 3), np.uint8)
         self.heat = [np.array([0 for i in range(self.params.height)])
@@ -87,6 +105,9 @@ class FirePatternUV(PatternUV):
         self.generateUVCoordinates(self.params.width, self.params.height)
 
     async def animate(self, delta):
+        #Check for color changes
+        if hasattr(self.params, 'color'):
+            self.params.palette = extrapolate_color(self.params.color)
         for i in range(self.params.width):
             heat = self.heat[i]
             # Update heat

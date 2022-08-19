@@ -15,7 +15,7 @@ from patterns.video_pattern import VideoPattern, Rect
 
 DEFAULT_CONFIG = [
     # Standard patterns
-    ('0x0', FirePatternUV, dict(palette=palettes.FIRE, width=2, height=100)),
+    ('0x0', FirePatternUV, dict(width=2, height=100)),
     ('1x0', CrossfadePattern, dict()),
     ('2x0', TheaterChasePattern, dict(color=np.array([255, 255, 255], dtype=np.uint8), sparkle_probability=0.001, decay_param=0.95)),
     ('3x0', SweepPattern, dict(color=np.array([255, 255, 255], dtype=np.uint8), decay_param=0.5, sweep_speed=0.3)),
