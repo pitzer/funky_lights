@@ -26,16 +26,3 @@ class TextureWebSocketsServer:
                 await websocket.send(await self.PrepareTextureMsg(segments))
             except websockets.ConnectionClosed as exc:
                 break
-
-
-class LaunchpadWebSocketsServer:
-    def __init__(self, pattern_selector):
-        self.pattern_selector = pattern_selector
-
-    async def serve(self, websocket, path):
-        while True:
-            segments = await asyncio.shield(self.pattern_generator.result)
-            try:
-                await websocket.receive(await self.PrepareTextureMsg(segments))
-            except websockets.ConnectionClosed as exc:
-                break
