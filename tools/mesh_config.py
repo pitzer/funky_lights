@@ -23,6 +23,15 @@ mesh_configs = [
         actual_csv='../config/trunk_actual.csv'
     ),
     MeshConfig(
+        mesh='../controller/mesh/eyes.obj',
+        cluster_eps=0.02,
+        start_offset=0.0,
+        end_offset=0.0,
+        uid_offset=50,
+        modelled_csv='../config/eyes_modelled.csv',
+        actual_csv='../config/eyes_actual.csv'
+    ),
+    MeshConfig(
         mesh='../controller/mesh/head.obj',
         cluster_eps=0.03,
         start_offset=0.15,
