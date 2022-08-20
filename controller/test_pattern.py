@@ -3,7 +3,7 @@ import time
 from funky_lights import connection, messages
 
 NUM_LEDS = 230
-
+WHITE = 128
 
 def main():
     tty_device = connection.DEFAULT_TTY_DEVICE
@@ -20,11 +20,11 @@ def main():
     # Some test pattern
     rgbs = []
     for i in range(int(NUM_LEDS / 2)):
-        col = int(i / (NUM_LEDS / 2) * 255)
-        rgbs += [(col, 255-col, 0)]
+        col = int(i / (NUM_LEDS / 2) * WHITE)
+        rgbs += [(col, WHITE-col, 0)]
     for i in range(int(NUM_LEDS / 2)):
-        col = int(255 - (i / (NUM_LEDS / 2) * 255))
-        rgbs += [(col, 255 - col, 0)]
+        col = int(WHITE - (i / (NUM_LEDS / 2) * WHITE))
+        rgbs += [(col, WHITE - col, 0)]
 
     serial_port = connection.InitializeController(
         tty_device, baudrate=baudrate)
