@@ -192,4 +192,4 @@ def plot_segment(data, clusters, labels, segment_points):
 
 def project_2d(data):
     Z, U, mu = pca(data)
-    return np.dot(data - mu, U.T)[:,:2]
+    return Z[:,:2]
