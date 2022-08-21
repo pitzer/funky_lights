@@ -65,7 +65,6 @@ class PatternCache:
 
     async def initialize_patterns(self):
         cached_patterns = []
-        
         for i, _ in enumerate(self.pattern_config):
             index_file = cache_index_path(self.led_config_hash, i)
             if not os.path.exists(index_file):
@@ -74,8 +73,6 @@ class PatternCache:
             cached_pattern = CachedPattern(self.led_config_hash, i)
             cached_pattern.prepareSegments(self.led_config)
             cached_pattern.initialize()
-        
-            # Add to cache and sync
             cached_patterns.append(cached_pattern)
 
         return cached_patterns
