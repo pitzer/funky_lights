@@ -1,4 +1,7 @@
 import asyncio
+from functools import reduce
+import numpy as np
+from operator import add
 import websockets
 
 
@@ -10,14 +13,15 @@ class TextureWebSocketsServer:
         self.TEXTURE_SIZE = self.TEXTURE_WIDTH * self.TEXTURE_HEIGHT * 4
 
     async def PrepareTextureMsg(self, segments):
-        msg = []
-        texture_size = self.TEXTURE_SIZE
-        for segment in segments:
-            for color in segment.colors:
-                msg += [color[0], color[1], color[2], 255]
-        # Added padding to the end of the buffer to fill the full texture
-        msg += [0] * (texture_size - len(msg))
-        return bytearray(msg)
+        out = np.zeros(self.TEXTURE_SIZE, dtype=np.uint8)
+        r = np.concatenate([segment.colors[:, 0] for segment in segments], axis=None)
+        g = np.concatenate([segment.colors[:, 1] for segment in segments], axis=None)
+        b = np.concatenate([segment.colors[:, 2] for segment in segments], axis=None)
+        color_bytes = reduce(add, [segment.num_leds for segment in segments]) * 4
+        out[:color_bytes:4] = r
+        out[1:color_bytes:4] = g
+        out[2:color_bytes:4] = b
+        return bytearray(out)
 
     async def serve(self, websocket, path):
         while True:
