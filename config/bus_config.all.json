@@ -12,14 +12,14 @@
             "uids": [10, 11, 14, 18, 25, 36],
             "device": "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AB6WWHXH-if00-port0",
             "baudrate": 500000,
-            "color_format": "GBR"
+            "color_format": "RBG"
         },
         {
             "name": "eyes",
             "uids": [50, 51],
             "device": "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AB6WWHY4-if00-port0",
             "baudrate": 500000,
-            "color_format": "RGB"
+            "color_format": "GRB"
         },
         {
             "name": "head_rings",
