@@ -4,7 +4,8 @@
             "name": "test",
             "uids": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
             "device": "/dev/ttyUSB0",
-            "baudrate": 100000
+            "baudrate": 500000,
+            "color_format": "RGB"
         }
     ]
 }

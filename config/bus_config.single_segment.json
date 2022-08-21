@@ -2,9 +2,15 @@
     "led_busses": [
         {
             "name": "one_segment_test",
-            "uids": [1],
-            "device": "/dev/tty.usbserial-14110",
-            "baudrate": 250000
+            "uids": [10,
+                11,
+                14,
+                18,
+                25,
+                36],
+            "device": "/dev/tty.usbserial-AB64M485",
+            "baudrate": 500000,
+            "color_format": "RBG"
         }
     ]
 }
