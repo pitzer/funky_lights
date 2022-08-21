@@ -27,37 +27,29 @@ def RgbToBits(rgbs, color_format=ColorFormat.GRB):
     Returns:
      a list of bytes
     """
-    out = []
+    out = [0] * (len(rgbs) * 2)
     if color_format == ColorFormat.RGB:
-        # We pack data as 16 bits: RRRRRGGGGGGBBBBB
-        for rgb in rgbs:
-            r, g, b = rgb
-            out += [((g << 3) & 0xE0) | ((b >> 3) & 0x1F),
-                    (r & 0xF8) | ((g >> 5) & 0x07)]
+        r = rgbs[:, 0]
+        g = rgbs[:, 1]
+        b = rgbs[:, 2]
     elif color_format == ColorFormat.BGR:
-        # We pack data as 16 bits: BBBBBGGGGGGRRRRR
-        for rgb in rgbs:
-            r, g, b = rgb
-            out += [((g << 3) & 0xE0) | ((r >> 3) & 0x1F),
-                    (b & 0xF8) | ((g >> 5) & 0x07)]
+        b = rgbs[:, 0]
+        g = rgbs[:, 1]
+        r = rgbs[:, 2]
     elif color_format == ColorFormat.GRB:
-        # We pack data as 16 bits: GGGGGRRRRRRBBBBB
-        for rgb in rgbs:
-            r, g, b = rgb
-            out += [((r << 3) & 0xE0) | ((b >> 3) & 0x1F),
-                    (g & 0xF8) | ((r >> 5) & 0x07)]
+        g = rgbs[:, 0]
+        r = rgbs[:, 1]
+        b = rgbs[:, 2]
     elif color_format == ColorFormat.GBR:
-        # We pack data as 16 bits: GGGGGBBBBBBRRRRR
-        for rgb in rgbs:
-            r, g, b = rgb
-            out += [((b << 3) & 0xE0) | ((r >> 3) & 0x1F),
-                    (g & 0xF8) | ((b >> 5) & 0x07)]
+        g = rgbs[:, 0]
+        b = rgbs[:, 1]
+        r = rgbs[:, 2]
     elif color_format == ColorFormat.RBG:
-        # We pack data as 16 bits: RRRRRBBBBBBGGGGG
-        for rgb in rgbs:
-            r, g, b = rgb
-            out += [((b << 3) & 0xE0) | ((g >> 3) & 0x1F),
-                    (r & 0xF8) | ((b >> 5) & 0x07)]
+        r = rgbs[:, 0]
+        b = rgbs[:, 1]
+        g = rgbs[:, 2]
+    out[::2] = ((g << 3) & 0xE0) | ((b >> 3) & 0x1F)
+    out[1::2] = (r & 0xF8) | ((g >> 5) & 0x07)
     return out
 
 
