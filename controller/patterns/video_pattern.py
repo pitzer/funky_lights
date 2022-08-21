@@ -64,7 +64,7 @@ class VideoPattern(PatternUV):
             return
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        for segment in self.segments:
+        for segment in self.getSegments():
             i = 0
             for color in segment.colors:
                 np.copyto(color, frame[segment.uv[i][0], segment.uv[i][1]])

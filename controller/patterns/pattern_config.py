@@ -29,8 +29,11 @@ DEFAULT_CONFIG = [
     ('4x1', VideoPattern, dict(file='media/psychill1.mp4', crop=Rect(60, 130, 60, 60))),
     ('5x1', VideoPattern, dict(file='media/psychill2.mp4', crop=Rect(60, 130, 60, 60))),
     
-    # # Effect patterns
+    # Effect patterns
     ('0x2', SparklePattern, dict(color=np.array([255, 255, 255]), sparkle_probability=0.001, decay_param=0.95)),
     ('2x2', RainbowWavesPattern, dict()),
     ('2x3', BouncingBlocksPattern, dict())
+
+    # Eyes
+    ('0x5', VideoPattern, dict(file='media/eyes.mp4', include_segments=[50, 51])),
 ] 
