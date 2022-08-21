@@ -40,6 +40,7 @@ class PatternSelector:
 
         # Pattern cache
         self.enable_cache = args.enable_cache
+        self.cached_patterns = []
         if args.enable_cache:
             self.pattern_cache = PatternCache(pattern_config, led_config, args)
         else:
@@ -58,7 +59,7 @@ class PatternSelector:
         self.buttons_active = []
         self.buttons_pressed = []
 
-        #DMX
+        # DMX
         self.dmx = None
         self.channels = bytearray(dmx_config['universe_size'])
         self.color = np.array([0, 0, 0])
@@ -69,6 +70,7 @@ class PatternSelector:
         self._MAX_PATTERN_DURATION = 600
 
     async def initializePatterns(self):
+        # Initialize all patterns
         for i, (button, cls, params) in enumerate(self.pattern_config):
             pattern = cls()
             for key in params:
@@ -78,10 +80,10 @@ class PatternSelector:
             self.patterns.append(pattern)
             self.button_to_pattern_index_map[button] = i
             self.pattern_index_to_button_map[i] = button   
-
+        
+        # Initialize cached patterns
         if self.args.enable_cache:
-            # This replaces all patterns by a cached version of themselves
-            self.patterns = await self.pattern_cache.build_cache(self.patterns, self._MAX_PATTERN_DURATION)
+            self.cached_patterns = await self.pattern_cache.initialize_patterns()
 
     def update(self, pattern_time):
         # Check if any launchpad button was pressed to change the pattern
@@ -119,7 +121,10 @@ class PatternSelector:
         if self.dmx:
             self.patterns[self.current_pattern_index].params.color = self.color
         
-        return self.patterns[self.current_pattern_index]
+        if self.args.enable_cache:
+            return self.cached_patterns[self.current_pattern_index]
+        else:
+            return self.patterns[self.current_pattern_index]
 
     def activateButton(self, button_name):
         if not button_name in self.buttons_active:
