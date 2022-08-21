@@ -25,6 +25,7 @@ def main():
     for i in range(int(NUM_LEDS / 2)):
         col = int(WHITE - (i / (NUM_LEDS / 2) * WHITE))
         rgbs += [(col, WHITE - col, 0)]
+    rgbs[0] = [0, 0, 0]
 
     serial_port = connection.InitializeController(
         tty_device, baudrate=baudrate)
@@ -33,7 +34,7 @@ def main():
     for i in range(100000):
         serial_port.write(messages.PrepareLedMsg(uid, rgbs))
         rgbs = rgbs[1:] + rgbs[:1]
-        time.sleep(0.05)
+        time.sleep(0.01)
 
     serial_port.close()
 
