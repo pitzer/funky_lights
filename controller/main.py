@@ -16,11 +16,12 @@ from patterns import pattern_config
 
 
 class SerialWriter(asyncio.Protocol):
-    def __init__(self, generator, uids):
+    def __init__(self, generator, uids, color_format):
         super().__init__()
         self.transport = None
         self.generator = generator
         self.uids = uids
+        self.color_format = color_format
 
     def connection_made(self, transport):
         """Store the serial transport and schedule the task to send data.
@@ -41,7 +42,7 @@ class SerialWriter(asyncio.Protocol):
             for segment in segments:
                 if segment.uid in self.uids:
                     self.transport.serial.write(
-                        messages.PrepareLedMsg(segment.uid, segment.colors))
+                        messages.PrepareLedMsg(segment.uid, segment.colors, self.color_format))
             # Output update rate to console
             counter += 1
             if (time.time() - start_time) > 1.0:
@@ -139,7 +140,10 @@ async def main():
 
         # Start async serial handlers
         serial_serve_handler = functools.partial(
-            SerialWriter, generator=pattern_generator, uids=bus['uids'])
+            SerialWriter, 
+            generator=pattern_generator, 
+            uids=bus['uids'], 
+            color_format=messages.ColorFormat[bus['color_format']])
         futures.append(serial_asyncio.create_serial_connection(
             loop, serial_serve_handler, bus['device'], baudrate=bus['baudrate']))
     
