@@ -170,7 +170,8 @@ class PatternSelector:
             self.launchpad.open()
             self.launchpad.mode = lpminimk3.Mode.PROG  # Switch to the programmer mode
         else:
-            print(f"No launchpad found.")
+            print("Launchpad controller not found.")
+            return
         if self.launchpad:
             for button in self.launchpad.panel.buttons():
                 button.led.color = self._LED_COLOR_INACTIVE
@@ -195,6 +196,7 @@ class PatternSelector:
             self.dmx = serial.Serial(self.dmx_config['device'], baudrate = self.dmx_config['baudrate'], stopbits = self.dmx_config['stop_bits'])
         except:
             print("DMX controller not found")
+            return
         if self.dmx:
             self.dmx.isOpen()
         
