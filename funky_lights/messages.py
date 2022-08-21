@@ -1,5 +1,7 @@
 import crc8
 from . import crc16
+from enum import Enum
+
 
 MAGIC = 0x55
 
@@ -9,25 +11,57 @@ CMD_LEDS = 1
 CMD_SERIAL_BAUDRATE = 2
 CMD_BOOTLOADER = 3
 
+class ColorFormat(Enum):
+    GRB = 0
+    GBR = 1
+    RGB = 2
+    BGR = 3
+    RBG = 4
 
-def RgbToBits(rgbs):
+
+def RgbToBits(rgbs, color_format=ColorFormat.GRB):
     """ Convert RGB value given as a 3-tuple to a list of two bytes that can
-         be sent to the LEDs. We pack data as 16 bits:
-           RRRRRGGGGGGBBBBB
+         be sent to the LEDs.
     Args:
      rgbs: list of rgb tuples
     Returns:
      a list of bytes
     """
     out = []
-    for rgb in rgbs:
-        r, g, b = rgb
-        out += [((g << 3) & 0xE0) | ((b >> 3) & 0x1F),
-                (r & 0xF8) | ((g >> 5) & 0x07)]
+    if color_format == ColorFormat.RGB:
+        # We pack data as 16 bits: RRRRRGGGGGGBBBBB
+        for rgb in rgbs:
+            r, g, b = rgb
+            out += [((g << 3) & 0xE0) | ((b >> 3) & 0x1F),
+                    (r & 0xF8) | ((g >> 5) & 0x07)]
+    elif color_format == ColorFormat.BGR:
+        # We pack data as 16 bits: BBBBBGGGGGGRRRRR
+        for rgb in rgbs:
+            r, g, b = rgb
+            out += [((g << 3) & 0xE0) | ((r >> 3) & 0x1F),
+                    (b & 0xF8) | ((g >> 5) & 0x07)]
+    elif color_format == ColorFormat.GRB:
+        # We pack data as 16 bits: GGGGGRRRRRRBBBBB
+        for rgb in rgbs:
+            r, g, b = rgb
+            out += [((r << 3) & 0xE0) | ((b >> 3) & 0x1F),
+                    (g & 0xF8) | ((r >> 5) & 0x07)]
+    elif color_format == ColorFormat.GBR:
+        # We pack data as 16 bits: GGGGGBBBBBBRRRRR
+        for rgb in rgbs:
+            r, g, b = rgb
+            out += [((b << 3) & 0xE0) | ((r >> 3) & 0x1F),
+                    (g & 0xF8) | ((b >> 5) & 0x07)]
+    elif color_format == ColorFormat.RBG:
+        # We pack data as 16 bits: RRRRRBBBBBBGGGGG
+        for rgb in rgbs:
+            r, g, b = rgb
+            out += [((b << 3) & 0xE0) | ((g >> 3) & 0x1F),
+                    (r & 0xF8) | ((b >> 5) & 0x07)]
     return out
 
 
-def PrepareLedMsg(bar_uid, rgbs):
+def PrepareLedMsg(bar_uid, rgbs, color_format=ColorFormat.GRB):
     """ Prepare a message from a list of RGB colors
     Args:
      serial: Serial port object. Should be already initialized
@@ -38,7 +72,7 @@ def PrepareLedMsg(bar_uid, rgbs):
     """
     header = [MAGIC, bar_uid, CMD_LEDS]
     header += [len(rgbs)]
-    data = RgbToBits(rgbs)
+    data = RgbToBits(rgbs, color_format)
     crc_compute = crc8.crc8()
     crc_compute.update(bytearray(data))
     crc = [crc_compute.digest()[0]]
