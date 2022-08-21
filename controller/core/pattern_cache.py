@@ -25,6 +25,10 @@ def cache_file_path(led_config_hash, pattern_index, animation_index):
         cache_pattern_folder(led_config_hash, pattern_index), animation_index_folder, filename)
 
 
+def cache_index_path(led_config_hash, pattern_index):
+    return os.path.join(cache_pattern_folder(led_config_hash, pattern_index), 'index.json')
+
+
 class CachedPattern(Pattern):
     def __init__(self, num_animation_steps, led_config_hash, pattern_index):
         super().__init__()
@@ -66,7 +70,8 @@ class PatternCache:
             cached_pattern.prepareSegments(self.led_config)
         
             # Update only patterns that are not already cached
-            if (not os.path.exists(cache_pattern_folder(self.led_config_hash, pattern_index)) or force_update):
+            index_file = cache_index_path(self.led_config_hash, pattern_index)
+            if (force_update or not os.path.exists(index_file)):
                 print("Caching pattern %d of type %s" % (pattern_index, type(pattern).__name__))
                 for animation_index in range(num_animation_steps):
                     await pattern.animate(delta)
@@ -80,6 +85,10 @@ class PatternCache:
                     async with async_open(cache_file, 'wb') as afp:
                         bytes = pickle.dumps(segment_colors)
                         await afp.write(bytes)
+                
+                # Write cache index file
+                async with async_open(index_file, 'w') as afp:
+                    await afp.write(json.dumps(dict(animation_steps=num_animation_steps)))
 
             # Add to cache and sync
             cached_patterns.append(cached_pattern)
