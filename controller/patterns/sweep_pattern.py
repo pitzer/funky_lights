@@ -1,4 +1,4 @@
-from patterns.pattern import Pattern
+from pattern import Pattern
 from patterns import utils
 import numpy as np
 import random

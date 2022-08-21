@@ -5,23 +5,19 @@ import numpy as np
 class TheaterChasePattern(Pattern):
     def __init__(self):
         super().__init__()
-        self.params.foreground_color = np.array([255, 0, 0], dtype=np.uint8)
+        self.params.color = np.array([255, 255, 255], dtype=np.uint8)
         self.params.background_color = np.array([0, 0, 0], dtype=np.uint8)
         self.params.speed = 1.5
         self.params.step_size = 3
 
     def initialize(self):
         self.pattern_segments = []
-        if hasattr(self.params, 'color'):
-            self.params.foreground_color = self.params.color
         for segment in self.segments:
             pattern_segment = TheaterChasePatternSegment(segment, self.params)
             pattern_segment.initialize()
             self.pattern_segments.append(pattern_segment)
 
     async def animate(self, delta):
-        if hasattr(self.params, 'color'):
-            self.params.foreground_color = self.params.color
         for pattern_segment in self.pattern_segments:
             await pattern_segment.animate(delta)
 
@@ -50,6 +46,6 @@ class TheaterChasePatternSegment(Pattern):
 
         # Set new offset leds to foreground color
         for i in range(new_offset, self.segment.num_leds, self.params.step_size):
-            self.segment.colors[i] = self.params.foreground_color
+            self.segment.colors[i] = self.params.color
 
         self.current_offset_fraction = new_offset_fraction
