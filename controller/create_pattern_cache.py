@@ -6,12 +6,6 @@ from core.pattern_cache import PatternCache
 from patterns import pattern_config
 
 
-def all_patterns_configs(config):
-    for d in config:
-        for pattern_id, config in d.items():
-            yield pattern_id, config
-
-
 async def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser()
@@ -25,6 +19,7 @@ async def main():
                         help="The maximum duration a pattern is cached for")
     args = parser.parse_args()
     led_config = json.load(args.led_config)
+
 
     cache = PatternCache(pattern_config.DEFAULT_CONFIG,
                          led_config, args.animation_rate)

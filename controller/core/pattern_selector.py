@@ -41,6 +41,7 @@ class PatternSelector:
 
         # Pattern cache
         self.enable_cache = args.enable_cache
+        self.cached_patterns = []
         if args.enable_cache:
             self.pattern_cache = PatternCache(pattern_config, led_config, args)
         else:
@@ -212,7 +213,7 @@ class PatternSelector:
             mix_pattern_ids=self.current_effect_pattern_ids)
 
         return self.pattern_mix
-
+   
 
     def activateButton(self, button_name):
         if not button_name:

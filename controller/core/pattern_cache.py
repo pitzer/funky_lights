@@ -29,6 +29,10 @@ def cache_index_path(led_config_hash, pattern_id):
     return os.path.join(cache_pattern_folder(led_config_hash, pattern_id), 'index.json')
 
 
+def cache_index_path(led_config_hash, pattern_index):
+    return os.path.join(cache_pattern_folder(led_config_hash, pattern_index), 'index.json')
+
+
 class CachedPattern(Pattern):
     def __init__(self, led_config_hash, pattern_id, num_animation_steps):
         super().__init__()
@@ -40,6 +44,13 @@ class CachedPattern(Pattern):
     def reset(self):
         self.current_animation_index = 0
 
+    def initialize(self):
+        super().initialize()
+        index_file = cache_index_path(self.led_config_hash, self.pattern_index)
+        with open(index_file, 'r') as f:
+            cache_index = json.load(f)
+            self.num_animation_steps = cache_index["animation_steps"]
+        
     async def animate(self, delta):
         cache_file = cache_file_path(
             self.led_config_hash, self.pattern_id, self.current_animation_index)
