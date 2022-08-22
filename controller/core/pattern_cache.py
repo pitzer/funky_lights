@@ -86,6 +86,8 @@ class PatternCache:
                 cached_pattern = CachedPattern(self.led_config_hash, pattern_id, num_animation_steps)
                 cached_pattern.prepareSegments(self.led_config)
                 cached_pattern.initialize()
+                cached_pattern.params.include_segments = cache_index["include_segments"]
+                cached_pattern.params.exclude_segments = cache_index["exclude_segments"]
                 self.patterns[pattern_id] = cached_pattern
 
     async def build_cache_for_pattern(self, pattern, pattern_id, max_pattern_duration, force_update):
@@ -109,7 +111,12 @@ class PatternCache:
             
             # Write cache index file
             async with async_open(index_file, 'w') as afp:
-                await afp.write(json.dumps(dict(animation_steps=num_animation_steps)))
+                cache_index = {
+                    "animation_steps": num_animation_steps,
+                    "include_segments": pattern.params.include_segments,
+                    "exclude_segments": pattern.params.exclude_segments,
+                }
+                await afp.write(json.dumps(cache_index))
 
     async def build_cache(self, patterns, max_pattern_duration, force_update=False):
         for pattern_id in self.patterns_for_caching():
