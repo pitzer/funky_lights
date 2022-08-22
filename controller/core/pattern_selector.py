@@ -40,21 +40,20 @@ class PatternSelector:
 
         # Pattern cache
         self.enable_cache = args.enable_cache
-        self.cached_patterns = []
         if args.enable_cache:
             self.pattern_cache = PatternCache(pattern_config, led_config, args)
         else:
             self.pattern_cache = None
 
         # Selected patterns
-        self.patterns = []
-        self.palettes = []
-        self.current_pattern_index = 0
+        self.patterns = {}
+        self.current_pattern_id = list(pattern_config.rotation.keys())[0]
         self.pattern_start_time = time.time()
+        self.pattern_rotation = []
+        self.pattern_rotation_index = 0
+        
 
         # Launchpad
-        self.button_to_pattern_index_map = {}
-        self.pattern_index_to_button_map = {}
         self.launchpad = None
         self.buttons_active = []
         self.buttons_pressed = []
@@ -67,23 +66,29 @@ class PatternSelector:
         # Constants
         self._LED_COLOR_ACTIVE = 100
         self._LED_COLOR_INACTIVE = 0
-        self._MAX_PATTERN_DURATION = 600
+
+    def all_patterns_configs(self):
+        for d in self.pattern_config:
+            for pattern_id, config in d.items():
+                yield pattern_id, config
 
     async def initializePatterns(self):
         # Initialize all patterns
-        for i, (button, cls, params) in enumerate(self.pattern_config):
+        for pattern_id, (cls, params) in self.all_patterns_configs():
             pattern = cls()
             for key in params:
                 setattr(pattern.params, key, params[key])
             pattern.prepareSegments(self.led_config)
             pattern.initialize()
-            self.patterns.append(pattern)
-            self.button_to_pattern_index_map[button] = i
-            self.pattern_index_to_button_map[i] = button   
+            self.patterns[pattern_id] = pattern  
         
+        # Initialize rotation 
+        self.pattern_rotation = list(self.pattern_config.rotation.keys())
+        self.pattern_all = [pattern_id for pattern_id, _ in self.all_patterns_configs()]
+
         # Initialize cached patterns
         if self.args.enable_cache:
-            self.cached_patterns = await self.pattern_cache.initialize_patterns()
+            await self.pattern_cache.initialize_patterns()
 
     def update(self, pattern_time):
         # Check if any launchpad button was pressed to change the pattern
@@ -91,40 +96,40 @@ class PatternSelector:
             # Only consider the last button for now.
             # Might be fun to consider multiple patterns at some point.
             button = self.buttons_pressed[-1]
-            if button in self.button_to_pattern_index_map:
+            if button in self.pattern_all:
                 # Deactivate button corresponding to previous pattern
-                self.deactivateButton(
-                    self.pattern_index_to_button_map[self.current_pattern_index])
+                self.deactivateButton(self.current_pattern_id)
+                # Update rotation index if the selected pattern is on rotation
+                if self.current_pattern_id in self.pattern_rotation:
+                    self.pattern_rotation_index = self.pattern_rotation.index(self.current_pattern_id)
                 # Activate button corresponding to current pattern
                 self.activateButton(button)
                 # Clear button presses
                 self.buttons_pressed.clear()
                 # Update pattern index based on button press
-                self.current_pattern_index = self.button_to_pattern_index_map[button]
+                self.current_pattern_id = button
                 self.pattern_start_time = pattern_time
             else:
                 self.buttons_pressed.clear()
 
         # Check if max pattern time is exceeded
-        if (pattern_time - self.pattern_start_time) > self._MAX_PATTERN_DURATION:
+        if (pattern_time - self.pattern_start_time) > self.args.pattern_rotation_time:
             # Deactivate button corresponding to previous pattern
-            self.deactivateButton(
-                self.pattern_index_to_button_map[self.current_pattern_index])
+            self.deactivateButton(self.current_pattern_id)
             # Rotate patterns
-            self.current_pattern_index = (
-                self.current_pattern_index + 1) % len(self.patterns)
+            self.pattern_rotation_index = (self.pattern_rotation_index + 1) % len(self.pattern_rotation)
             # Activate button corresponding to current pattern
-            self.activateButton(
-                self.pattern_index_to_button_map[self.current_pattern_index])
+            self.activateButton(self.pattern_rotation[self.pattern_rotation_index])
+            self.current_pattern_id = self.pattern_rotation[self.pattern_rotation_index]
             self.pattern_start_time = pattern_time
         
         if self.dmx:
-            self.patterns[self.current_pattern_index].params.color = self.color
+            self.patterns[self.current_pattern_id].params.color = self.color
         
         if self.args.enable_cache:
-            return self.cached_patterns[self.current_pattern_index]
+            return self.pattern_cache.patterns[self.current_pattern_id]
         else:
-            return self.patterns[self.current_pattern_index]
+            return self.patterns[self.current_pattern_id]
 
     def activateButton(self, button_name):
         if not button_name in self.buttons_active:

@@ -25,6 +25,8 @@ class Pattern:
 
     def getSegments(self):
         for segment in self.segments:
+            if not self.params.include_segments and not self.params.exclude_segments:
+                yield segment
             if self.params.include_segments and segment.uid in self.params.include_segments:
                 yield segment
             elif self.params.exclude_segments and segment.uid not in self.params.exclude_segments:
