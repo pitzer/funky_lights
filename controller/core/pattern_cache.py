@@ -60,7 +60,7 @@ class PatternCache:
         print("LED config hash: " + str(self.led_config_hash))
 
     def patterns_for_caching(self):
-        for d in [self.rotation, self.manual, self.eyes]:
+        for d in self.pattern_config:
             for pattern_id, _ in d.items():
                 yield pattern_id
 

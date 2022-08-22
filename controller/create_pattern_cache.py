@@ -5,6 +5,11 @@ import asyncio
 from core.pattern_cache import PatternCache
 from patterns import pattern_config
 
+def all_patterns_configs(config):
+    for d in config:
+        for pattern_id, config in d.items():
+            yield pattern_id, config
+
 
 async def main():
     # Parse command line arguments
@@ -21,14 +26,16 @@ async def main():
 
     cache = PatternCache(pattern_config.DEFAULT_CONFIG, led_config, args.animation_rate)
 
-    patterns = []
-    for _, cls, params in cache.pattern_config:
-        pattern = cls()
-        for key in params:
-            setattr(pattern.params, key, params[key])
-        pattern.prepareSegments(led_config)
-        pattern.initialize()
-        patterns.append(pattern)
+    # Initialize all patterns
+    patterns = {}
+    for d in pattern_config.DEFAULT_CONFIG:
+        for pattern_id, (cls, params) in d.items():
+            pattern = cls()
+            for key in params:
+                setattr(pattern.params, key, params[key])
+            pattern.prepareSegments(led_config)
+            pattern.initialize()
+            patterns[pattern_id] = pattern  
         
     await cache.build_cache(patterns, args.max_cached_pattern_duration, args.force_update)
 
