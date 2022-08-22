@@ -4,8 +4,10 @@ import json
 import lpminimk3
 import time
 import serial
+from serial.tools import list_ports
 import numpy as np
 import websockets
+import threading
 
 from core.pattern_cache import PatternCache
 
@@ -31,6 +33,7 @@ def parse_dmx(channels, size, color = np.array([0,0,0])):
     
 
 
+
 class PatternSelector:
     def __init__(self, pattern_config, led_config, dmx_config, args):
         self.pattern_config = pattern_config
@@ -50,11 +53,13 @@ class PatternSelector:
         self.launchpad = None
         self.buttons_active = []
         self.buttons_pressed = []
+        self.launchpadConnected = asyncio.Event()
 
         #DMX
         self.dmx = None
         self.channels = bytearray(dmx_config['universe_size'])
         self.color = np.array([0, 0, 0])
+        self.dmxConnected = asyncio.Event()
 
         # Constants
         self._LED_COLOR_ACTIVE = 100
@@ -131,7 +136,7 @@ class PatternSelector:
                 button.led.color = self._LED_COLOR_INACTIVE
 
     @run_in_executor
-    def controllerPoll(self):
+    async def controllerPoll(self):
         
         if self.launchpad:
             button_event = self.launchpad.panel.buttons().poll_for_event()
@@ -141,20 +146,49 @@ class PatternSelector:
                 pass               
     
     @run_in_executor
-    def dmxPoll(self): 
-
-        if self.dmx:
+    async def dmxPoll(self): 
+        print("po0000lling")
+        while True:
             #Check for waiting messages from DMX controller
-            if self.dmx.inWaiting() > 0:
-                bytes = self.dmx.read_until(expected = bytearray([self.dmx_config['start_byte']]))
-                while self.dmx.inWaiting() > 0:
-                    self.channels = self.dmx.read_until(expected = bytearray([self.dmx_config['stop_byte']]))
-                self.color = parse_dmx(self.channels, self.dmx_config['universe_size'], self.color)
-            else:
-                pass    
-
-    async def launchpadListener(self):
+            #print("polling")
+            try:
+                if self.dmx.inWaiting() > 0:
+                    bytes = self.dmx.read_until(expected = bytearray([self.dmx_config['start_byte']]))
+                    while self.dmx.inWaiting() > 0:
+                        self.channels = self.dmx.read_until(expected = bytearray([self.dmx_config['stop_byte']]))
+                    self.color = parse_dmx(self.channels, self.dmx_config['universe_size'], self.color)
+                else:
+                    pass 
+            except:
+                #print("DMX read error")
+                self.channels = bytearray(self.dmx_config['universe_size'])
+                self.patterns[self.current_pattern_index].params.color = None 
+                raise Exception("DMX read error")
         
+        #If DMX connection is lost, cancel read task
+        asyncio.current_task().cancel()
+ 
+    @run_in_executor
+    async def check_presence(self, correct_port, flag, interval=1):
+        while True:
+            found = False
+            ports = list(list_ports.comports())
+            for port in ports:
+                if port.name.split(".")[1] == correct_port:
+                    found = True
+                    break 
+            if found:
+                await asyncio.sleep(interval)
+                continue
+            else:
+                print ("Device has been disconnected!")
+                flag.clear()
+                #asyncio.current_task().cancel()
+                raise Exception("Device has been disconnected!")
+    
+    async def launchpadListener(self):
+        launchpadConnected = asyncio.Event()
+
         available_lps = lpminimk3.find_launchpads()
         if available_lps:
             # Use the first available launchpad
@@ -162,16 +196,23 @@ class PatternSelector:
             # Open device for reading and writing on MIDI interface (by default)
             self.launchpad.open()
             self.launchpad.mode = lpminimk3.Mode.PROG  # Switch to the programmer mode
-        else:
-            print(f"No launchpad found.")
         if self.launchpad:
             for button in self.launchpad.panel.buttons():
                 button.led.color = self._LED_COLOR_INACTIVE
-        
-        while True:
-            # Wait for a controller event
-            await self.controllerPoll()
-        
+
+            port_trunc = self.dmx.port.split(".")[1]
+            checker = asyncio.create_task(self.check_presence(port_trunc, launchpadConnected, 0.1))
+            await checker
+            
+            while launchpadConnected.is_set():
+                # Wait for a controller event
+                await self.controllerPoll()
+        else:
+            self.launchpad = None
+            time.sleep(1)
+            #await self.launchpadListener()
+
+                
     async def launchpadWSListener(self, websocket, path):
         while True:
             try:
@@ -181,17 +222,72 @@ class PatternSelector:
                     self.buttons_pressed.append(event["button"])
             except websockets.ConnectionClosed as exc:
                 break
-
+    
     async def dmxListener(self):
-        #Check for connected DMX controller
-        try:
-            self.dmx = serial.Serial(self.dmx_config['device'], baudrate = self.dmx_config['baudrate'], stopbits = self.dmx_config['stop_bits'])
-        except:
-            print("DMX controller not found")
-        if self.dmx:
-            self.dmx.isOpen()
-        
         while True:
-            # Wait for a controller event
-            await self.dmxPoll()
+        #Check for connected DMX controller
+            try:
+                self.dmx = serial.Serial(self.dmx_config['device'], baudrate = self.dmx_config['baudrate'], stopbits = self.dmx_config['stop_bits'])
+            except:
+                print("DMX controller not found")
+                await asyncio.sleep(1)
+            
+            #Controller found
+            
+            if self.dmx:
+                futures = []
+                print("DMX controller found")
+                self.dmx.isOpen()
+                self.dmxConnected.set()
+                port_trunc = self.dmx.port.split(".")[1]
+
+                while True:
+                    try:
+                        await asyncio.gather(
+                            await self.dmxPoll(),
+                            await self.check_presence(port_trunc, self.dmxConnected, 0.1),
+                            return_exceptions=True
+                        )
+                    except Exception as e:
+                        self.dmxListener()
+                        break
+            
+                
+
+
+                # try:
+                #     dmx_monitor.run_forever(await self.check_presence(port_trunc, self.dmxConnected, 1))
+                # except:
+                #     print("DMX monitor error")
+                #     self.dmx = None
+                #     self.dmxConnected.clear()
+                #     dmx_poller.stop()
+                #     continue
+
+
+                # futures.append(self.check_presence(port_trunc, self.dmxConnected, 1))
+                
+                # futures.append(self.dmxPoll())
+                # results = await asyncio.gather(
+                #     *futures,
+                #     return_exceptions=False)
+                # try:
+                #     presence.create_task(await self.check_presence(port_trunc, self.dmxConnected, 1))
+                #     print("Got THIS far")
+                # except asyncio.CancelledError:
+                #     continue
+                # #presence.run_forever()
+                # if self.dmxConnected.is_set() == False:
+                #     presence.cancel()
+
+                # read_loop = asyncio.new_event_loop()
+                # read_loop.create_task(await self.dmxPoll())
+                # read_loop.run_forever()
+
+    
+    async def dmxInit(self):
+        futures = []
+        futures.append(asyncio.create_task(self.dmxListener(futures)))
+        results = await asyncio.gather(*futures)
+
             

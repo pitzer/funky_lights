@@ -17,7 +17,7 @@ COOLING = 600
 SPARKING = 120
 
 
-
+# Unused color conversion function
 def convert_color(hsv):
     rgb = colorsys.hsv_to_rgb(hsv[0], hsv[1], hsv[2])
     return [int(rgb[0]*255), int(rgb[1]*255), int(rgb[2]*255)]
@@ -91,13 +91,14 @@ class FirePatternUV(PatternUV):
             self.params.palette = extrapolate_color(self.params.color)
         else:
             self.params.palette = palettes.FIRE
-        print(self.params.palette)
         self.params.width = 2
         self.params.height = 100
 
     def initialize(self):
         if hasattr(self.params, 'color'):
             self.params.palette = extrapolate_color(self.params.color)
+        else:
+            self.params.palette = palettes.FIRE
         self.palette_size = self.params.palette.shape[0]
         self.frame = np.zeros((self.params.height, self.params.width, 3), np.uint8)
         self.heat = [np.array([0 for i in range(self.params.height)])
@@ -108,6 +109,8 @@ class FirePatternUV(PatternUV):
         #Check for color changes
         if hasattr(self.params, 'color'):
             self.params.palette = extrapolate_color(self.params.color)
+        else:
+            self.params.palette = palettes.FIRE
         for i in range(self.params.width):
             heat = self.heat[i]
             # Update heat
