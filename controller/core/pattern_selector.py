@@ -131,11 +131,10 @@ class PatternSelector:
 
     def handle_effect_buttons(self, button, pattern_time, released=False):
         if released:
-            print("deactivateButton: " + button)
             self.deactivateButton(button)
             self.current_effect_pattern_ids.remove(button)
+            self.patterns[button].reset()
         else:
-            print("activateButton: " + button)
             self.activateButton(button)
             self.current_effect_pattern_ids.append(button)
 
@@ -202,8 +201,8 @@ class PatternSelector:
             replace_pattern_ids.append(self.current_pattern_eye_id)
         self.pattern_mix.update_mix(
             base_pattern_ids=[self.current_pattern_id], 
-            mix_pattern_ids=self.current_effect_pattern_ids, 
-            replace_pattern_ids=replace_pattern_ids)
+            replace_pattern_ids=replace_pattern_ids,
+            mix_pattern_ids=self.current_effect_pattern_ids)
 
         return self.pattern_mix
 

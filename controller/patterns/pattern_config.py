@@ -6,6 +6,7 @@ import patterns.palettes as palettes
 from patterns.color_roll_pattern import ColorRollPattern
 from patterns.crossfade_pattern import CrossfadePattern
 from patterns.fire_pattern import FirePatternUV
+from patterns.flash_pattern import FlashPattern
 from patterns.sparkle_pattern import SparklePattern
 from patterns.sweep_pattern import SweepPattern
 from patterns.theater_chase_pattern import TheaterChasePattern
@@ -42,7 +43,8 @@ DEFAULT_CONFIG = PatternConfig(
 
     # Effect patterns are overlayed on top of any pattern that is current playing.
     special_effects = {
-        '0x2': (SparklePattern, dict(sparkle_probability=0.001, decay_param=0.95)),
+        '0x2': (FlashPattern, dict()),
+        '1x2': (SparklePattern, dict(sparkle_probability=0.001, decay_param=0.95)),
     },
 
     # Eye patterns

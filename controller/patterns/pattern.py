@@ -18,6 +18,9 @@ class Pattern:
         self.segments = []
         self.params = self.PatternParameters()
 
+    def reset(self):
+        pass
+
     def prepareSegments(self, led_config):
         for s in led_config['led_segments']:
             segment = Segment(s['uid'], s['num_leds'], s['led_positions'])
