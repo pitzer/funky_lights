@@ -43,7 +43,7 @@ class PatternMix(Pattern):
                 if mix_segment in included_segments:
                     np.copyto(segment.colors, mix_segment.colors)
 
-        # Mix mix
+        # Mix
         for pattern in self.mix_patterns:
             await pattern.animate(delta)
             for segment, mix_segment in zip(self.segments, pattern.segments):
