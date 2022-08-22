@@ -95,17 +95,23 @@ class PatternGenerator:
 async def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("-l", "--led_config", type=argparse.FileType('r'),
-                        default="../config/led_config.json", help="LED config file")
-    parser.add_argument("-b", "--bus_config", type=argparse.FileType('r'),
-                        default="../config/bus_config.json", help="Bus config file")
-    parser.add_argument("-c", "--enable_cache", action='store_true', help="Enable pattern caching")
-    parser.add_argument("-a", "--animation_rate", type=int, default=20, help="The target animation rate in Hz")
-    parser.add_argument("-d", "--dmx_config", type=argparse.FileType('r'),
-                        default="../config/dmx_config_enttec.json", help="DMX config file")
-    parser.add_argument("-t", "--ws_port_texture", type=int, default=5678, help="The WebSockets port for the texture server")
-    parser.add_argument("-p", "--ws_port_launchpad", type=int, default=5679, help="The WebSockets port for the launchpad server")
-    
+    parser.add_argument("-l", "--led_config", type=argparse.FileType('r'), default="../config/led_config.json", 
+                        help="LED config file")
+    parser.add_argument("-b", "--bus_config", type=argparse.FileType('r'), default="../config/bus_config.json", 
+                        help="Bus config file")
+    parser.add_argument("-c", "--enable_cache", action='store_true', 
+                        help="Enable pattern caching")
+    parser.add_argument("-a", "--animation_rate", type=int, default=20, 
+                        help="The target animation rate in Hz")
+    parser.add_argument("-d", "--dmx_config", type=argparse.FileType('r'), default="../config/dmx_config_enttec.json", 
+                        help="DMX config file")
+    parser.add_argument("-t", "--ws_port_texture", type=int, default=5678, 
+                        help="The WebSockets port for the texture server")
+    parser.add_argument("-p", "--ws_port_launchpad", type=int, default=5679, 
+                        help="The WebSockets port for the launchpad server")
+    parser.add_argument("-r", "--pattern_rotation_time", type=int, default=600, 
+                        help="The maximum duration a pattern is displayed before rotating to the next.")
+
     args = parser.parse_args()
 
     led_config = json.load(args.led_config)

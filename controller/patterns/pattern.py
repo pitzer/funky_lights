@@ -6,21 +6,34 @@ class Segment:
     def __init__(self, uid, num_leds, led_positions):
         self.uid = uid
         self.num_leds = num_leds
-        self.colors = np.array([[255, 0, 0] for i in range(num_leds)], dtype=np.ubyte)
+        self.colors = np.array([[0, 0, 0] for i in range(num_leds)], dtype=np.ubyte)
         self.led_positions = np.array(led_positions)
 
 class Pattern:
     class PatternParameters:
-        pass
+        include_segments = []
+        exclude_segments = []
 
     def __init__(self):
         self.segments = []
         self.params = self.PatternParameters()
 
+    def reset(self):
+        pass
+
     def prepareSegments(self, led_config):
         for s in led_config['led_segments']:
             segment = Segment(s['uid'], s['num_leds'], s['led_positions'])
             self.segments.append(segment)
+
+    def getSegments(self):
+        for segment in self.segments:
+            if not self.params.include_segments and not self.params.exclude_segments:
+                yield segment
+            if self.params.include_segments and segment.uid in self.params.include_segments:
+                yield segment
+            elif self.params.exclude_segments and segment.uid not in self.params.exclude_segments:
+                yield segment
 
     def initialize(self):
         pass
@@ -63,15 +76,15 @@ class PatternUV(Pattern):
         super().__init__()
     
     def applyGrid(self, grid):
-        for segment in self.segments:
+        for segment in self.getSegments():
             for i, color in enumerate(segment.colors):
                 uv = segment.uv[i]
                 np.copyto(color, grid.coordinates[uv[1]][uv[0]])
 
     def generateUVCoordinates(self, width, height, offset_u=0, offset_v=0):
-        max_x = max_y = max_z = sys.float_info.min
+        max_x = max_y = max_z = -sys.float_info.max
         min_x = min_y = min_z = sys.float_info.max
-        for segment in self.segments:
+        for segment in self.getSegments():
             for p in segment.led_positions:
                 max_x = max(max_x, p[0])
                 min_x = min(min_x, p[0])
@@ -86,7 +99,7 @@ class PatternUV(Pattern):
         # Note: the axis are scaled independently which could lead to distortions
         scale = np.array([(height - 1) / (max_y - min_y),
                           (width - 1) / (max_z - min_z)])
-        for segment in self.segments:
+        for segment in self.getSegments():
             uv = []
             for p in segment.led_positions:
                 pm = np.multiply(p[1:] + offset, scale).astype(int)
