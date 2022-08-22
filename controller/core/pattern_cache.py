@@ -37,6 +37,9 @@ class CachedPattern(Pattern):
         self.num_animation_steps = num_animation_steps
         self.current_animation_index = 0
         
+    def reset(self):
+        self.current_animation_index = 0
+
     async def animate(self, delta):
         cache_file = cache_file_path(
             self.led_config_hash, self.pattern_id, self.current_animation_index)

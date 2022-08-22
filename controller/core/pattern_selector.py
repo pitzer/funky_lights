@@ -82,6 +82,13 @@ class PatternSelector:
                 yield pattern_id, config
 
 
+    def maybe_cached_pattern(self, pattern_id):
+        if self.pattern_cache and pattern_id in self.pattern_cache.patterns:
+            return self.pattern_cache.patterns[pattern_id]
+        else:
+            return self.patterns[pattern_id]
+
+
     async def initializePatterns(self):
         # Initialize all patterns
         for pattern_id, (cls, params) in self.all_patterns_configs():
@@ -133,7 +140,7 @@ class PatternSelector:
         if released:
             self.deactivateButton(button)
             self.current_effect_pattern_ids.remove(button)
-            self.patterns[button].reset()
+            self.maybe_cached_pattern(button).reset()
         else:
             self.activateButton(button)
             self.current_effect_pattern_ids.append(button)
