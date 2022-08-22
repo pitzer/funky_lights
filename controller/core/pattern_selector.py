@@ -140,7 +140,8 @@ class PatternSelector:
     def handle_effect_buttons(self, button, pattern_time, released=False):
         if released:
             self.deactivateButton(button)
-            self.current_effect_pattern_ids.remove(button)
+            while button in self.current_effect_pattern_ids:
+                self.current_effect_pattern_ids.remove(button)
             self.maybe_cached_pattern(button).reset()
         else:
             self.activateButton(button)
@@ -229,7 +230,7 @@ class PatternSelector:
     def deactivateButton(self, button_name):
         if not button_name:
             return
-        if button_name in self.buttons_active:
+        while button_name in self.buttons_active:
             self.buttons_active.remove(button_name)
         if self.launchpad:
             button_group = self.launchpad.panel.buttons(button_name)
@@ -290,6 +291,8 @@ class PatternSelector:
                 event = json.loads(res)
                 if event["type"] == "button_pressed":
                     self.buttons_pressed.append(event["button"])
+                elif event["type"] == "button_released":
+                    self.buttons_released.append(event["button"])
             except websockets.ConnectionClosed as exc:
                 break
 

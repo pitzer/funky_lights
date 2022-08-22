@@ -216,12 +216,21 @@
                 };
                 ws.send(JSON.stringify(event));
             };
+            function onLaunchpadButtonReleased(button_name) {
+                const event = {
+                    type: 'button_released',
+                    button: button_name,
+                };
+                ws.send(JSON.stringify(event));
+            };
             ws.onopen = function (event) {
                 signals.launchpadButtonPressed.add(onLaunchpadButtonPressed);
+                signals.launchpadButtonReleased.add(onLaunchpadButtonReleased);
             };
             ws.onclose = function (e) {
                 console.log('Launchpad WebSocket is closed. Reconnect will be attempted in 1 second.', e.reason);
                 signals.launchpadButtonPressed.remove(onLaunchpadButtonPressed);
+                signals.launchpadButtonReleased.remove(onLaunchpadButtonReleased);
                 setTimeout(function () {
                     startWebSocketForLaunchpadMessages();
                 }, 1000);

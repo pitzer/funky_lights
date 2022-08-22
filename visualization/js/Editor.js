@@ -18,6 +18,7 @@ function Editor() {
         // launchpad
 
         launchpadButtonPressed: new Signal(),
+        launchpadButtonReleased: new Signal(),
         launchpadMessageReceived: new Signal(),
 
 		// script

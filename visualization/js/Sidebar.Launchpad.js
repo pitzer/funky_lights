@@ -32,6 +32,9 @@ function SidebarLaunchpad( editor ) {
             const ui_button = new UIButton(button).setMarginLeft('7px');
             ui_button.onClick(function () {
                 signals.launchpadButtonPressed.dispatch(button);
+                setTimeout(function () {
+                    signals.launchpadButtonReleased.dispatch(button);
+                }, 5000);
             });
             row.add(ui_button);
         }
