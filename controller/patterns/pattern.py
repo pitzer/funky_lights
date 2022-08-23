@@ -110,6 +110,9 @@ class PatternUV(Pattern):
 
     def initialize(self):
         pass
-        
+
+    def reset(self):
+        pass
+
     def animate(self, delta):
         pass
