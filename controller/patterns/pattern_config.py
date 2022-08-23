@@ -11,6 +11,7 @@ from patterns.sparkle_pattern import SparklePattern
 from patterns.sweep_pattern import SweepPattern
 from patterns.theater_chase_pattern import TheaterChasePattern
 from patterns.rainbow_pattern import RainbowPattern
+from patterns.starburst_pattern import StarburstPattern
 from patterns.checkers_pattern import CheckersPattern
 from patterns.rainbow_waves_pattern import RainbowWavesPattern
 from patterns.bouncing_blocks_pattern import BouncingBlocksPattern
@@ -58,7 +59,8 @@ DEFAULT_CONFIG = PatternConfig(
         #bottom row for easy identification
         '0x7': (FlashPattern, dict()),
         '1x7': (SparklePattern, dict(sparkle_probability=0.001, decay_param=0.95)),
-        '2x7': (CheckersPattern, dict(decay_param=0.95))
+        '2x7': (CheckersPattern, dict(decay_param=0.95)),
+        '3x7': (StarburstPattern, dict(decay_param=0.95))
     },
 
     # Eye patterns
