@@ -76,10 +76,10 @@ class PatternSelector:
         # Launchpad color constants
         self._LED_COLOR_ROTATION_ACTIVE = lpminimk3.colors.ColorPalette.Red.SHADE_1
         self._LED_COLOR_ROTATION_INACTIVE = lpminimk3.colors.ColorPalette.Red.SHADE_9
-        self._LED_COLOR_MANUAL_ACTIVE = lpminimk3.colors.ColorPalette.Blue.SHADE_1
-        self._LED_COLOR_MANUAL_INACTIVE = lpminimk3.colors.ColorPalette.Blue.SHADE_17
-        self._LED_COLOR_EFFECTS_ACTIVE = lpminimk3.colors.ColorPalette.Green.SHADE_1
-        self._LED_COLOR_EFFECTS_INACTIVE = lpminimk3.colors.ColorPalette.Green.SHADE_43
+        self._LED_COLOR_MANUAL_ACTIVE = lpminimk3.colors.ColorPalette.Green.SHADE_1
+        self._LED_COLOR_MANUAL_INACTIVE = lpminimk3.colors.ColorPalette.Green.SHADE_43
+        self._LED_COLOR_EFFECTS_ACTIVE = lpminimk3.colors.ColorPalette.Blue.SHADE_1
+        self._LED_COLOR_EFFECTS_INACTIVE = lpminimk3.colors.ColorPalette.Blue.SHADE_17
         self._LED_COLOR_EYES_ACTIVE = lpminimk3.colors.ColorPalette.Violet.SHADE_1
         self._LED_COLOR_EYES_INACTIVE = lpminimk3.colors.ColorPalette.Violet.SHADE_29
 
@@ -122,11 +122,11 @@ class PatternSelector:
 
     def handle_rotation_buttons(self, button, pattern_time):
         # Deactivate button corresponding to previous pattern
-        self.deactivateButton(self.current_pattern_id, self._LED_COLOR_ROTATION_INACTIVE)
+        self.deactivateButton(self.current_pattern_id)
         # Update rotation index if the selected pattern is on rotation
         self.pattern_rotation_index = self.pattern_rotation.index(button)
         # Activate button corresponding to current pattern
-        self.activateButton(button, self._LED_COLOR_ROTATION_ACTIVE)
+        self.activateButton(button)
         # Update pattern index based on button press
         self.current_pattern_id = button
         self.pattern_start_time = pattern_time    
@@ -134,9 +134,9 @@ class PatternSelector:
 
     def handle_manual_buttons(self, button, pattern_time):
         # Deactivate button corresponding to previous pattern
-        self.deactivateButton(self.current_pattern_id, self._LED_COLOR_MANUAL_INACTIVE)
+        self.deactivateButton(self.current_pattern_id)
         # Activate button corresponding to current pattern
-        self.activateButton(button, self._LED_COLOR_MANUAL_ACTIVE)
+        self.activateButton(button)
         # Update pattern index based on button press
         self.current_pattern_id = button
         self.pattern_start_time = pattern_time
@@ -144,26 +144,25 @@ class PatternSelector:
 
     def handle_effect_buttons(self, button, pattern_time, released=False):
         if released:
-            self.deactivateButton(button, self._LED_COLOR_EFFECTS_INACTIVE)
+            self.deactivateButton(button)
             while button in self.current_effect_pattern_ids:
                 self.current_effect_pattern_ids.remove(button)
             self.maybe_cached_pattern(button).reset()
         else:
-            self.activateButton(button, self._LED_COLOR_EFFECTS_ACTIVE)
+            self.activateButton(button)
             self.current_effect_pattern_ids.append(button)
 
 
     def handle_eye_buttons(self, button, pattern_time):
         if button == self.current_pattern_eye_id:
             # Deactivate eye pattern
-            self.deactivateButton(button, self._LED_COLOR_EYES_INACTIVE)
+            self.deactivateButton(button)
             self.current_pattern_eye_id = None
         else:
             if self.current_pattern_eye_id:
-                self.deactivateButton(self.current_pattern_eye_id, 
-                                      self._LED_COLOR_EYES_INACTIVE)
+                self.deactivateButton(self.current_pattern_eye_id)
             # Activate button corresponding to current pattern
-            self.activateButton(button, self._LED_COLOR_EYES_ACTIVE)
+            self.activateButton(button)
             # Update pattern index based on button press
             self.current_pattern_eye_id = button
 
@@ -195,12 +194,11 @@ class PatternSelector:
             return
 
         # Deactivate button corresponding to previous pattern
-        self.deactivateButton(self.current_pattern_id, self._LED_COLOR_ROTATION_INACTIVE)
+        self.deactivateButton(self.current_pattern_id)
         # Rotate patterns
         self.pattern_rotation_index = (self.pattern_rotation_index + 1) % len(self.pattern_rotation)
         # Activate button corresponding to current pattern
-        self.activateButton(self.pattern_rotation[self.pattern_rotation_index], 
-                            self._LED_COLOR_ROTATION_ACTIVE)
+        self.activateButton(self.pattern_rotation[self.pattern_rotation_index])
         self.current_pattern_id = self.pattern_rotation[self.pattern_rotation_index]
         self.pattern_start_time = pattern_time
 
@@ -223,23 +221,45 @@ class PatternSelector:
         return self.pattern_mix
    
 
-    def activateButton(self, button_name, button_color):
+    def activateButton(self, button_name):
         if not button_name:
             return
         if not button_name in self.buttons_active:
             self.buttons_active.append(button_name)
         if self.launchpad:
+            if button_name in self.pattern_rotation:
+                button_color = self._LED_COLOR_ROTATION_ACTIVE
+            elif button_name in self.pattern_manual:
+                button_color = self._LED_COLOR_MANUAL_ACTIVE
+            elif button_name in self.pattern_effects:
+                button_color = self._LED_COLOR_EFFECTS_ACTIVE
+            elif button_name in self.pattern_eyes:
+                button_color = self._LED_COLOR_EYES_ACTIVE
+            else:
+                button_color = 0
+
             button_group = self.launchpad.panel.buttons(button_name)
             for button in button_group:
                 button.led.color = button_color
 
 
-    def deactivateButton(self, button_name, button_color):
+    def deactivateButton(self, button_name):
         if not button_name:
             return
         while button_name in self.buttons_active:
             self.buttons_active.remove(button_name)
         if self.launchpad:
+            if button_name in self.pattern_rotation:
+                button_color = self._LED_COLOR_ROTATION_INACTIVE
+            elif button_name in self.pattern_manual:
+                button_color = self._LED_COLOR_MANUAL_INACTIVE
+            elif button_name in self.pattern_effects:
+                button_color = self._LED_COLOR_EFFECTS_INACTIVE
+            elif button_name in self.pattern_eyes:
+                button_color = self._LED_COLOR_EYES_INACTIVE
+            else:
+                button_color = 0
+
             button_group = self.launchpad.panel.buttons(button_name)
             for button in button_group:
                 button.led.color = button_color
