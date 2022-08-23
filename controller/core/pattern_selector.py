@@ -61,7 +61,7 @@ class PatternSelector:
         self.current_pattern_id = self.pattern_rotation[0]
         self.pattern_start_time = time.time()
         self.pattern_rotation_index = 0
-        self.current_pattern_eye_id = None
+        self.current_pattern_eye_id = self.pattern_eyes[0]
         self.current_effect_pattern_ids = []
 
         # Pattern mixer
