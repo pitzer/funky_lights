@@ -49,7 +49,7 @@ class UVGrid():
     
     def paintPoint(self, u, v, color):  
         u, v = int(u), int(v)
-        if u < self.width and v < self.height:
+        if u < self.width and  u >= 0 and v < self.height and v >= 0:
             self.coordinates[u][v] = color
     
     def paintMesh(self, mesh, color):
