@@ -34,22 +34,35 @@ class SerialWriter(asyncio.Protocol):
     def connection_lost(self, exc):
         print('Writer closed')
 
+
+    def initialize_lights(self):
+        serial = self.transport.serial
+        current_baudrate = self.transport.serial.baudrate
+        # Start application
+        serial.serial = connection.BOOTLOADER_BAUDRATE
+        serial.write(messages.PrepareStartLedControllerMsg(messages.BROADCAST_UID))
+        # Change application baudrate to current_baudrate
+        serial.serial = connection.START_BAUDRATE
+        prescaler = int(16000000 / current_baudrate)
+        serial.write(messages.PrepareBaudrateMsg(messages.BROADCAST_UID, prescaler))
+        # Return to normal operations
+        serial.serial = current_baudrate
+        
+
     async def serve(self):
-        start_time = time.time()
-        counter = 0
+        last_init_time = time.time() - 2.0
         while True:
+            # Initialize lights every second (should only affect lights that are in bootloader mode)
+            if (time.time() - last_init_time) > 1.0:
+                self.initialize_lights()
+                last_init_time = time.time()
+
+            # Send color messages
             segments = await asyncio.shield(self.generator.result)
             for segment in segments:
                 if segment.uid in self.uids:
                     self.transport.serial.write(
                         messages.PrepareLedMsg(segment.uid, segment.colors, self.color_format))
-            # Output update rate to console
-            counter += 1
-            if (time.time() - start_time) > 1.0:
-                print("Serial FPS: %.1f" %
-                      (counter / (time.time() - start_time)))
-                counter = 0
-                start_time = time.time()
 
 
 class PatternGenerator:
