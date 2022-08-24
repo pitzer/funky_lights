@@ -41,10 +41,12 @@ class SerialWriter(asyncio.Protocol):
         # Start application
         serial.baudrate = connection.BOOTLOADER_BAUDRATE
         serial.write(messages.PrepareStartLedControllerMsg(messages.BROADCAST_UID))
+        serial.flush()
         # Change application baudrate to current_baudrate
         serial.baudrate = connection.START_BAUDRATE
         prescaler = int(16000000 / current_baudrate)
         serial.write(messages.PrepareBaudrateMsg(messages.BROADCAST_UID, prescaler))
+        serial.flush()
         # Return to normal operations
         serial.baudrate = current_baudrate
         
