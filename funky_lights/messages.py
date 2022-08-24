@@ -20,8 +20,8 @@ class ColorFormat(Enum):
 
 
 def RgbToBits(rgbs, color_format=ColorFormat.GRB):
-    """ Convert RGB value given as a 3-tuple to a list of two bytes that can
-         be sent to the LEDs.
+    """ Convert RGB value given as a Nx3 numpy array to a list of two bytes that
+         can be sent to the LEDs.
     Args:
      rgbs: list of rgb tuples
     Returns:
