@@ -39,14 +39,14 @@ class SerialWriter(asyncio.Protocol):
         serial = self.transport.serial
         current_baudrate = self.transport.serial.baudrate
         # Start application
-        serial.serial = connection.BOOTLOADER_BAUDRATE
+        serial.baudrate = connection.BOOTLOADER_BAUDRATE
         serial.write(messages.PrepareStartLedControllerMsg(messages.BROADCAST_UID))
         # Change application baudrate to current_baudrate
-        serial.serial = connection.START_BAUDRATE
+        serial.baudrate = connection.START_BAUDRATE
         prescaler = int(16000000 / current_baudrate)
         serial.write(messages.PrepareBaudrateMsg(messages.BROADCAST_UID, prescaler))
         # Return to normal operations
-        serial.serial = current_baudrate
+        serial.baudrate = current_baudrate
         
 
     async def serve(self):
