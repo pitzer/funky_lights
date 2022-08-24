@@ -59,7 +59,7 @@ class SerialWriter(asyncio.Protocol):
         last_init_time = time.time() - 2.0
         while True:
             # Initialize lights every second (should only affect lights that are in bootloader mode)
-            if (time.time() - last_init_time) > 10.0:
+            if (time.time() - last_init_time) > 1.0:
                 await self.initialize_lights()
                 last_init_time = time.time()
 
