@@ -35,18 +35,21 @@ class SerialWriter(asyncio.Protocol):
         print('Writer closed')
 
 
-    def initialize_lights(self):
+    async def initialize_lights(self):
         serial = self.transport.serial
-        current_baudrate = self.transport.serial.baudrate
+        current_baudrate = serial.baudrate
+        await asyncio.sleep(0.05)
         # Start application
-        serial.serial = connection.BOOTLOADER_BAUDRATE
+        serial.baudrate = connection.BOOTLOADER_BAUDRATE
         serial.write(messages.PrepareStartLedControllerMsg(messages.BROADCAST_UID))
+        await asyncio.sleep(0.01)
         # Change application baudrate to current_baudrate
-        serial.serial = connection.START_BAUDRATE
+        serial.baudrate = connection.START_BAUDRATE
         prescaler = int(16000000 / current_baudrate)
         serial.write(messages.PrepareBaudrateMsg(messages.BROADCAST_UID, prescaler))
+        await asyncio.sleep(0.01)
         # Return to normal operations
-        serial.serial = current_baudrate
+        serial.baudrate = current_baudrate
         
 
     async def serve(self):
@@ -54,7 +57,7 @@ class SerialWriter(asyncio.Protocol):
         while True:
             # Initialize lights every second (should only affect lights that are in bootloader mode)
             if (time.time() - last_init_time) > 1.0:
-                self.initialize_lights()
+                await self.initialize_lights()
                 last_init_time = time.time()
 
             # Send color messages
