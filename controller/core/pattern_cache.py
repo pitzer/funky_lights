@@ -110,13 +110,15 @@ class PatternCache:
                     await afp.write(bytes)
             
             # Write cache index file
-            async with async_open(index_file, 'w') as afp:
+            with open(index_file, 'w', encoding='utf-8') as f:
+            # async with async_open(index_file, 'w', encoding='utf-8') as afp:
                 cache_index = {
                     "animation_steps": num_animation_steps,
                     "include_segments": pattern.params.include_segments,
                     "exclude_segments": pattern.params.exclude_segments,
                 }
-                await afp.write(json.dumps(cache_index))
+                json.dump(cache_index, f, ensure_ascii=False, indent=4)
+                # await afp.write(json.dumps(cache_index, ensure_ascii=False, indent=4))
 
     async def build_cache(self, patterns, max_pattern_duration, force_update=False):
         for pattern_id in self.patterns_for_caching():
