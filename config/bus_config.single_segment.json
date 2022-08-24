@@ -8,7 +8,7 @@
                 18,
                 25,
                 36],
-            "device": "/dev/tty.usbserial-AB64M485",
+            "device": "/dev/tty.usbserial-1410",
             "baudrate": 500000,
             "color_format": "RBG"
         }
