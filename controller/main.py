@@ -37,7 +37,8 @@ class SerialWriter(asyncio.Protocol):
 
     async def initialize_lights(self):
         serial = self.transport.serial
-        current_baudrate = self.transport.serial.baudrate
+        current_baudrate = serial.baudrate
+        await asyncio.sleep(0.01)
         # Start application
         serial.baudrate = connection.BOOTLOADER_BAUDRATE
         serial.write(messages.PrepareStartLedControllerMsg(messages.BROADCAST_UID))
@@ -46,7 +47,7 @@ class SerialWriter(asyncio.Protocol):
         serial.baudrate = connection.START_BAUDRATE
         prescaler = int(16000000 / current_baudrate)
         serial.write(messages.PrepareBaudrateMsg(messages.BROADCAST_UID, prescaler))
-        await asyncio.sleep(0.001)
+        await asyncio.sleep(0.01)
         # Return to normal operations
         serial.baudrate = current_baudrate
         
