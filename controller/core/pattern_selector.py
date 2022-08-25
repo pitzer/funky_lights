@@ -6,6 +6,8 @@ import time
 import serial
 import numpy as np
 import websockets
+from serial.tools import list_ports
+import threading 
 
 from core.pattern_cache import PatternCache
 from core.pattern_mixer import PatternMix
@@ -87,6 +89,7 @@ class PatternSelector:
         self.dmx = None
         self.channels = bytearray(dmx_config['universe_size'])
         self.color = np.array([0, 0, 0])
+        self.dmxConnected = asyncio.Event()
 
 
     def all_patterns_configs(self):
@@ -278,17 +281,40 @@ class PatternSelector:
 
     @run_in_executor
     def dmxPoll(self): 
-
-        if self.dmx:
-            #Check for waiting messages from DMX controller
-            if self.dmx.inWaiting() > 0:
-                bytes = self.dmx.read_until(expected = bytearray([self.dmx_config['start_byte']]))
-                while self.dmx.inWaiting() > 0:
-                    self.channels = self.dmx.read_until(expected = bytearray([self.dmx_config['stop_byte']]))
-                self.color = parse_dmx(self.channels, self.dmx_config['universe_size'], self.color)
+        try:
+            if self.dmx:
+                #Check for waiting messages from DMX controller
+                print("Polling DMX")
+                if self.dmx.inWaiting() > 0:
+                    bytes = self.dmx.read_until(expected = bytearray([self.dmx_config['start_byte']]))
+                    while self.dmx.inWaiting() > 0:
+                        self.channels = self.dmx.read_until(expected = bytearray([self.dmx_config['stop_byte']]))
+                    self.color = parse_dmx(self.channels, self.dmx_config['universe_size'], self.color)
+                else:
+                    pass 
+        except Exception as e:
+            print("DMX read error: " + str(e)) 
+    
+    async def check_presence(self, correct_port, flag, interval=1):
+        while True:
+            print("Checking presence")
+            found = False
+            ports = list(list_ports.comports())
+            for port in ports:
+                if port.name.split(".")[1] == correct_port:
+                    found = True
+                    continue 
+            if found:
+                print("Device connected")
+                await time.sleep(interval)
             else:
-                pass    
-
+                print ("Device has been disconnected!")
+                flag.clear()
+                #asyncio.current_task().cancel()
+                #raise Exception("Device has been disconnected!")
+                break
+            
+    
 
     async def launchpadListener(self):
         available_lps = lpminimk3.find_launchpads()
@@ -330,19 +356,27 @@ class PatternSelector:
                     self.buttons_released.append(event["button"])
             except websockets.ConnectionClosed as exc:
                 break
-
-
+    
     async def dmxListener(self):
         #Check for connected DMX controller
-        try:
-            self.dmx = serial.Serial(self.dmx_config['device'], baudrate = self.dmx_config['baudrate'], stopbits = self.dmx_config['stop_bits'])
-        except:
-            print("DMX controller not found")
-            return
-        if self.dmx:
-            self.dmx.isOpen()
-        
         while True:
-            # Wait for a controller event
-            await self.dmxPoll()
-            
+            try:
+                self.dmx = serial.Serial(self.dmx_config['device'], baudrate = self.dmx_config['baudrate'], stopbits = self.dmx_config['stop_bits'])
+            except:
+                #print("DMX controller not found")
+                await asyncio.sleep(1)
+                self.dmx = None
+                continue
+            if self.dmx:
+                self.dmx.isOpen()
+                self.dmxConnected.set()
+                port_trunc = self.dmx.port.split(".")[1]
+                #monitor = threading.Thread(target = self.check_presence, args = (port_trunc, self.dmxConnected))
+                #monitor.start()
+                loop = asyncio.get_event_loop()
+                task = asyncio.run_coroutine_threadsafe(self.check_presence(port_trunc, self.dmxConnected), loop)
+
+                while self.dmxConnected.is_set():
+                    # Wait for a controller event
+                    self.dmxPoll()
+            await asyncio.sleep(1)
