@@ -2,6 +2,15 @@
 This project develops a new light system for the Funkadelephant art car. 
 
 ## Setup and installation
+First, install the the legacy Arduino IDE (version 1.8 works). The current codebase is unfortunately not compatible with newer Arduino IDE version (2.0+). Add the damellis attiny board manager in Settings->“Additional Boards Manager URLs”: https://raw.githubusercontent.com/damellis/attiny/ide-1.6.x-boards-manager/package_damellis_attiny_index.json
+You may need to restart the Arduino IDE.
+
+Install the Apple Developer Commandline Tools and accept the license aggreement by running:
+
+``` 
+sudo xcodebuild -license
+``` 
+
 To start with funky_lights, first download the code using git:
 
 ``` 
