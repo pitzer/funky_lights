@@ -1,33 +1,33 @@
-uid,name,num_leds,length,reversed,offset,sub_component,num_adressable_leds,bus,status
-80,leg_back_right/Body1,132,4.60,FALSE,0,leg_back_right,132,leg_back_right,done
-81,leg_back_right/Body2,50,1.88,FALSE,0,leg_back_right,50,leg_back_right,done
-82,leg_back_right/Body3,52,1.93,FALSE,0,leg_back_right,52,leg_back_right,done
-83,leg_back_right/Body4,61,2.25,FALSE,0,leg_back_right,61,leg_back_right,done
-84,leg_back_right/Body5,49,1.84,FALSE,0,leg_back_right,49,leg_back_right,done
-85,leg_back_right/Body6,31,1.23,FALSE,0,leg_back_right,31,leg_back_right,done
-86,leg_back_right/Body7,31,1.24,FALSE,0,leg_back_right,31,leg_back_right,done
-87,leg_back_right/Body8,23,0.98,FALSE,0,leg_back_right,23,leg_back_right,done
-88,leg_back_right/Body1 (1),132,4.60,TRUE,0,leg_back_right,132,leg_back_right,done
-89,leg_front_right/Body1,123,4.30,FALSE,0,leg_front_right,123,leg_front_right,done
-90,leg_front_right/Body2,42,1.59,TRUE,0,leg_front_right,42,leg_front_right,done
-91,leg_front_right/Body3,37,1.45,FALSE,0,leg_front_right,37,leg_front_right,done
-92,leg_front_right/Body4,33,1.29,FALSE,0,leg_front_right,33,leg_front_right,done
-93,leg_front_right/Body5,16,0.75,FALSE,0,leg_front_right,16,leg_front_right,done
-94,leg_front_right/Body6,26,1.08,FALSE,0,leg_front_right,26,leg_front_right,done
-95,leg_front_right/Body1 (1),123,4.30,FALSE,0,leg_front_right,123,leg_front_right,done
-96,leg_back_left/Body1,132,4.61,FALSE,0,leg_back_left,132,leg_back_left,done
-97,leg_back_left/Body2,45,1.70,FALSE,0,leg_back_left,45,leg_back_left,done
-98,leg_back_left/Body3,49,1.83,FALSE,0,leg_back_left,49,leg_back_left,done
-99,leg_back_left/Body4,62,2.28,FALSE,0,leg_back_left,62,leg_back_left,done
-100,leg_back_left/Body5,47,1.76,FALSE,0,leg_back_left,47,leg_back_left,done
-101,leg_back_left/Body6,31,1.24,FALSE,0,leg_back_left,31,leg_back_left,done
-102,leg_back_left/Body7,33,1.30,FALSE,0,leg_back_left,33,leg_back_left,done
-103,leg_back_left/Body8,26,1.07,FALSE,0,leg_back_left,26,leg_back_left,done
-104,leg_back_left/Body1 (1),132,4.61,TRUE,0,leg_back_left,132,leg_back_left,done
-105,leg_front_left/Body1,124,4.34,FALSE,0,leg_front_left,124,leg_front_left,done
-106,leg_front_left/Body2,41,1.58,TRUE,0,leg_front_left,41,leg_front_left,done
-107,leg_front_left/Body3,37,1.45,FALSE,0,leg_front_left,37,leg_front_left,done
-108,leg_front_left/Body4,33,1.30,FALSE,0,leg_front_left,33,leg_front_left,done
-109,leg_front_left/Body5,15,0.71,FALSE,0,leg_front_left,15,leg_front_left,done
-110,leg_front_left/Body6,27,1.10,FALSE,0,leg_front_left,27,leg_front_left,done
-111,leg_front_left/Body1 (1),124,4.34,FALSE,0,leg_front_left,124,leg_front_left,done
+uid,name,num_leds,length,reversed,offset,sub_component,num_adressable_leds,bus,status,points,points
+80,leg_back_right/Body1,132,4.60,FALSE,0,leg_back_right,132,leg_back_right,done,
+81,leg_back_right/Body2,50,1.88,FALSE,0,leg_back_right,50,leg_back_right,done,
+82,leg_back_right/Body3,52,1.93,FALSE,0,leg_back_right,52,leg_back_right,done,
+83,leg_back_right/Body4,61,2.25,FALSE,0,leg_back_right,61,leg_back_right,done,
+84,leg_back_right/Body5,49,1.84,FALSE,0,leg_back_right,49,leg_back_right,done,
+85,leg_back_right/Body6,31,1.23,FALSE,0,leg_back_right,31,leg_back_right,done,
+86,leg_back_right/Body7,31,1.24,FALSE,0,leg_back_right,31,leg_back_right,done,
+87,leg_back_right/Body8,23,0.98,FALSE,0,leg_back_right,23,leg_back_right,done,
+88,leg_back_right/Body1 (1),132,4.60,TRUE,0,leg_back_right,132,leg_back_right,done,
+89,leg_front_right/Body1,123,4.30,FALSE,0,leg_front_right,123,leg_front_right,done,
+90,leg_front_right/Body2,42,1.59,TRUE,0,leg_front_right,42,leg_front_right,done,
+91,leg_front_right/Body3,37,1.45,FALSE,0,leg_front_right,37,leg_front_right,done,
+92,leg_front_right/Body4,33,1.29,FALSE,0,leg_front_right,33,leg_front_right,done,
+93,leg_front_right/Body5,16,0.75,FALSE,0,leg_front_right,16,leg_front_right,done,
+94,leg_front_right/Body6,26,1.08,FALSE,0,leg_front_right,26,leg_front_right,done,
+95,leg_front_right/Body1 (1),123,4.30,FALSE,0,leg_front_right,123,leg_front_right,done,
+96,leg_back_left/segment_1,177,5.89,FALSE,0,leg_back_left,177,leg_back_left,done,"[[1.6001999999999998, 0.8549952782673093, -5.209868115928227], [1.4478, 1.5282483177357846, -5.196330122832097], [1.651, 0.7111660270541152, -4.165903391984321], [1.651, 1.3378254054251733, -3.835616836919034], [1.6764, 1.8618952285645465, -3.569552737780918], [1.6382999999999999, 2.078323896554676, -3.5348503961897255], [1.6002, 2.2947525645448064, -3.5001480545985344], [1.5367, 2.48085700830209, -3.527746569245052], [1.4731999999999998, 2.6669614520593736, -3.55534508389157], [1.0922, 3.02874420272951, -3.9911022804120093], [1.016, 2.974860444878766, -4.6714902977057555], [1.1176, 2.8353419055215907, -4.83146054318939], [1.2191999999999998, 2.6958233661644164, -4.991430788673026], [1.27, 2.4509383516971535, -5.0750698353599235], [1.3208000000000002, 2.2060533372298905, -5.15870888204682]]"
+97,leg_back_left/Body2,45,1.70,FALSE,0,leg_back_left,45,leg_back_left,done,
+98,leg_back_left/Body3,49,1.83,FALSE,0,leg_back_left,49,leg_back_left,done,
+99,leg_back_left/Body4,62,2.28,FALSE,0,leg_back_left,62,leg_back_left,done,
+100,leg_back_left/Body5,47,1.76,FALSE,0,leg_back_left,47,leg_back_left,done,
+101,leg_back_left/Body6,31,1.24,FALSE,0,leg_back_left,31,leg_back_left,done,
+102,leg_back_left/Body7,33,1.30,FALSE,0,leg_back_left,33,leg_back_left,done,
+103,leg_back_left/Body8,26,1.07,FALSE,0,leg_back_left,26,leg_back_left,done,
+104,leg_back_left/Body1 (1),132,4.61,TRUE,0,leg_back_left,132,leg_back_left,done,
+105,leg_front_left/Body1,124,4.34,FALSE,0,leg_front_left,124,leg_front_left,done,
+106,leg_front_left/Body2,41,1.58,TRUE,0,leg_front_left,41,leg_front_left,done,
+107,leg_front_left/Body3,37,1.45,FALSE,0,leg_front_left,37,leg_front_left,done,
+108,leg_front_left/Body4,33,1.30,FALSE,0,leg_front_left,33,leg_front_left,done,
+109,leg_front_left/Body5,15,0.71,FALSE,0,leg_front_left,15,leg_front_left,done,
+110,leg_front_left/Body6,27,1.10,FALSE,0,leg_front_left,27,leg_front_left,done,
+111,leg_front_left/Body1 (1),124,4.34,FALSE,0,leg_front_left,124,leg_front_left,done,
