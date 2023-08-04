@@ -1,4 +1,4 @@
-uid,name,num_leds,length,reversed,offset,sub_component,num_adressable_leds,bus,status,points,points
+uid,name,num_leds,length,reversed,offset,sub_component,num_adressable_leds,bus,status,points
 80,leg_back_right/Body1,132,4.60,FALSE,0,leg_back_right,132,leg_back_right,done,
 81,leg_back_right/Body2,50,1.88,FALSE,0,leg_back_right,50,leg_back_right,done,
 82,leg_back_right/Body3,52,1.93,FALSE,0,leg_back_right,52,leg_back_right,done,
