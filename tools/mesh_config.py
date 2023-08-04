@@ -34,8 +34,8 @@ mesh_configs = [
     MeshConfig(
         mesh='../controller/mesh/head.obj',
         cluster_eps=0.03,
-        start_offset=0.15,
-        end_offset=0.05,
+        start_offset=0.0,
+        end_offset=0.0,
         uid_offset=60,
         modelled_csv='../config/head_modelled.csv',
         actual_csv='../config/head_actual.csv'
@@ -43,8 +43,8 @@ mesh_configs = [
     MeshConfig(
         mesh='../controller/mesh/legs.obj',
         cluster_eps=0.03,
-        start_offset=0.15,
-        end_offset=0.05,
+        start_offset=0.0,
+        end_offset=0.0,
         uid_offset=80,
         modelled_csv='../config/legs_modelled.csv',
         actual_csv='../config/legs_actual.csv'
