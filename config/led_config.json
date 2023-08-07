@@ -10948,7 +10948,7 @@
             ]
         },
         {
-            "uid": 60,
+            "uid": 105,
             "name": "head/shield_1",
             "num_leds": 176,
             "length": 5.836643834496622,
@@ -17840,7 +17840,7 @@
             ]
         },
         {
-            "uid": 105,
+            "uid": 60,
             "name": "leg_front_left/segment_1",
             "num_leds": 156,
             "length": 5.1933765572849415,
