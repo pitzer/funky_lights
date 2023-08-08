@@ -2,123 +2,63 @@
     "led_busses": [
         {
             "name": "dome",
-            "uids": [
-                1,
-                2,
-                3
-            ],
+            "uids": [1, 2, 3],
             "device": "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AB6WZ1I0-if00-port0",
             "baudrate": 500000,
             "color_format": "RGB"
         },
         {
             "name": "trunk_tusks_flange",
-            "uids": [
-                10,
-                11,
-                14,
-                18,
-                25,
-                36
-            ],
+            "uids": [10, 11, 14, 18, 25, 36],
             "device": "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AB6WWHXH-if00-port0",
             "baudrate": 500000,
             "color_format": "RBG"
         },
         {
             "name": "eyes",
-            "uids": [
-                50,
-                51
-            ],
+            "uids": [50, 51],
             "device": "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AB6WWHY4-if00-port0",
             "baudrate": 500000,
             "color_format": "GRB"
         },
         {
             "name": "head_rings",
-            "uids": [
-                105,
-                62,
-                67
-            ],
+            "uids": [60, 62, 67],
             "device": "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_ABZ5XJZN-if00-port0",
             "baudrate": 500000,
             "color_format": "RGB"
         },
         {
             "name": "head_top",
-            "uids": [
-                61,
-                63,
-                64,
-                65,
-                66
-            ],
+            "uids": [61, 63, 64, 65, 66],
             "device": "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AB0OJXQZ-if00-port0",
             "baudrate": 500000,
             "color_format": "RGB"
         },
         {
             "name": "leg_back_right",
-            "uids": [
-                80,
-                81,
-                82,
-                83,
-                84,
-                85,
-                86,
-                87,
-                88
-            ],
+            "uids": [80, 81, 82, 83, 84, 85, 86, 87, 88],
             "device": "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AB6X0PCB-if00-port0",
             "baudrate": 500000,
             "color_format": "RGB"
-        },
+        }, 
         {
             "name": "leg_front_right",
-            "uids": [
-                89,
-                90,
-                91,
-                92,
-                93,
-                94,
-                95
-            ],
+            "uids": [89, 90, 91, 92, 93, 94, 95],
             "device": "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AB6WYEGW-if00-port0",
             "baudrate": 500000,
             "color_format": "RGB"
         },
         {
             "name": "leg_back_left",
-            "uids": [
-                96,
-                97,
-                98,
-                99,
-                100,
-                101,
-                102,
-                103,
-                104
-            ],
+            "uids": [96, 97, 98, 99, 100, 101, 102, 103, 104],
             "device": "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AB6WWD2L-if00-port0",
             "baudrate": 500000,
             "color_format": "RGB"
         },
         {
             "name": "leg_front_left",
-            "uids": [
-                60,
-                106,
-                107,
-                108,
-                109,
-                110,
-                111
-            ],
+            "uids": [105, 106, 107, 108, 109, 110, 111],
             "device": "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AB6X17MM-if00-port0",
             "baudrate": 500000,
             "color_format": "RGB"
