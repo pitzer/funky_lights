@@ -1,0 +1,12 @@
+
+{
+    "led_busses": [
+        {
+            "name": "dome",
+            "uids": [42],
+            "device": "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AB64M485-if00-port0",
+            "baudrate": 500000,
+            "color_format": "RGB"
+        }
+    ]
+}
