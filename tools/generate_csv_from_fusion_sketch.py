@@ -11,35 +11,9 @@ import math
 
 SPLINE_SAMPLING_STEP_SIZE_M = 0.01
 CSV_UNIT = 'm'
-LED_DISTANCE_M = 5.0 / 150.0
+LED_DISTANCE_M = 5.0 / 300.0
 MIRROR_ON_Z = False
 CSV_FILENAME = '/Users/pitzer/Documents/workspace/funky_lights/config/led_config.csv'
-MERGE_RESULTS = True
-
-
-class Segment():
-    def __init__(self, uid, length, points):
-        self.uid = uid
-        self.points = points
-        self.length = length
-
-    def merge(self, other):
-        self.points.extend(other.points[1:])
-        self.length += other.length
-
-
-def convertInternalUnitsToCSV(app, length, points):
-    des = app.activeProduct
-    unitsMgr = des.unitsManager
-
-    for p in points:
-        for i in range(len(p)):
-            p[i] = unitsMgr.convert(p[i], unitsMgr.internalUnits, CSV_UNIT)
-    length = unitsMgr.convert(
-        length, unitsMgr.internalUnits, CSV_UNIT)
-    
-    return length, points
-
 
 def evalateFittedSpline(app, entity):
     des = app.activeProduct
@@ -72,39 +46,15 @@ def evalateFittedSpline(app, entity):
         inc_length += step_size
 
     points.append(list(endPoint.asArray()))
+
+    # Convert units to CSV_UNIT
+    for p in points:
+        for i in range(len(p)):
+            p[i] = unitsMgr.convert(p[i], unitsMgr.internalUnits, CSV_UNIT)
+    total_length = unitsMgr.convert(
+        total_length, unitsMgr.internalUnits, CSV_UNIT)
     
-    return convertInternalUnitsToCSV(app, total_length, points)
-
-
-def evalateSketchLine(app, entity):
-    des = app.activeProduct
-    unitsMgr = des.unitsManager
-    geom = entity.worldGeometry
-    eva = geom.evaluator
-
-    _, startPoint, endPoint = eva.getEndPoints()
-    _, length = eva.getLengthAtParameter(0.0, 1.0)
-
-    points = []
-    points.append(list(startPoint.asArray()))
-    points.append(list(endPoint.asArray()))
-
-    return convertInternalUnitsToCSV(app, length, points)
-
-
-def evalateBRepEdge(app, entity):
-    des = app.activeProduct
-    unitsMgr = des.unitsManager
-    eva = entity.evaluator
-
-    _, startPoint, endPoint = eva.getEndPoints()
-    length = entity.length
-
-    points = []
-    points.append(list(startPoint.asArray()))
-    points.append(list(endPoint.asArray()))
-
-    return convertInternalUnitsToCSV(app, length, points)
+    return total_length, points
 
 
 def createCSVRow(segment_id, num_leds, total_length, points):
@@ -128,46 +78,27 @@ def run(context):
         app = adsk.core.Application.get()
         ui = app.userInterface
 
-        # Generate line segments
-
         segment_id = 0
-        segments = []
+        csv_header = ['uid', 'name', 'num_leds', 'length', 'reversed', 'offset',
+                      'sub_component', 'num_adressable_leds', 'bus', 'status', 'points']
+        csv_data = []
         for selection in ui.activeSelections:
             entity = selection.entity
-            if entity.objectType == adsk.fusion.SketchFittedSpline.classType():
-                length, points = evalateFittedSpline(app, entity)
-            elif entity.objectType == adsk.fusion.SketchLine.classType():
-                length, points = evalateSketchLine(app, entity)
-            elif entity.objectType == adsk.fusion.BRepEdge.classType():
-                length, points = evalateBRepEdge(app, entity)
-            else:
+            if entity.objectType not in [adsk.fusion.SketchFittedSpline.classType(), adsk.fusion.SketchLine.classType()]:
                 continue
-            
-            segments.append(Segment(segment_id, length, points))
+            total_length, points = evalateFittedSpline(app, entity)
+            num_leds = math.floor(total_length / LED_DISTANCE_M) + 1
+            csv_data.append(createCSVRow(
+                segment_id, num_leds, total_length, points))
+
             segment_id += 1
 
             if MIRROR_ON_Z:
                 for p in points:
                     p[2] = -p[2]
-                segments.append(Segment(segment_id, length, points))
+                csv_data.append(createCSVRow(
+                    segment_id, num_leds, total_length, points))
                 segment_id += 1
-
-
-        # Generate line segments
-        if MERGE_RESULTS and len(segments) > 1:
-            merge_segment = segments[0]
-            for i in range(len(segments) - 1, 0, -1):
-                other = segments.pop(i)
-                merge_segment.merge(other)
-
-
-        # Output as CSV
-        csv_header = ['uid', 'name', 'num_leds', 'length', 'reversed', 'offset',
-                      'sub_component', 'num_adressable_leds', 'bus', 'status', 'points']
-        csv_data = []
-        for segment in segments:
-            num_leds = math.floor(segment.length / LED_DISTANCE_M) + 1
-            csv_data.append(createCSVRow(segment.uid, num_leds, segment.length, segment.points))
 
         with open(CSV_FILENAME, 'w', encoding='utf-8') as f:
             writer = csv.writer(f)
