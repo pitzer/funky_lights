@@ -30,3 +30,16 @@ class TextureWebSocketsServer:
                 await websocket.send(await self.PrepareTextureMsg(segments))
             except websockets.ConnectionClosed as exc:
                 break
+
+
+class PatternMixWebSocketsServer:
+    def __init__(self, pattern_generator):
+        self.pattern_generator = pattern_generator
+
+    async def serve(self, websocket, path):
+        while True:
+            pattern_mix = await asyncio.shield(self.pattern_generator.pattern_mix)
+            try:
+                await websocket.send(json.dumps(pattern_mix))
+            except websockets.ConnectionClosed as exc:
+                break

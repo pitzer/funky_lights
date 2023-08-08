@@ -63,6 +63,7 @@ class PatternSelector:
         self.pattern_rotation_index = 0
         self.current_pattern_eye_id = self.pattern_eyes[0]
         self.current_effect_pattern_ids = []
+        self.replace_pattern_ids = []
 
         # Pattern mixer
         self.pattern_mix = PatternMix(self.patterns, self.pattern_cache)
@@ -87,6 +88,14 @@ class PatternSelector:
         self.dmx = None
         self.channels = bytearray(dmx_config['universe_size'])
         self.color = np.array([0, 0, 0])
+
+
+    def get_pattern_mix(self):
+        return {
+            "current_pattern_id": self.current_pattern_id,
+            "replace_pattern_ids": self.replace_pattern_ids,
+            "current_effect_pattern_ids": self.current_effect_pattern_ids,
+        }
 
 
     def all_patterns_configs(self):
@@ -210,12 +219,11 @@ class PatternSelector:
         if self.dmx:
             self.patterns[self.current_pattern_id].params.color = self.color
         
-        replace_pattern_ids = []
         if self.current_pattern_eye_id:
-            replace_pattern_ids.append(self.current_pattern_eye_id)
+            self.replace_pattern_ids.append(self.current_pattern_eye_id)
         self.pattern_mix.update_mix(
             base_pattern_ids=[self.current_pattern_id], 
-            replace_pattern_ids=replace_pattern_ids,
+            replace_pattern_ids=self.replace_pattern_ids,
             mix_pattern_ids=self.current_effect_pattern_ids)
 
         return self.pattern_mix

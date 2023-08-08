@@ -11,7 +11,7 @@ import traceback
 
 from funky_lights import connection, messages
 from core.pattern_selector import PatternSelector
-from core.websockets import TextureWebSocketsServer
+from core.websockets import TextureWebSocketsServer, PatternMixWebSocketsServer
 from patterns import pattern_config
 
 
@@ -69,9 +69,13 @@ class SerialWriter(asyncio.Protocol):
 
 
 class PatternGenerator:
-    def __init__(self, patter_selector):
+    def __init__(self, args, patter_selector):
+        self.args = args
         self.patter_selector = patter_selector
         self.result = asyncio.Future()
+
+        if args.enable_pattern_mix_publish:
+            self.pattern_mix = asyncio.Future()
 
         self._ANIMATION_RATE = 20
         self._FPS_UPDATE_RATE = 1
@@ -88,10 +92,15 @@ class PatternGenerator:
             cur_animation_time = time.time()
             pattern = self.patter_selector.update(cur_animation_time)
 
+            # Update results future for processing by IO
+            if self.args.enable_pattern_mix_publish:
+                self.pattern_mix.set_result(self.patter_selector.get_pattern_mix())
+                self.pattern_mix = asyncio.Future()
+
             # Process animation
             await self.tick(pattern, cur_animation_time - prev_animation_time)
 
-            # Update future for processing by IO
+            # Update results future for processing by IO
             self.result.set_result(pattern.segments)
             self.result = asyncio.Future()
             prev_animation_time = cur_animation_time
@@ -127,6 +136,10 @@ async def main():
                         help="The WebSockets port for the launchpad server")
     parser.add_argument("-r", "--pattern_rotation_time", type=int, default=600, 
                         help="The maximum duration a pattern is displayed before rotating to the next.")
+    parser.add_argument("--enable_pattern_mix_publish", action='store_false', 
+                        help="Enables a WebSockets server to publish the pattern mix")
+    parser.add_argument("--pattern_mix_publish_port", type=int, default=5680, 
+                        help="The WebSockets port for the pattern mix publisher")
 
     args = parser.parse_args()
 
@@ -143,7 +156,7 @@ async def main():
     futures.append(pattern_selector.dmxListener())
 
     # Start pattern generator
-    pattern_generator = PatternGenerator(pattern_selector)
+    pattern_generator = PatternGenerator(args, pattern_selector)
     futures.append(pattern_generator.run())
     
     # Start WS servers
@@ -152,6 +165,10 @@ async def main():
                    '0.0.0.0', args.ws_port_texture))
     futures.append(websockets.serve(pattern_selector.launchpadWSListener,
                    '0.0.0.0', args.ws_port_launchpad))
+
+    if args.enable_pattern_mix_publish:
+        ws_pattern_mix_publish = PatternMixWebSocketsServer(pattern_generator) 
+        futures.append(websockets.serve(ws_pattern_mix_publish.serve, '0.0.0.0', args.pattern_mix_publish_port))
 
     # Start serial
     loop = asyncio.get_event_loop()
