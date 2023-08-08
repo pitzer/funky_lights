@@ -74,7 +74,7 @@ class PatternGenerator:
         self.patter_selector = patter_selector
         self.result = asyncio.Future()
 
-        if args.enable_pattern_mix_publish:
+        if args.enable_pattern_mix_publisher:
             self.pattern_mix = asyncio.Future()
 
         self._ANIMATION_RATE = 20
@@ -93,7 +93,7 @@ class PatternGenerator:
             pattern = self.patter_selector.update(cur_animation_time)
 
             # Update results future for processing by IO
-            if self.args.enable_pattern_mix_publish:
+            if self.args.enable_pattern_mix_publisher:
                 self.pattern_mix.set_result(self.patter_selector.get_pattern_mix())
                 self.pattern_mix = asyncio.Future()
 
@@ -136,10 +136,14 @@ async def main():
                         help="The WebSockets port for the launchpad server")
     parser.add_argument("-r", "--pattern_rotation_time", type=int, default=600, 
                         help="The maximum duration a pattern is displayed before rotating to the next.")
-    parser.add_argument("--enable_pattern_mix_publish", action='store_false', 
+    parser.add_argument("--enable_pattern_mix_publisher", action='store_true', 
                         help="Enables a WebSockets server to publish the pattern mix")
     parser.add_argument("--pattern_mix_publish_port", type=int, default=5680, 
                         help="The WebSockets port for the pattern mix publisher")
+    parser.add_argument("--enable_pattern_mix_subscriber", action='store_true', 
+                        help="Enables a WebSockets client to subscribe to a pattern mix")
+    parser.add_argument("--pattern_mix_subscribe_uri", default='ws://localhost:5680', 
+                        help="The WebSockets URI for the pattern mix subscriber")
 
     args = parser.parse_args()
 
@@ -166,9 +170,12 @@ async def main():
     futures.append(websockets.serve(pattern_selector.launchpadWSListener,
                    '0.0.0.0', args.ws_port_launchpad))
 
-    if args.enable_pattern_mix_publish:
+    if args.enable_pattern_mix_publisher:
         ws_pattern_mix_publish = PatternMixWebSocketsServer(pattern_generator) 
         futures.append(websockets.serve(ws_pattern_mix_publish.serve, '0.0.0.0', args.pattern_mix_publish_port))
+    
+    if args.enable_pattern_mix_subscriber:
+        futures.append(pattern_selector.patternMixWSListener(args.pattern_mix_subscribe_uri))
 
     # Start serial
     loop = asyncio.get_event_loop()

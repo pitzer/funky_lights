@@ -89,12 +89,15 @@ class PatternSelector:
         self.channels = bytearray(dmx_config['universe_size'])
         self.color = np.array([0, 0, 0])
 
+        # Pattern Mix Subscriber
+        self.pattern_mix_updates = []
+
 
     def get_pattern_mix(self):
         return {
-            "current_pattern_id": self.current_pattern_id,
-            "replace_pattern_ids": self.replace_pattern_ids,
-            "current_effect_pattern_ids": self.current_effect_pattern_ids,
+            'current_pattern_id': self.current_pattern_id,
+            'replace_pattern_ids': self.replace_pattern_ids,
+            'current_effect_pattern_ids': self.current_effect_pattern_ids,
         }
 
 
@@ -211,8 +214,37 @@ class PatternSelector:
         self.current_pattern_id = self.pattern_rotation[self.pattern_rotation_index]
         self.pattern_start_time = pattern_time
 
+    def handle_pattern_mix_updates(self, pattern_time):
+        for pattern_mix in self.pattern_mix_updates:
+            # Handle current_pattern_id
+            pid = pattern_mix['current_pattern_id']
+            if pid in self.patterns:
+                if pid != self.current_pattern_id:
+                    self.pattern_start_time = pattern_time
+                self.current_pattern_id = pid
+            
+            # Handle replace_pattern_ids
+            self.replace_pattern_ids.clear()
+            for pid in pattern_mix['replace_pattern_ids']:
+                if pid in self.patterns:
+                    self.replace_pattern_ids.append(pid)
+            
+            # Handle removed effects and reset
+            for pid in self.current_effect_pattern_ids:
+                if pid not in pattern_mix['current_effect_pattern_ids']:
+                    self.maybe_cached_pattern(pid).reset()
+
+            # Update current_effect_pattern_ids    
+            self.current_effect_pattern_ids.clear()
+            for pid in pattern_mix['current_effect_pattern_ids']:
+                if pid  in self.patterns:
+                    self.current_effect_pattern_ids.append(pid)
+
+         # Clear updates
+        self.pattern_mix_updates.clear()
 
     def update(self, pattern_time):
+        self.handle_pattern_mix_updates(pattern_time)
         self.handle_buttons(pattern_time)
         self.handle_pattern_timer(pattern_time)
         
@@ -220,7 +252,7 @@ class PatternSelector:
             self.patterns[self.current_pattern_id].params.color = self.color
         
         if self.current_pattern_eye_id:
-            self.replace_pattern_ids.append(self.current_pattern_eye_id)
+            self.replace_pattern_ids = [self.current_pattern_eye_id]
         self.pattern_mix.update_mix(
             base_pattern_ids=[self.current_pattern_id], 
             replace_pattern_ids=self.replace_pattern_ids,
@@ -325,6 +357,16 @@ class PatternSelector:
         while True:
             # Wait for a controller event
             await self.controllerPoll()
+
+
+    async def patternMixWSListener(self, uri):
+        async for websocket in websockets.connect(uri):
+            try:
+                res = await websocket.recv()
+                pattern_mix = json.loads(res)
+                self.pattern_mix_updates.append(pattern_mix)
+            except websockets.ConnectionClosed:
+                continue
 
 
     async def launchpadWSListener(self, websocket, path):
