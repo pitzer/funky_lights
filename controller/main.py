@@ -128,13 +128,17 @@ async def main():
                         help="Enable pattern caching")
     parser.add_argument("-a", "--animation_rate", type=int, default=20, 
                         help="The target animation rate in Hz")
-    parser.add_argument("-d", "--dmx_config", type=argparse.FileType('r'), default="../config/dmx_config_enttec.json", 
+    parser.add_argument("--enable_dmx", action='store_true', 
+                        help="Enables support for a DMX device")
+    parser.add_argument("--dmx_config", type=argparse.FileType('r'), default="../config/dmx_config_enttec.json", 
                         help="DMX config file")
-    parser.add_argument("-t", "--ws_port_texture", type=int, default=5678, 
+    parser.add_argument("--ws_port_texture", type=int, default=5678, 
                         help="The WebSockets port for the texture server")
-    parser.add_argument("-p", "--ws_port_launchpad", type=int, default=5679, 
+    parser.add_argument("--enable_launchpad", action='store_true', 
+                        help="Enables support for a USB launchpad device")
+    parser.add_argument("--ws_port_launchpad", type=int, default=5679, 
                         help="The WebSockets port for the launchpad server")
-    parser.add_argument("-r", "--pattern_rotation_time", type=int, default=600, 
+    parser.add_argument("--pattern_rotation_time", type=int, default=600, 
                         help="The maximum duration a pattern is displayed before rotating to the next.")
     parser.add_argument("--enable_pattern_mix_publisher", action='store_true', 
                         help="Enables a WebSockets server to publish the pattern mix")
@@ -142,7 +146,7 @@ async def main():
                         help="The WebSockets port for the pattern mix publisher")
     parser.add_argument("--enable_pattern_mix_subscriber", action='store_true', 
                         help="Enables a WebSockets client to subscribe to a pattern mix")
-    parser.add_argument("--pattern_mix_subscribe_uri", default='ws://localhost:5680', 
+    parser.add_argument("--pattern_mix_subscribe_uri", default='ws://funkypi.wlan:5680', 
                         help="The WebSockets URI for the pattern mix subscriber")
 
     args = parser.parse_args()
@@ -155,21 +159,27 @@ async def main():
 
     # Pattern selector
     pattern_selector = PatternSelector(pattern_config.DEFAULT_CONFIG, led_config, dmx_config, args)
-    futures.append(pattern_selector.launchpadListener())
+
+    # Launchpad handler
+    if args.enable_launchpad:
+        futures.append(pattern_selector.launchpadListener())
+
     #DMX handler
-    futures.append(pattern_selector.dmxListener())
+    if args.enable_dmx:
+        futures.append(pattern_selector.dmxListener())
 
     # Start pattern generator
     pattern_generator = PatternGenerator(args, pattern_selector)
     futures.append(pattern_generator.run())
     
-    # Start WS servers
+    # WS servers for the web visualization
     ws_texture = TextureWebSocketsServer(pattern_generator)
     futures.append(websockets.serve(ws_texture.serve,
                    '0.0.0.0', args.ws_port_texture))
     futures.append(websockets.serve(pattern_selector.launchpadWSListener,
                    '0.0.0.0', args.ws_port_launchpad))
 
+    # Publisher and subscriber for pattern mix
     if args.enable_pattern_mix_publisher:
         ws_pattern_mix_publish = PatternMixWebSocketsServer(pattern_generator) 
         futures.append(websockets.serve(ws_pattern_mix_publish.serve, '0.0.0.0', args.pattern_mix_publish_port))
