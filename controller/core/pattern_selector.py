@@ -302,18 +302,7 @@ class PatternSelector:
 
             button_group = self.launchpad.panel.buttons(button_name)
             for button in button_group:
-                button.led.color = button_color
-
-
-    @run_in_executor
-    def controllerPoll(self):
-        
-        if self.launchpad:
-            button_event = self.launchpad.panel.buttons().poll_for_event()
-            if button_event and button_event.type == lpminimk3.ButtonEvent.PRESS:
-                self.buttons_pressed.append(button_event.button.name)
-            elif button_event and button_event.type == lpminimk3.ButtonEvent.RELEASE:
-                self.buttons_released.append(button_event.button.name)               
+                button.led.color = button_color        
 
 
     @run_in_executor
@@ -330,33 +319,70 @@ class PatternSelector:
                 pass    
 
 
-    async def launchpadListener(self):
-        available_lps = lpminimk3.find_launchpads()
-        if available_lps:
-            # Use the first available launchpad
-            self.launchpad = available_lps[0]
-            # Open device for reading and writing on MIDI interface (by default)
-            self.launchpad.open()
-            self.launchpad.mode = lpminimk3.Mode.PROG  # Switch to the programmer mode
-        else:
-            print("Launchpad controller not found.")
-            return
-        if self.launchpad:
-            for button in self.launchpad.panel.buttons():
-                if button.name in self.pattern_rotation:
+    def initializeLaunchpadButtons(self):
+        for button in self.launchpad.panel.buttons():
+            if button.name in self.pattern_rotation:
+                if button.name in self.buttons_active:
+                    button.led.color = self._LED_COLOR_ROTATION_ACTIVE
+                else:
                     button.led.color = self._LED_COLOR_ROTATION_INACTIVE
-                elif button.name in self.pattern_manual:
+            elif button.name in self.pattern_manual:
+                if button.name in self.buttons_active:
+                    button.led.color = self._LED_COLOR_MANUAL_ACTIVE
+                else:
                     button.led.color = self._LED_COLOR_MANUAL_INACTIVE
-                elif button.name in self.pattern_effects:
+            elif button.name in self.pattern_effects:
+                if button.name in self.buttons_active:
+                    button.led.color = self._LED_COLOR_EFFECTS_ACTIVE
+                else:
                     button.led.color = self._LED_COLOR_EFFECTS_INACTIVE
-                elif button.name in self.pattern_eyes:
+            elif button.name in self.pattern_eyes:
+                if button.name in self.buttons_active:
+                    button.led.color = self._LED_COLOR_EYES_ACTIVE
+                else:
                     button.led.color = self._LED_COLOR_EYES_INACTIVE
-                else: 
-                    button.led.color = 0
-        
+            else: 
+                button.led.color = 0
+            
+    
+    @run_in_executor
+    def launchpadListener(self):
+        # Outer loop to find launchpads
         while True:
-            # Wait for a controller event
-            await self.controllerPoll()
+            available_lps = lpminimk3.find_launchpads()
+            if available_lps:
+                # Use the first available launchpad
+                self.launchpad = available_lps[0]
+                # Open device for reading and writing on MIDI interface (by default)
+                self.launchpad.open()
+                self.launchpad.mode = lpminimk3.Mode.PROG  # Switch to the programmer mode
+                print('Connected to launchpad device.')
+            else:
+                # sleep for 1 second and continue
+                time.sleep(1)
+                continue
+            
+            # Initialize button colors
+            self.initializeLaunchpadButtons()
+
+            # Inner loop for polling button presses
+            while self.launchpad.is_open():
+                # Check if device is still connected
+                if not self.launchpad.device_inquiry():
+                    print('Launchpad disconnected.')
+                    self.launchpad.close()
+                    time.sleep(1)
+                    break
+
+                # Wait for a controller event
+                button_event = self.launchpad.panel.buttons().poll_for_event(timeout=10)
+                if not button_event:
+                    continue
+                if button_event.type == lpminimk3.ButtonEvent.PRESS:
+                    self.buttons_pressed.append(button_event.button.name)
+                elif button_event.type == lpminimk3.ButtonEvent.RELEASE:
+                    self.buttons_released.append(button_event.button.name)
+
 
 
     async def patternMixWSListener(self, uri):
