@@ -1,0 +1,16 @@
+{
+    "led_busses": [
+        {
+            "name": "rad",
+            "uids": [
+                1,
+                2,
+                3,
+                4
+            ],
+            "device": "/dev/serial/by-id/pci-FTDI_FT232R_USB_UART_ABSCEZAC-if00-port0",
+            "baudrate": 500000,
+            "color_format": "RGB"
+        }
+    ]
+}
