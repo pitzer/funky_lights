@@ -172,8 +172,8 @@
         var ledLights = editor.scene.getObjectByName(ledObjectName);
         const newPosition = new THREE.Vector3(0, 0.55, 0);
         editor.execute(new SetPositionCommand(editor, ledLights, newPosition));
-        // const newRotation = new THREE.Euler(0, 90 * THREE.MathUtils.DEG2RAD, 0);
-        // editor.execute(new SetRotationCommand(editor, ledLights, newRotation));
+        const newRotation = new THREE.Euler(0, 90 * THREE.MathUtils.DEG2RAD, 0);
+        editor.execute(new SetRotationCommand(editor, ledLights, newRotation));
 
         // Start listening to websockets for LED updates
         function startWebSocketForLedMessages() {
