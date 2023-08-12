@@ -3,7 +3,6 @@
         {
             "name": "dome",
             "uids": [
-                1,
                 2,
                 3
             ],
@@ -38,9 +37,9 @@
         {
             "name": "head_rings",
             "uids": [
-                105,
+                1,
                 62,
-                67
+                65
             ],
             "device": "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_ABZ5XJZN-if00-port0",
             "baudrate": 500000,
@@ -52,8 +51,8 @@
                 61,
                 63,
                 64,
-                65,
-                66
+                66,
+                67
             ],
             "device": "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AB0OJXQZ-if00-port0",
             "baudrate": 500000,
