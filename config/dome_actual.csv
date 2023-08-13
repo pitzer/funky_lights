@@ -1,4 +1,4 @@
 uid,name,num_leds,length,reversed,offset,sub_component,num_adressable_leds,bus,status
-1,dome/center,230,7.87,FALSE,0,dome,230,dome,done
+1,dome/center,230,7.87,TRUE,0,dome,230,dome,done
 2,dome/left,230,7.87,TRUE,0,dome,230,dome,done
 3,dome/right,230,7.87,TRUE,0,dome,230,dome,done
