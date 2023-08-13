@@ -247,6 +247,7 @@
             function (object) {
                 object.name = 'OBJMesh'
                 object.position.set(0, 0.55, 0);
+                object.rotateY(180 * THREE.MathUtils.DEG2RAD)
                 editor.execute(new AddObjectCommand(editor, object));
             },
             // called when loading is in progresses
