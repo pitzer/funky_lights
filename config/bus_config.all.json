@@ -4,7 +4,9 @@
             "name": "dome",
             "uids": [
                 2,
-                3
+                3,
+                120, 
+                121
             ],
             "device": "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AB6WZ1I0-if00-port0",
             "baudrate": 500000,

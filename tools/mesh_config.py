@@ -48,5 +48,14 @@ mesh_configs = [
         uid_offset=80,
         modelled_csv='../config/legs_modelled.csv',
         actual_csv='../config/legs_actual.csv'
+    ),
+    MeshConfig(
+        mesh='../controller/mesh/tail.obj',
+        cluster_eps=0.03,
+        start_offset=0.0,
+        end_offset=0.0,
+        uid_offset=120,
+        modelled_csv='',
+        actual_csv='../config/tail_actual.csv'
     )
 ]
