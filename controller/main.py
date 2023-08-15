@@ -77,7 +77,6 @@ class PatternGenerator:
         if args.enable_pattern_mix_publisher:
             self.pattern_mix = asyncio.Future()
 
-        self._ANIMATION_RATE = 20
         self._FPS_UPDATE_RATE = 1
 
     async def tick(self, pattern, delta):
@@ -85,7 +84,7 @@ class PatternGenerator:
 
     async def run(self):
         await self.patter_selector.initializePatterns()
-        prev_animation_time = time.time() - 1.0 / self._ANIMATION_RATE
+        prev_animation_time = time.time() - 1.0 / self.args.animation_rate
         start_time = time.time()
         counter = 0
         while True:
@@ -107,7 +106,7 @@ class PatternGenerator:
 
             # Sleep for the remaining time
             processing_time = time.time() - cur_animation_time
-            await asyncio.sleep(max(0, 1.0/self._ANIMATION_RATE - processing_time))
+            await asyncio.sleep(max(0, 1.0/self.args.animation_rate - processing_time))
 
             # Output update rate to console
             counter += 1
