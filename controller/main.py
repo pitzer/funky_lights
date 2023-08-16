@@ -69,52 +69,63 @@ class SerialWriter(asyncio.Protocol):
 
 
 class PatternGenerator:
-    def __init__(self, args, patter_selector):
+    def __init__(self, args, pattern_selector):
         self.args = args
-        self.patter_selector = patter_selector
+        self.pattern_selector = pattern_selector
         self.result = asyncio.Future()
 
         if args.enable_pattern_mix_publisher:
             self.pattern_mix = asyncio.Future()
 
-        self._ANIMATION_RATE = 20
-        self._FPS_UPDATE_RATE = 1
+        self._LOG_RATE = 1.0
 
     async def tick(self, pattern, delta):
         await pattern.animate(delta)
 
     async def run(self):
-        await self.patter_selector.initializePatterns()
-        prev_animation_time = time.time() - 1.0 / self._ANIMATION_RATE
-        start_time = time.time()
-        counter = 0
+        await self.pattern_selector.initializePatterns()
+        animation_time_delta = 1.0 / self.args.animation_rate
+        cur_animation_time = time.time()
+        next_animation_time = cur_animation_time + animation_time_delta
+        prev_log_time = cur_animation_time
+        log_counter = 0
+
         while True:
-            cur_animation_time = time.time()
-            pattern = self.patter_selector.update(cur_animation_time)
+            cur_animation_time = next_animation_time
+            next_animation_time = cur_animation_time + animation_time_delta
+
+            # Skip a frame if falling too far behind
+            if time.time() > next_animation_time:
+                print("Falling behind. Skipping frame.")
+                continue
+
+            # Update pattern selection
+            pattern = self.pattern_selector.update(cur_animation_time)
 
             # Update results future for processing by IO
             if self.args.enable_pattern_mix_publisher:
-                self.pattern_mix.set_result(self.patter_selector.get_pattern_mix())
+                self.pattern_mix.set_result(self.pattern_selector.get_pattern_mix())
                 self.pattern_mix = asyncio.Future()
 
             # Process animation
-            await self.tick(pattern, cur_animation_time - prev_animation_time)
+            await self.tick(pattern, animation_time_delta)
 
             # Update results future for processing by IO
             self.result.set_result(pattern.segments)
             self.result = asyncio.Future()
-            prev_animation_time = cur_animation_time
-
-            # Sleep for the remaining time
-            processing_time = time.time() - cur_animation_time
-            await asyncio.sleep(max(0, 1.0/self._ANIMATION_RATE - processing_time))
 
             # Output update rate to console
-            counter += 1
-            if (time.time() - start_time) > 1.0 / self._FPS_UPDATE_RATE:
-                print("Animation FPS: %.1f" % (counter / (time.time() - start_time)))
-                counter = 0
-                start_time = time.time()
+            log_counter += 1
+            cur_log_time = time.time()
+            log_time_delta = cur_log_time - prev_log_time
+            if log_time_delta > 1.0 / self._LOG_RATE:
+                print("Animation FPS: %.1f" % (log_counter / log_time_delta))
+                log_counter = 0
+                prev_log_time = cur_log_time
+
+            # Sleep for the remaining time
+            await asyncio.sleep(max(0, next_animation_time - time.time()))
+
 
 
 async def main():
