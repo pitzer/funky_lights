@@ -63,7 +63,7 @@ class PatternSelector:
         self.pattern_rotation_index = 0
         self.current_pattern_eye_id = self.pattern_eyes[0]
         self.current_effect_pattern_ids = []
-        self.replace_pattern_ids = []
+        self.replace_pattern_ids = [self.current_pattern_eye_id]
 
         # Pattern mixer
         self.pattern_mix = PatternMix(self.patterns, self.pattern_cache)
@@ -166,16 +166,17 @@ class PatternSelector:
 
 
     def handle_eye_buttons(self, button, pattern_time):
-        if button == self.current_pattern_eye_id:
+        if self.current_pattern_eye_id:
             # Deactivate eye pattern
             self.deactivateButton(button)
+            while button in self.replace_pattern_ids:
+                self.replace_pattern_ids.remove(button)
             self.current_pattern_eye_id = None
+
         else:
-            if self.current_pattern_eye_id:
-                self.deactivateButton(self.current_pattern_eye_id)
-            # Activate button corresponding to current pattern
+            # Activate eye pattern
             self.activateButton(button)
-            # Update pattern index based on button press
+            self.replace_pattern_ids.append(button)     
             self.current_pattern_eye_id = button
 
 
@@ -250,9 +251,7 @@ class PatternSelector:
         
         if self.dmx:
             self.patterns[self.current_pattern_id].params.color = self.color
-        
-        if self.current_pattern_eye_id:
-            self.replace_pattern_ids = [self.current_pattern_eye_id]
+
         self.pattern_mix.update_mix(
             base_pattern_ids=[self.current_pattern_id], 
             replace_pattern_ids=self.replace_pattern_ids,
