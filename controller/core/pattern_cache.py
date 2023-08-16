@@ -88,7 +88,7 @@ class PatternCache:
                 cached_pattern.initialize()
                 cached_pattern.params.include_segments = cache_index["include_segments"]
                 cached_pattern.params.exclude_segments = cache_index["exclude_segments"]
-                cached_pattern.params.led_masks = cache_index["segment_masks"]
+                cached_pattern.params.segment_masks = cache_index["segment_masks"]
                 self.patterns[pattern_id] = cached_pattern
 
     async def build_cache_for_pattern(self, pattern, pattern_id, max_pattern_duration, force_update):
