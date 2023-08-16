@@ -20,6 +20,9 @@ from patterns.video_pattern import VideoPattern, Rect
 PatternConfig = namedtuple(
     'PatternConfig', ['rotation', 'manual', 'special_effects', 'eyes'])
 
+SegmentMask = namedtuple(
+    'SegmentMask', ['segment_uid', 'start', 'end'])
+
 DEFAULT_CONFIG = PatternConfig(
     # This is the default pattern rotation. These patterns are rotated unless manually changed.
     rotation = {
@@ -65,7 +68,7 @@ DEFAULT_CONFIG = PatternConfig(
 
     # Eye patterns
     eyes = {
-        '0x3': (VideoPattern, dict(file='media/eyes.mp4', include_segments=[50, 51])),
+        '0x3': (VideoPattern, dict(file='media/eyes.mp4', include_segments=[50, 51], segment_masks=[SegmentMask(50, 0, 97), SegmentMask(51, 0, 91)])),
     }
 ) 
 

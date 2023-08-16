@@ -8,11 +8,13 @@ class Segment:
         self.num_leds = num_leds
         self.colors = np.array([[0, 0, 0] for i in range(num_leds)], dtype=np.ubyte)
         self.led_positions = np.array(led_positions)
+        self.mask = None
 
 class Pattern:
     class PatternParameters:
         include_segments = []
         exclude_segments = []
+        segment_masks = []
 
     def __init__(self):
         self.segments = []
@@ -24,6 +26,9 @@ class Pattern:
     def prepareSegments(self, led_config):
         for s in led_config['led_segments']:
             segment = Segment(s['uid'], s['num_leds'], s['led_positions'])
+            for mask in self.params.segment_masks:
+                if mask.segment_uid == segment.uid:
+                    segment.mask = mask
             self.segments.append(segment)
 
     def getSegments(self):
