@@ -116,7 +116,7 @@ class PatternCache:
                     "animation_steps": num_animation_steps,
                     "include_segments": pattern.params.include_segments,
                     "exclude_segments": pattern.params.exclude_segments,
-                    "led_masks": pattern.params.segment_masks,
+                    "segment_masks": pattern.params.segment_masks,
                 }
                 json.dump(cache_index, f, ensure_ascii=False, indent=4)
 
