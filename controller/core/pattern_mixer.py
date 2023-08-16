@@ -33,7 +33,13 @@ class PatternMix(Pattern):
         for pattern in self.base_pattern_ids:
             await pattern.animate(delta)
             for segment, mix_segment in zip(self.segments, pattern.segments):
-                np.copyto(segment.colors, mix_segment.colors)
+                if mix_segment.mask:
+                    # Mask available, copy masked LEDs only
+                    m = mix_segment.mask
+                    segment.colors[m.start:m.end] = mix_segment.colors[m.start:m.end]
+                else:
+                    # No mask, copy everything
+                    np.copyto(segment.colors, mix_segment.colors)
 
         # Replace
         for pattern in self.replace_patterns:
@@ -41,7 +47,13 @@ class PatternMix(Pattern):
             included_segments = list(pattern.getSegments())
             for segment, mix_segment in zip(self.segments, pattern.segments):
                 if mix_segment in included_segments:
-                    np.copyto(segment.colors, mix_segment.colors)
+                    if mix_segment.mask:
+                        # Mask available, copy masked LEDs only
+                        m = mix_segment.mask
+                        segment.colors[m.start:m.end] = mix_segment.colors[m.start:m.end]
+                    else:
+                        # No mask, copy everything
+                        np.copyto(segment.colors, mix_segment.colors)
 
         # Mix
         for pattern in self.mix_patterns:
@@ -49,6 +61,12 @@ class PatternMix(Pattern):
             for segment, mix_segment in zip(self.segments, pattern.segments):
                 tmp = 255 - mix_segment.colors  # a temp uint8 array here
                 np.putmask(segment.colors, tmp < segment.colors, tmp)  # a temp bool array here
-                segment.colors += mix_segment.colors
+                if mix_segment.mask:
+                    # Mask available, copy masked LEDs only
+                    m = mix_segment.mask
+                    segment.colors[m.start:m.end] += mix_segment.colors[m.start:m.end]
+                else:
+                    # No mask, copy everything
+                    segment.colors += mix_segment.colors
 
 
