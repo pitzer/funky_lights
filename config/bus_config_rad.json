@@ -5,7 +5,7 @@
             "uids": [
                 1,
                 2,
-                3,
+                123,
                 4
             ],
             "device": "/dev/serial/by-id/pci-FTDI_FT232R_USB_UART_ABSCEZAC-if00-port0",

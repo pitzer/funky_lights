@@ -1032,7 +1032,7 @@
             ]
         },
         {
-            "uid": 3,
+            "uid": 123,
             "name": "back_frame/horizontal_2_right",
             "num_leds": 174,
             "length": 2.8341951104795466,
