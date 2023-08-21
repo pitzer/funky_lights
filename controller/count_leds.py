@@ -18,6 +18,8 @@ def main():
         uid = int(sys.argv[3])
     if len(sys.argv) > 4:
         count = int(sys.argv[4])
+    else:
+        count = 20
 
     serial_port = connection.InitializeController(
         tty_device, baudrate=baudrate)
