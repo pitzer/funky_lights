@@ -1,5 +1,6 @@
 import sys
 from funky_lights import connection, messages
+import numpy as np
 
 NUM_LEDS = 230
 
