@@ -1,9 +1,9 @@
 import sys
-import time
 from funky_lights import connection, messages
+import numpy as np
 
 NUM_LEDS = 230
-WHITE = 255
+
 
 def main():
     tty_device = connection.DEFAULT_TTY_DEVICE
@@ -17,28 +17,23 @@ def main():
     if len(sys.argv) > 3:
         uid = int(sys.argv[3])
     if len(sys.argv) > 4:
-        NUM_LEDS = int(sys.argv[4])
-  
-    # Some test pattern
-    rgbs = []
-    for i in range(int(NUM_LEDS / 2)):
-        col = int(i / (NUM_LEDS / 2) * WHITE)
-        rgbs += [(col, WHITE-col, 0)]
-    for i in range(int(NUM_LEDS / 2)):
-        col = int(WHITE - (i / (NUM_LEDS / 2) * WHITE))
-        rgbs += [(col, WHITE - col, 0)]
-    rgbs = [(255, 255, 255)] * NUM_LEDS
-    rgbs[-1] = (255, 0, 0)
-
+        count = int(sys.argv[4])
+    else:
+        count = 20
 
     serial_port = connection.InitializeController(
         tty_device, baudrate=baudrate)
 
     # Send messages to all the bars
-    for i in range(100000):
+    while True:
+        rgbs = np.zeros((NUM_LEDS, 3), int)
+        for i in range(NUM_LEDS):
+            rgbs[i, :] = (0, 0, 0)
+        for i in range(count - 1):
+            rgbs[i, :] = (255, 255, 255)
+        rgbs[count - 1, :] = (255, 0, 0)
         serial_port.write(messages.PrepareLedMsg(uid, rgbs))
-        # rgbs = rgbs[1:] + rgbs[:1]
-        time.sleep(0.02)
+        count = int(input("Number of LEDs: "))
 
     serial_port.close()
 
