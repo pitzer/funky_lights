@@ -1,7 +1,7 @@
 import sys
 from funky_lights import connection, messages
 
-NUM_LEDS = 20
+NUM_LEDS = 230
 
 
 def main():
@@ -16,19 +16,21 @@ def main():
     if len(sys.argv) > 3:
         uid = int(sys.argv[3])
     if len(sys.argv) > 4:
-        NUM_LEDS = int(sys.argv[4])
-
-    # Some test pattern
-    rgbs = [(255, 255, 255)] * NUM_LEDS
-    rgbs[-1] = (255, 0, 0)
+        count = int(sys.argv[4])
 
     serial_port = connection.InitializeController(
         tty_device, baudrate=baudrate)
 
     # Send messages to all the bars
     while True:
+        rgbs = np.zeros((NUM_LEDS, 3), int)
+        for i in range(NUM_LEDS):
+            rgbs[i, :] = (0, 0, 0)
+        for i in range(count - 1):
+            rgbs[i, :] = (255, 255, 255)
+        rgbs[count - 1, :] = (255, 0, 0)
         serial_port.write(messages.PrepareLedMsg(uid, rgbs))
-        NUM_LEDS = int(input("Number of LEDs: "))
+        count = int(input("Number of LEDs: "))
 
     serial_port.close()
 
