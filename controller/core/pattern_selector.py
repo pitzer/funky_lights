@@ -348,15 +348,21 @@ class PatternSelector:
     def launchpadListener(self):
         # Outer loop to find launchpads
         while True:
-            available_lps = lpminimk3.find_launchpads()
-            if available_lps:
-                # Use the first available launchpad
-                self.launchpad = available_lps[0]
-                # Open device for reading and writing on MIDI interface (by default)
-                self.launchpad.open()
-                self.launchpad.mode = lpminimk3.Mode.PROG  # Switch to the programmer mode
-                print('Connected to launchpad device.')
-            else:
+            try:
+                available_lps = lpminimk3.find_launchpads()
+                if available_lps:
+                    # Use the first available launchpad
+                    self.launchpad = available_lps[0]
+                    # Open device for reading and writing on MIDI interface (by default)
+                    self.launchpad.open()
+                    self.launchpad.mode = lpminimk3.Mode.PROG  # Switch to the programmer mode
+                    print('Connected to launchpad device.')
+                else:
+                    # sleep for 1 second and continue
+                    time.sleep(1)
+                    continue
+            except Exception as err:
+                print(f"Unexpected {err=}, {type(err)=} while connecting to launchpad.")
                 # sleep for 1 second and continue
                 time.sleep(1)
                 continue
