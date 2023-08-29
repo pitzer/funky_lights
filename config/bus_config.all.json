@@ -20,7 +20,7 @@
                 14,
                 18,
                 25,
-                36
+                131
             ],
             "device": "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AB6WWHXH-if00-port0",
             "baudrate": 500000,
