@@ -3,6 +3,7 @@ class Selector {
     constructor(editor) {
 
         const signals = editor.signals;
+        const scene = editor.scene;
 
         this.editor = editor;
         this.signals = signals;
@@ -13,7 +14,11 @@ class Selector {
 
             if (intersects.length > 0) {
 
-                const object = intersects[0].object;
+                var object = intersects[0].object;
+
+                while (object.parent !== this.editor.scene) {
+                    object = object.parent;
+                }
 
                 if (object.userData.object !== undefined) {
 
