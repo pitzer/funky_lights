@@ -173,15 +173,38 @@
         texture.needsUpdate = true;
         var material = new THREE.MeshBasicMaterial({ map: texture });
 
-        // Add one mesh per head
+        // Create head objects
         for (var head of headConfigData.heads) {
+            const id = head.id;
             const position = head.position;
             const orientation = head.orientation;
-            var object = new THREE.Mesh(mergedGeometry, material);
-            object.position.set(position.x, position.y + yOffset, position.z);
-            object.rotateY(orientation * THREE.MathUtils.DEG2RAD);
-            object.name = head.id;
-            editor.execute(new AddObjectCommand(editor, object));
+            const loader = new OBJLoader();
+            loader.load(
+                // resource URL
+                head.mesh,
+                // called when resource is loaded
+                function (object) {
+                    object.name = id;
+                    object.position.set(position.x, position.y + yOffset, position.z);
+                    object.rotateY(orientation * THREE.MathUtils.DEG2RAD)
+                    editor.execute(new AddObjectCommand(editor, object));
+
+                    // Add lights as a child
+                    var lightsObject = new THREE.Mesh(mergedGeometry, material);
+                    lightsObject.name = 'lights';
+                    editor.execute(new AddObjectCommand(editor, lightsObject, object, 0));
+                    
+                    editor.select(object);
+                },
+                // called when loading is in progresses
+                function (xhr) {
+                    console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+                },
+                // called when loading has errors
+                function (error) {
+                    console.log('An error happened');
+                }
+            );
         }
 
         // Start listening to websockets for LED updates
@@ -245,34 +268,6 @@
 
         }
         startWebSocketForLaunchpadMessages();
-
-            
-        // load a mesh file
-        
-        for (var head of headConfigData.heads) {
-            const position = head.position;
-            const orientation = head.orientation;
-            const loader = new OBJLoader();
-            loader.load(
-                // resource URL
-                head.mesh,
-                // called when resource is loaded
-                function (object) {
-                    object.name = 'OBJMesh'
-                    object.position.set(position.x, position.y + yOffset, position.z);
-                    object.rotateY(orientation * THREE.MathUtils.DEG2RAD)
-                    editor.execute(new AddObjectCommand(editor, object));
-                },
-                // called when loading is in progresses
-                function (xhr) {
-                    console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-                },
-                // called when loading has errors
-                function (error) {
-                    console.log('An error happened');
-                }
-            );
-        }
 
         // add some lights
         {
