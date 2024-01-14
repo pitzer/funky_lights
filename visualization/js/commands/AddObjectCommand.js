@@ -8,13 +8,15 @@ import { ObjectLoader } from 'three';
  */
 class AddObjectCommand extends Command {
 
-	constructor( editor, object ) {
+    constructor(editor, object, parent, index) {
 
 		super( editor );
 
 		this.type = 'AddObjectCommand';
 
 		this.object = object;
+        this.parent = parent;
+        this.index = index;
 		if ( object !== undefined ) {
 
 			this.name = `Add Object: ${object.name}`;
@@ -25,7 +27,7 @@ class AddObjectCommand extends Command {
 
 	execute() {
 
-		this.editor.addObject( this.object );
+		this.editor.addObject( this.object, this.parent, this.index );
 		this.editor.select( this.object );
 
 	}
