@@ -1,6 +1,6 @@
 import { UITabbedPanel, UISpan } from './libs/ui.js';
 
-import { SidebarLaunchpad } from './Sidebar.Launchpad.js';
+import { SidebarImpossibleDialogue } from './Sidebar.ImpossibleDialogue.js';
 
 function Sidebar( editor ) {
 
@@ -10,7 +10,7 @@ function Sidebar( editor ) {
 	container.setId( 'sidebar' );
 
     const launchpad = new UISpan().add(
-        new SidebarLaunchpad( editor ),
+        new SidebarImpossibleDialogue( editor ),
 	);
     
     container.addTab('scene', strings.getKey('sidebar/scene'), launchpad );
