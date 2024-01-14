@@ -1,0 +1,64 @@
+{
+    "heads": [
+        {
+            "id": "head_1",
+            "position": {
+                "x": -2.5,
+                "y": 0,
+                "z": 4.33
+            },
+            "orientation": 150,
+            "mesh": "../controller/mesh/head.obj"
+        },
+        {
+            "id": "head_2",
+            "position": {
+                "x": 2.5,
+                "y": 0,
+                "z": 4.33
+            },
+            "orientation": 210,
+            "mesh": "../controller/mesh/head.obj"
+        },
+        {
+            "id": "head_3",
+            "position": {
+                "x": 5.0,
+                "y": 0,
+                "z": 0
+            },
+            "orientation": 270,
+            "mesh": "../controller/mesh/head.obj"
+        },
+        {
+            "id": "head_4",
+            "position": {
+                "x": 2.5,
+                "y": 0,
+                "z": -4.33
+            },
+            "orientation": 330,
+            "mesh": "../controller/mesh/head.obj"
+        },
+        {
+            "id": "head_5",
+            "position": {
+                "x": -2.5,
+                "y": 0,
+                "z": -4.33
+            },
+            "orientation": 30,
+            "mesh": "../controller/mesh/head.obj"
+        },
+        {
+            "id": "head_6",
+            "position": {
+                "x": -5.0,
+                "y": 0,
+                "z": 0
+            },
+            "orientation": 90,
+            "mesh": "../controller/mesh/head.obj"
+        }
+    ]
+}
