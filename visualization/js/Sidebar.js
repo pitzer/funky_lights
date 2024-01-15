@@ -1,6 +1,7 @@
 import { UITabbedPanel, UISpan } from './libs/ui.js';
 
 import { SidebarImpossibleDialogue } from './Sidebar.ImpossibleDialogue.js';
+import { SidebarObjects } from './Sidebar.Objects.js';
 
 function Sidebar( editor ) {
 
@@ -9,11 +10,12 @@ function Sidebar( editor ) {
 	const container = new UITabbedPanel();
 	container.setId( 'sidebar' );
 
-    const launchpad = new UISpan().add(
+    const scene = new UISpan().add(
         new SidebarImpossibleDialogue( editor ),
+        new SidebarObjects(editor),
 	);
     
-    container.addTab('scene', strings.getKey('sidebar/scene'), launchpad );
+    container.addTab('scene', strings.getKey('sidebar/scene'), scene );
     container.select( 'scene' );
 
 	return container;
