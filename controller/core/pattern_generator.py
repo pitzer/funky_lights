@@ -19,11 +19,12 @@ class PatternGenerator:
         for o in config['heads']:
             object_id = o['id']
             self.objects_ids.append(object_id)
-            # Opening JSON file
             led_config_file = open(o['led_config'])
             led_config = json.load(led_config_file)
-            self.pattern_selectors[object_id] = PatternSelector(
+            pattern_selector = PatternSelector(
                 pattern_config.DEFAULT_CONFIG, led_config, None, args)
+            pattern_selector.current_pattern_id = o['pattern_id']
+            self.pattern_selectors[object_id] = pattern_selector
 
             if args.enable_pattern_mix_publisher:
                 self.pattern_mixes[object_id] = asyncio.Future()
