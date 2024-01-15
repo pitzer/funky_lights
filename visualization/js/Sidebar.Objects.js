@@ -7,9 +7,6 @@ import { SetRotationCommand } from '../js/commands/SetRotationCommand.js';
 
 import * as BufferGeometryUtils from '../js/BufferGeometryUtils.js';
 
-import headConfigData from '../../config/head_config.json' assert { type: 'json' };
-import ledConfigData from '../../config/led_config_impossible_dialogue.json' assert { type: 'json' };
-
 // constants
 const yOffset = 0.55;
 const textureWidth = 128;
