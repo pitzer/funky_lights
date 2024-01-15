@@ -1,9 +1,6 @@
 import { UIPanel, UIRow, UIButton, UISpan, UIText, UINumber, UIBreak } from './libs/ui.js';
-import { UIOutliner } from './libs/ui.three.js';
 import { OBJLoader } from '../js/OBJLoader.js';
 import { AddObjectCommand } from '../js/commands/AddObjectCommand.js';
-import { SetPositionCommand } from '../js/commands/SetPositionCommand.js';
-import { SetRotationCommand } from '../js/commands/SetRotationCommand.js';
 
 import * as BufferGeometryUtils from '../js/BufferGeometryUtils.js';
 
