@@ -8,7 +8,8 @@
                 "z": 4.33
             },
             "orientation": 150,
-            "mesh": "../controller/mesh/head.obj"
+            "mesh": "../controller/mesh/head.obj",
+            "led_config": "../config/led_config_impossible_dialogue.json"
         },
         {
             "id": "head_2",
@@ -18,7 +19,8 @@
                 "z": 4.33
             },
             "orientation": 210,
-            "mesh": "../controller/mesh/head.obj"
+            "mesh": "../controller/mesh/head.obj",
+            "led_config": "../config/led_config_impossible_dialogue.json"
         },
         {
             "id": "head_3",
@@ -28,7 +30,8 @@
                 "z": 0
             },
             "orientation": 270,
-            "mesh": "../controller/mesh/head.obj"
+            "mesh": "../controller/mesh/head.obj",
+            "led_config": "../config/led_config_impossible_dialogue.json"
         },
         {
             "id": "head_4",
@@ -38,7 +41,8 @@
                 "z": -4.33
             },
             "orientation": 330,
-            "mesh": "../controller/mesh/head.obj"
+            "mesh": "../controller/mesh/head.obj",
+            "led_config": "../config/led_config_impossible_dialogue.json"
         },
         {
             "id": "head_5",
@@ -48,7 +52,8 @@
                 "z": -4.33
             },
             "orientation": 30,
-            "mesh": "../controller/mesh/head.obj"
+            "mesh": "../controller/mesh/head.obj",
+            "led_config": "../config/led_config_impossible_dialogue.json"
         },
         {
             "id": "head_6",
@@ -58,7 +63,8 @@
                 "z": 0
             },
             "orientation": 90,
-            "mesh": "../controller/mesh/head.obj"
+            "mesh": "../controller/mesh/head.obj",
+            "led_config": "../config/led_config_impossible_dialogue.json"
         }
     ]
 }
