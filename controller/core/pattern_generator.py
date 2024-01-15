@@ -16,7 +16,7 @@ class PatternGenerator:
         self.pattern_mixes = {}
 
         # Pattern selectors
-        for o in config['heads']:
+        for o in config['objects']:
             object_id = o['id']
             self.objects_ids.append(object_id)
             led_config_file = open(o['led_config'])

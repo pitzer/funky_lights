@@ -28,9 +28,8 @@ function SidebarObjects( editor ) {
 
         function (data) {
             let json = JSON.parse(data);
-            // Create head objects
-            for (var head of json.heads) {
-                createObject(head);
+            for (var obj of json.objects) {
+                createObject(obj);
             }
         },
 
