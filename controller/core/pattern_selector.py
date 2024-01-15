@@ -86,7 +86,8 @@ class PatternSelector:
 
         # DMX
         self.dmx = None
-        self.channels = bytearray(dmx_config['universe_size'])
+        if dmx_config:
+            self.channels = bytearray(dmx_config['universe_size'])
         self.color = np.array([0, 0, 0])
 
         # Pattern Mix Subscriber
