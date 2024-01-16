@@ -12,7 +12,8 @@ class PatternGenerator:
         self.config = config
         self.result = asyncio.Future()
         self.objects_ids = []
-        self.pattern_selectors = {}
+        self.pattern_selectors_leds = {}
+        self.pattern_selectors_solids = {}
         self.pattern_mixes = {}
 
         # Pattern selectors
@@ -21,19 +22,28 @@ class PatternGenerator:
             self.objects_ids.append(object_id)
             led_config_file = open(o['led_config'])
             led_config = json.load(led_config_file)
-            pattern_selector = PatternSelector(
-                pattern_config.DEFAULT_CONFIG, led_config, None, args)
-            pattern_selector.current_pattern_id = o['pattern_id']
-            self.pattern_selectors[object_id] = pattern_selector
 
-            if args.enable_pattern_mix_publisher:
-                self.pattern_mixes[object_id] = asyncio.Future()
+            # LED patterns
+            selector = PatternSelector(
+                pattern_config.DEFAULT_CONFIG, led_config, None, args)
+            selector.current_pattern_id = o['led_pattern_id']
+            self.pattern_selectors_leds[object_id] = selector
+
+            # Solid patterns
+            solid_config_file = open(o['solid_config'])
+            solid_config = json.load(solid_config_file)
+            selector = PatternSelector(
+                pattern_config.DEFAULT_CONFIG, solid_config, None, args)
+            selector.current_pattern_id = o['solid_pattern_id']
+            self.pattern_selectors_solids[object_id] = selector
 
         self._LOG_RATE = 1.0
 
 
     async def initializePatterns(self):
-        for pattern_selector in self.pattern_selectors.values():
+        for pattern_selector in self.pattern_selectors_leds.values():
+            await pattern_selector.initializePatterns()
+        for pattern_selector in self.pattern_selectors_solids.values():
             await pattern_selector.initializePatterns()
 
     async def tick(self, pattern, delta):
@@ -57,28 +67,26 @@ class PatternGenerator:
                 continue
             
             # Animate patterns
-            segments = {}
+            led_segments = {}
+            solid_segments = {}
             for object_id in self.objects_ids:
-                pattern_selector = self.pattern_selectors[object_id]
+                led_selector = self.pattern_selectors_leds[object_id]
+                solid_selector = self.pattern_selectors_solids[object_id]
 
                 # Update pattern selection
-                pattern = pattern_selector.update(cur_animation_time)
-
-                # Update results future for processing by IO
-                if self.args.enable_pattern_mix_publisher:
-                    pattern_mix = self.pattern_mixes[object_id]
-                    pattern_mix.set_result(
-                        pattern_selector.get_pattern_mix())
-                    pattern_mix = asyncio.Future()
+                led_pattern = led_selector.update(cur_animation_time)
+                solid_pattern = solid_selector.update(cur_animation_time)
 
                 # Process animation
-                await self.tick(pattern, animation_time_delta)
+                await self.tick(led_pattern, animation_time_delta)
+                await self.tick(solid_pattern, animation_time_delta)
 
                 # Stash results in a dictionary
-                segments[object_id] = pattern.segments
+                led_segments[object_id] = led_pattern.segments
+                solid_segments[object_id] = solid_pattern.segments
 
             # Update results future for processing by IO
-            self.result.set_result(segments)
+            self.result.set_result((self.objects_ids, led_segments, solid_segments))
             self.result = asyncio.Future()
 
             # Output update rate to console

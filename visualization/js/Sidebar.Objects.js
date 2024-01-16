@@ -4,6 +4,9 @@ import { AddObjectCommand } from '../js/commands/AddObjectCommand.js';
 
 import * as BufferGeometryUtils from '../js/BufferGeometryUtils.js';
 
+import { MeshPhongMaterial } from 'three';
+
+
 // constants
 const yOffset = 0.55;
 const textureWidth = 128;
@@ -19,6 +22,7 @@ function SidebarObjects( editor ) {
 
     const ledObjects = new Map();
     const ledObjectMaterials = new Map();
+    const solidObjectMaterials = new Map();
 
     const loader = new THREE.FileLoader();
 
@@ -58,6 +62,11 @@ function SidebarObjects( editor ) {
                 object.name = object_id;
                 object.position.set(position.x, position.y + yOffset, position.z);
                 object.rotateY(orientation * THREE.MathUtils.DEG2RAD)
+                const material = createMaterialForMesh();
+                for (let i = 0; i < object.children.length; i++) {
+                    object.children[i].material = material;
+                }
+                solidObjectMaterials.set(object_id, material);
                 editor.execute(new AddObjectCommand(editor, object));
 
                 // Add lights as a child
@@ -72,6 +81,13 @@ function SidebarObjects( editor ) {
                 console.log(error);
             }
         );
+    }
+
+    function createMaterialForMesh() {
+        var material = new MeshPhongMaterial();
+        material.flatShading = true;
+        material.vertexColors = false;
+        return material
     }
 
     // Create LED lights object with texture.
@@ -152,12 +168,19 @@ function SidebarObjects( editor ) {
         ws.onmessage = function (event) {
             var json = JSON.parse(event.data);
             for (let i = 0; i < json.length; i++) {
-                let texture = json[i];
-                const object_id = texture.object_id;
-                const data = Uint8Array.from(atob(texture.texture_data), c => c.charCodeAt(0))
-                let material = ledObjectMaterials.get(object_id);
-                material.map = new THREE.DataTexture(data, textureWidth, textureHeight);
-                material.map.needsUpdate = true;
+                let material = json[i];
+
+                // Update LED texture data
+                const object_id = material.object_id;
+                const data = Uint8Array.from(atob(material.texture_data), c => c.charCodeAt(0))
+                let ledMaterial = ledObjectMaterials.get(object_id);
+                ledMaterial.map = new THREE.DataTexture(data, textureWidth, textureHeight);
+                ledMaterial.map.needsUpdate = true;
+
+                // Update mesh color
+                let meshMaterial = solidObjectMaterials.get(object_id);
+                meshMaterial.color.setStyle(material.mesh_color);
+                // meshMaterial.color.setStyle('#f44336');
             }
             editor.signals.sceneGraphChanged.dispatch();
         };

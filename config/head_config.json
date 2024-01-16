@@ -10,7 +10,9 @@
             "orientation": 150,
             "mesh": "../controller/mesh/head.obj",
             "led_config": "../config/led_config_impossible_dialogue.json",
-            "pattern_id": "0x0"
+            "led_pattern_id": "0x0",
+            "solid_config": "../config/led_config_solid.json",
+            "solid_pattern_id": "1x1"
         },
         {
             "id": "head_2",
@@ -22,7 +24,9 @@
             "orientation": 210,
             "mesh": "../controller/mesh/head.obj",
             "led_config": "../config/led_config_impossible_dialogue.json",
-            "pattern_id": "1x0"
+            "led_pattern_id": "1x0",
+            "solid_config": "../config/led_config_solid.json",
+            "solid_pattern_id": "1x1"
         },
         {
             "id": "head_3",
@@ -34,7 +38,9 @@
             "orientation": 270,
             "mesh": "../controller/mesh/head.obj",
             "led_config": "../config/led_config_impossible_dialogue.json",
-            "pattern_id": "2x0"
+            "led_pattern_id": "2x0",
+            "solid_config": "../config/led_config_solid.json",
+            "solid_pattern_id": "1x1"
         },
         {
             "id": "head_4",
@@ -46,7 +52,9 @@
             "orientation": 330,
             "mesh": "../controller/mesh/head.obj",
             "led_config": "../config/led_config_impossible_dialogue.json",
-            "pattern_id": "3x0"
+            "led_pattern_id": "3x0",
+            "solid_config": "../config/led_config_solid.json",
+            "solid_pattern_id": "1x1"
         },
         {
             "id": "head_5",
@@ -58,7 +66,9 @@
             "orientation": 30,
             "mesh": "../controller/mesh/head.obj",
             "led_config": "../config/led_config_impossible_dialogue.json",
-            "pattern_id": "4x0"
+            "led_pattern_id": "4x0",
+            "solid_config": "../config/led_config_solid.json",
+            "solid_pattern_id": "1x1"
         },
         {
             "id": "head_6",
@@ -70,7 +80,9 @@
             "orientation": 90,
             "mesh": "../controller/mesh/head.obj",
             "led_config": "../config/led_config_impossible_dialogue.json",
-            "pattern_id": "5x0"
+            "led_pattern_id": "5x0",
+            "solid_config": "../config/led_config_solid.json",
+            "solid_pattern_id": "1x1"
         }
     ]
 }

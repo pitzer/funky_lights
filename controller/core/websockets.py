@@ -27,18 +27,25 @@ class TextureWebSocketsServer:
 
     async def serve(self, websocket, path):
         while True:
-            segments_dict = await asyncio.shield(self.pattern_generator.result)
-            object_textures = []
-            for (object_id, segments) in segments_dict.items():
+            (object_ids, led_segments, solid_segments) = await asyncio.shield(self.pattern_generator.result)
+            object_materials = []
+            for object_id in object_ids:
+                object_material = {}
+                object_material['object_id'] = object_id
+                # LED segments
+                segments = led_segments[object_id]
                 texture_bytes = await self.PrepareTextureMsg(segments)
                 encoded_data = base64.b64encode(texture_bytes)
-                object_texture = {}
-                object_texture['object_id'] = object_id
-                object_texture['texture_data'] = encoded_data.decode("utf-8")
-                object_textures.append(object_texture)
-            
+                object_material['texture_data'] = encoded_data.decode("utf-8")
+
+                # Solid colors
+                segments = solid_segments[object_id]
+                color = tuple(segments[0].colors[0])
+                object_material['mesh_color'] = '#%02x%02x%02x' % color
+                object_materials.append(object_material)
+
             try:
-                await websocket.send(json.dumps(object_textures))
+                await websocket.send(json.dumps(object_materials))
             except websockets.ConnectionClosed as exc:
                 break
 
