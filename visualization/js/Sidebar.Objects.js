@@ -23,6 +23,8 @@ function SidebarObjects( editor ) {
     const ledObjects = new Map();
     const ledObjectMaterials = new Map();
     const solidObjectMaterials = new Map();
+    const centerOrientations = new Map();
+    const currentOrientations = new Map();
 
     const loader = new THREE.FileLoader();
 
@@ -62,6 +64,8 @@ function SidebarObjects( editor ) {
                 object.name = object_id;
                 object.position.set(position.x, position.y + yOffset, position.z);
                 object.rotateY(orientation * THREE.MathUtils.DEG2RAD)
+                centerOrientations.set(object_id, object.rotation.y * THREE.MathUtils.RAD2DEG);
+                currentOrientations.set(object_id, object.rotation.y * THREE.MathUtils.RAD2DEG);
                 const material = createMaterialForMesh();
                 for (let i = 0; i < object.children.length; i++) {
                     object.children[i].material = material;
@@ -178,9 +182,15 @@ function SidebarObjects( editor ) {
                 ledMaterial.map.needsUpdate = true;
 
                 // Update mesh color
+                let center = centerOrientations.get(object_id);
+                let orientation = currentOrientations.get(object_id);
+                let angle = 180 - Math.abs(Math.abs(orientation - center) - 180); 
                 let meshMaterial = solidObjectMaterials.get(object_id);
-                meshMaterial.color.setStyle(material.mesh_color);
-                // meshMaterial.color.setStyle('#f44336');
+                if (angle < Math.abs(20)) {
+                    meshMaterial.color.setStyle(material.mesh_color);
+                } else {
+                    meshMaterial.color.setStyle('#ffffff');
+                }
             }
             editor.signals.sceneGraphChanged.dispatch();
         };
@@ -195,6 +205,14 @@ function SidebarObjects( editor ) {
         };
     }
     startWebSocketForLedMessages();
+
+    signals.objectChanged.add(function (object) {
+
+        if (object !== editor.selected) return;
+
+        currentOrientations.set(object.name, object.rotation.y * THREE.MathUtils.RAD2DEG);
+
+    });
 
 	return container;
 }
