@@ -1,7 +1,8 @@
 import { UITabbedPanel, UISpan } from './libs/ui.js';
 
-import { SidebarImpossibleDialogue } from './Sidebar.ImpossibleDialogue.js';
-import { SidebarObjects } from './Sidebar.Objects.js';
+import { SidebarLoadConfig } from './Sidebar.LoadConfig.js';
+import { SidebarObject } from './Sidebar.Object.js';
+
 
 function Sidebar( editor ) {
 
@@ -11,8 +12,8 @@ function Sidebar( editor ) {
 	container.setId( 'sidebar' );
 
     const scene = new UISpan().add(
-        new SidebarImpossibleDialogue( editor ),
-        new SidebarObjects(editor),
+        new SidebarLoadConfig(editor),
+        new SidebarObject(editor),
 	);
     
     container.addTab('scene', strings.getKey('sidebar/scene'), scene );

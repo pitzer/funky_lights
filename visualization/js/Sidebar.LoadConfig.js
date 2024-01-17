@@ -1,8 +1,8 @@
 import { UIPanel, UIRow, UIButton, UISpan, UIText, UINumber, UIBreak } from './libs/ui.js';
-import { OBJLoader } from '../js/OBJLoader.js';
-import { AddObjectCommand } from '../js/commands/AddObjectCommand.js';
+import { OBJLoader } from './OBJLoader.js';
+import { AddObjectCommand } from './commands/AddObjectCommand.js';
 
-import * as BufferGeometryUtils from '../js/BufferGeometryUtils.js';
+import * as BufferGeometryUtils from './BufferGeometryUtils.js';
 
 import { MeshPhongMaterial } from 'three';
 
@@ -13,7 +13,7 @@ const textureWidth = 128;
 const textureHeight = 128;
 const cubeWidth = 0.03;
 
-function SidebarObjects( editor ) {
+function SidebarLoadConfig( editor ) {
 
 	const config = editor.config;
 	const strings = editor.strings;
@@ -73,8 +73,10 @@ function SidebarObjects( editor ) {
                 solidObjectMaterials.set(object_id, material);
                 editor.execute(new AddObjectCommand(editor, object));
 
-                // Add lights as a child
-                createLightsObject(object_id, led_config, object);
+                // Add optional lights as a child
+                if (led_config !== undefined) {
+                    createLightsObject(object_id, led_config, object);
+                }
             },
             // called when loading is in progresses
             function (xhr) {
@@ -178,6 +180,9 @@ function SidebarObjects( editor ) {
                 const object_id = material.object_id;
                 const data = Uint8Array.from(atob(material.texture_data), c => c.charCodeAt(0))
                 let ledMaterial = ledObjectMaterials.get(object_id);
+                if (ledMaterial == undefined) {
+                    continue;
+                }
                 ledMaterial.map = new THREE.DataTexture(data, textureWidth, textureHeight);
                 ledMaterial.map.needsUpdate = true;
 
@@ -217,4 +222,4 @@ function SidebarObjects( editor ) {
 	return container;
 }
 
-export { SidebarObjects };
+export { SidebarLoadConfig };
