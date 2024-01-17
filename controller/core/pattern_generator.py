@@ -20,22 +20,24 @@ class PatternGenerator:
         for o in config['objects']:
             object_id = o['id']
             self.objects_ids.append(object_id)
-            led_config_file = open(o['led_config'])
-            led_config = json.load(led_config_file)
 
             # LED patterns
-            selector = PatternSelector(
-                pattern_config.DEFAULT_CONFIG, led_config, None, args)
-            selector.current_pattern_id = o['led_pattern_id']
-            self.pattern_selectors_leds[object_id] = selector
+            if 'led_config' in o.keys():
+                led_config_file = open(o['led_config'])
+                led_config = json.load(led_config_file)
+                selector = PatternSelector(
+                    pattern_config.DEFAULT_CONFIG, led_config, None, args)
+                selector.current_pattern_id = o['led_pattern_id']
+                self.pattern_selectors_leds[object_id] = selector
 
             # Solid patterns
-            solid_config_file = open(o['solid_config'])
-            solid_config = json.load(solid_config_file)
-            selector = PatternSelector(
-                pattern_config.DEFAULT_CONFIG, solid_config, None, args)
-            selector.current_pattern_id = o['solid_pattern_id']
-            self.pattern_selectors_solids[object_id] = selector
+            if 'solid_config' in o.keys():
+                solid_config_file = open(o['solid_config'])
+                solid_config = json.load(solid_config_file)
+                selector = PatternSelector(
+                    pattern_config.DEFAULT_CONFIG, solid_config, None, args)
+                selector.current_pattern_id = o['solid_pattern_id']
+                self.pattern_selectors_solids[object_id] = selector
 
         self._LOG_RATE = 1.0
 
@@ -70,20 +72,17 @@ class PatternGenerator:
             led_segments = {}
             solid_segments = {}
             for object_id in self.objects_ids:
-                led_selector = self.pattern_selectors_leds[object_id]
-                solid_selector = self.pattern_selectors_solids[object_id]
+                if object_id in self.pattern_selectors_leds:
+                    selector = self.pattern_selectors_leds[object_id]
+                    pattern = selector.update(cur_animation_time)
+                    await self.tick(pattern, animation_time_delta)
+                    led_segments[object_id] = pattern.segments
 
-                # Update pattern selection
-                led_pattern = led_selector.update(cur_animation_time)
-                solid_pattern = solid_selector.update(cur_animation_time)
-
-                # Process animation
-                await self.tick(led_pattern, animation_time_delta)
-                await self.tick(solid_pattern, animation_time_delta)
-
-                # Stash results in a dictionary
-                led_segments[object_id] = led_pattern.segments
-                solid_segments[object_id] = solid_pattern.segments
+                if object_id in self.pattern_selectors_solids:
+                    selector = self.pattern_selectors_solids[object_id]
+                    pattern = selector.update(cur_animation_time)
+                    await self.tick(pattern, animation_time_delta)
+                    solid_segments[object_id] = pattern.segments
 
             # Update results future for processing by IO
             self.result.set_result((self.objects_ids, led_segments, solid_segments))

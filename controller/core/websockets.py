@@ -32,16 +32,20 @@ class TextureWebSocketsServer:
             for object_id in object_ids:
                 object_material = {}
                 object_material['object_id'] = object_id
+                
                 # LED segments
-                segments = led_segments[object_id]
-                texture_bytes = await self.PrepareTextureMsg(segments)
-                encoded_data = base64.b64encode(texture_bytes)
-                object_material['texture_data'] = encoded_data.decode("utf-8")
+                if object_id in led_segments:
+                    segments = led_segments[object_id]
+                    texture_bytes = await self.PrepareTextureMsg(segments)
+                    encoded_data = base64.b64encode(texture_bytes)
+                    object_material['texture_data'] = encoded_data.decode("utf-8")
 
                 # Solid colors
-                segments = solid_segments[object_id]
-                color = tuple(segments[0].colors[0])
-                object_material['mesh_color'] = '#%02x%02x%02x' % color
+                if object_id in solid_segments:
+                    segments = solid_segments[object_id]
+                    color = tuple(segments[0].colors[0])
+                    object_material['mesh_color'] = '#%02x%02x%02x' % color
+                
                 object_materials.append(object_material)
 
             try:

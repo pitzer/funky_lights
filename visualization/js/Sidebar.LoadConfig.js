@@ -56,6 +56,7 @@ function SidebarLoadConfig( editor ) {
         const position = object_config.position;
         const orientation = object_config.orientation;
         const led_config = object_config.led_config;
+        const solid_config = object_config.solid_config;
         const obj_loader = new OBJLoader();
         // Load mesh geometry
         obj_loader.load(
@@ -66,11 +67,14 @@ function SidebarLoadConfig( editor ) {
                 object.rotateY(orientation * THREE.MathUtils.DEG2RAD)
                 centerOrientations.set(object_id, object.rotation.y * THREE.MathUtils.RAD2DEG);
                 currentOrientations.set(object_id, object.rotation.y * THREE.MathUtils.RAD2DEG);
-                const material = createMaterialForMesh();
-                for (let i = 0; i < object.children.length; i++) {
-                    object.children[i].material = material;
+                if (solid_config !== undefined) {
+                    const material = createMaterialForMesh();
+                    for (let i = 0; i < object.children.length; i++) {
+                        object.children[i].material = material;
+                    }
+                    solidObjectMaterials.set(object_id, material);
                 }
-                solidObjectMaterials.set(object_id, material);
+
                 editor.execute(new AddObjectCommand(editor, object));
 
                 // Add optional lights as a child
@@ -178,23 +182,24 @@ function SidebarLoadConfig( editor ) {
 
                 // Update LED texture data
                 const object_id = material.object_id;
-                const data = Uint8Array.from(atob(material.texture_data), c => c.charCodeAt(0))
                 let ledMaterial = ledObjectMaterials.get(object_id);
-                if (ledMaterial == undefined) {
-                    continue;
+                if (ledMaterial !== undefined) {
+                    const data = Uint8Array.from(atob(material.texture_data), c => c.charCodeAt(0))
+                    ledMaterial.map = new THREE.DataTexture(data, textureWidth, textureHeight);
+                    ledMaterial.map.needsUpdate = true;
                 }
-                ledMaterial.map = new THREE.DataTexture(data, textureWidth, textureHeight);
-                ledMaterial.map.needsUpdate = true;
 
                 // Update mesh color
                 let center = centerOrientations.get(object_id);
                 let orientation = currentOrientations.get(object_id);
                 let angle = 180 - Math.abs(Math.abs(orientation - center) - 180); 
                 let meshMaterial = solidObjectMaterials.get(object_id);
-                if (angle < Math.abs(20)) {
-                    meshMaterial.color.setStyle(material.mesh_color);
-                } else {
-                    meshMaterial.color.setStyle('#ffffff');
+                if (meshMaterial !== undefined) {
+                    if (angle < Math.abs(20)) {
+                        meshMaterial.color.setStyle(material.mesh_color);
+                    } else {
+                        meshMaterial.color.setStyle('#ffffff');
+                    }
                 }
             }
             editor.signals.sceneGraphChanged.dispatch();

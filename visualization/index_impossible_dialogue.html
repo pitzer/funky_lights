@@ -115,46 +115,6 @@
 
         createRenderer();
 
-        // Start listening and sending launchpad messages
-        function startWebSocketForLaunchpadMessages() {
-            var ws = new WebSocket("ws://" + window.location.hostname + ":5679/");
-            ws.onmessage = function (event) {
-                const message = event.data;
-                editor.signals.launchpadMessageReceived.dispatch(message);
-            };
-            function onLaunchpadButtonPressed(button_name) {
-                const event = {
-                    type: 'button_pressed',
-                    button: button_name,
-                };
-                ws.send(JSON.stringify(event));
-            };
-            function onLaunchpadButtonReleased(button_name) {
-                const event = {
-                    type: 'button_released',
-                    button: button_name,
-                };
-                ws.send(JSON.stringify(event));
-            };
-            ws.onopen = function (event) {
-                signals.launchpadButtonPressed.add(onLaunchpadButtonPressed);
-                signals.launchpadButtonReleased.add(onLaunchpadButtonReleased);
-            };
-            ws.onclose = function (e) {
-                console.log('Launchpad WebSocket is closed. Reconnect will be attempted in 1 second.', e.reason);
-                signals.launchpadButtonPressed.remove(onLaunchpadButtonPressed);
-                signals.launchpadButtonReleased.remove(onLaunchpadButtonReleased);
-                setTimeout(function () {
-                    startWebSocketForLaunchpadMessages();
-                }, 1000);
-            };
-            ws.onerror = function (err) {
-                ws.close();
-            };
-
-        }
-        startWebSocketForLaunchpadMessages();
-
         // add some lights
         {
             const color = 0x222222;
