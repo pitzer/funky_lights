@@ -1,5 +1,5 @@
-# Funkadelephant Lights
-This project develops a new light system for the Funkadelephant art car. 
+# The (Im)possible Dialogue
+This repository is the code developed for The (Im)possible Dialogue art installation at Burning Man 2024. It is a fork of [Funky Lights](https://github.com/pitzer/funky_lights), which is the light system we developed for the Funkadelephant art car [@funkadelephant](https://www.instagram.com/funkadelephant). 
 
 ## Setup and installation
 First, install the the legacy Arduino IDE (version 1.8 works). The current codebase is unfortunately not compatible with newer Arduino IDE version (2.0+). Add the damellis attiny board manager in Settings->“Additional Boards Manager URLs”: https://raw.githubusercontent.com/damellis/attiny/ide-1.6.x-boards-manager/package_damellis_attiny_index.json
@@ -11,14 +11,14 @@ Install the Apple Developer Commandline Tools and accept the license aggreement 
 sudo xcodebuild -license
 ``` 
 
-To start with funky_lights, first download the code using git:
+To start with impossible_dialogue, first download the code using git:
 
 ``` 
-git clone https://github.com/pitzer/funky_lights.git
+git clone https://github.com/Impossible-Dialogue/impossible_dialogue.git
 ``` 
-Before running any of the tools, we have to install required dependencies and the funky_lights package with common Python modules. All of this can be done by navigating to the main code directory and run setup.py using the following command:
+Before running any of the tools, we have to install required dependencies and the impossible_dialogue package with common Python modules. All of this can be done by navigating to the main code directory and run setup.py using the following command:
 ``` 
-cd funky_lights
+cd impossible_dialogue
 pip install -e .
 ``` 
 The -e runs the package installing in editable mode (dynamically) which automatically detects any changes you make to the code when developing, avoiding the need to continually re-install the package.
@@ -27,7 +27,7 @@ Once installed, you can check that it was successfully installed by running:
 ``` 
 pip list
 ``` 
-You should now see the funky_lights package as well as those listed in the requirements.txt in the listed packages.
+You should now see the impossible_dialogue package as well as those listed in the requirements.txt in the listed packages.
 
 ## LED boards
 Each LED segment is controlled by a small attiny85 based board. The software for the board is in [attiny/attiny.ino](attiny/attiny.ino) file.
