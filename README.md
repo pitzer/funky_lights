@@ -1,6 +1,13 @@
 # The (Im)possible Dialogue
 This repository is the code developed for The (Im)possible Dialogue art installation at Burning Man 2024. It is a fork of [Funky Lights](https://github.com/pitzer/funky_lights), which is the light system we developed for the Funkadelephant art car [@funkadelephant](https://www.instagram.com/funkadelephant). 
 
+Demonstration of the art installation concept implemented in this software and visualization tool:
+
+[![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/WGkq_b77eO8/0.jpg)](https://www.youtube.com/watch?v=WGkq_b77eO8)
+
+
+
+
 ## Setup and installation
 First, install the the legacy Arduino IDE (version 1.8 works). The current codebase is unfortunately not compatible with newer Arduino IDE version (2.0+). Add the damellis attiny board manager in Settings->“Additional Boards Manager URLs”: https://raw.githubusercontent.com/damellis/attiny/ide-1.6.x-boards-manager/package_damellis_attiny_index.json
 You may need to restart the Arduino IDE.
@@ -186,7 +193,7 @@ Now point a browser to http://localhost:8000/visualization
 
 Video of the visualization in action:
 
-[![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/MJFyqkiHWJo/0.jpg)](http://www.youtube.com/watch?v=MJFyqkiHWJo)
+[![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/MyNKwLF5xEc/0.jpg)](https://youtu.be/MyNKwLF5xEc)
 
 ## Other docs
 
