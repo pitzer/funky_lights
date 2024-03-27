@@ -63,4 +63,4 @@ class PatternMix(Pattern):
                     # No mask, copy everything
                     segment.colors += mix_segment.colors
 
-
+        return self.segments

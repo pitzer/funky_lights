@@ -41,8 +41,9 @@ class PatternSelector:
         self.args = args
 
         # Pattern rotation and related
-        self.current_pattern_id = pattern_manager.pattern_rotation[0]
+        self.current_pattern_id = self.pattern_manager.pattern_rotation[0]
         self.pattern_start_time = time.time()
+        self.pattern_rotation = self.pattern_manager.pattern_rotation
         self.pattern_rotation_index = 0
         self.current_pattern_eye_id = pattern_manager.pattern_eyes[0]
         self.current_effect_pattern_ids = []
@@ -75,6 +76,12 @@ class PatternSelector:
 
         # Pattern Mix Subscriber
         self.pattern_mix_updates = []
+
+
+    async def initialize(self):
+        self.pattern_mix.prepareSegments(self.led_config)
+        self.pattern_mix.initialize()
+
 
     def get_pattern_mix(self):
         return {
@@ -204,9 +211,8 @@ class PatternSelector:
             base_pattern_ids=[self.current_pattern_id],
             replace_pattern_ids=self.replace_pattern_ids,
             mix_pattern_ids=self.current_effect_pattern_ids)
-
-        self.pattern_manager.select_patterns(
-            [self.current_pattern_id] + self.replace_pattern_ids + self.current_effect_pattern_ids)
+        
+        return [self.current_pattern_id] + self.replace_pattern_ids + self.current_effect_pattern_ids
 
     def activateButton(self, button_name):
         if not button_name:

@@ -1,11 +1,4 @@
-import asyncio
-import functools
-import json
-import lpminimk3
-import time
-import serial
 import numpy as np
-import websockets
 
 from core.pattern_cache import PatternCache
     
@@ -55,10 +48,6 @@ class PatternManager:
         if self.args.enable_cache:
             await self.pattern_cache.initialize_patterns()
 
-        # Initialize pattern mix
-        self.pattern_mix.prepareSegments(self.led_config)
-        self.pattern_mix.initialize()
-
 
     def _maybe_cached_pattern(self, pattern_id):
         if self.pattern_cache and pattern_id in self.pattern_cache.patterns:
@@ -75,8 +64,8 @@ class PatternManager:
         self.pattern(pattern_id).reset()
 
 
-    def select_patterns(self, pattern_ids):
-        self.pattern_selected.append(pattern_ids)
+    def update_pattern_selection(self, pattern_ids):
+        self.pattern_selected = pattern_ids
     
 
     def clear_selected_patterns(self):

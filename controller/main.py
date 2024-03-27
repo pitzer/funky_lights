@@ -19,7 +19,7 @@ from core.websockets import TextureWebSocketsServer, PatternMixWebSocketsServer
 async def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("-l", "--config", type=argparse.FileType('r'), default="../config/head_config.json", 
+    parser.add_argument("-l", "--config", type=argparse.FileType('r'), default="/home/pi/impossible_dialogue/config/head_config.json", 
                         help="LED config file")
     parser.add_argument("-c", "--enable_cache", action='store_true', 
                         help="Enable pattern caching")
