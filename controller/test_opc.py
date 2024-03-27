@@ -1,7 +1,7 @@
 from opclib import opc
 import time
 
-ADDRESS = '192.168.86.62:7890'
+ADDRESS = '192.168.86.50:7890'
 
 # Create a client object
 client = opc.Client(ADDRESS)
@@ -18,7 +18,7 @@ else:
 # Send pixels forever at 30 frames per second
 while True:
     my_pixels = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
-    if client.put_pixels(my_pixels, channel=0):
+    if client.put_pixels(my_pixels, channel=1):
         print('...')
     else:
         print('not connected')
