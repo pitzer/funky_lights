@@ -10,6 +10,7 @@ import time
 import traceback
 
 from funky_lights import connection, messages
+from core.opc import OpenPixelControlProtocol
 from core.serial import SerialWriter
 from core.pattern_generator import PatternGenerator
 from core.websockets import TextureWebSocketsServer, PatternMixWebSocketsServer
@@ -83,6 +84,20 @@ async def main():
     #     futures.append(serial_asyncio.create_serial_connection(
     #         loop, serial_serve_handler, bus['device'], baudrate=bus['baudrate']))
     
+    # Start Open Pixel Control
+    loop = asyncio.get_event_loop()
+    for o in config['objects']:
+        object_id = o['id']
+        if not 'opc_connection' in o.keys():
+            continue
+        connection = o['opc_connection']
+        opc_factory = functools.partial(
+            OpenPixelControlProtocol, 
+            generator=pattern_generator, 
+            object_id=object_id)
+        futures.append(loop.create_connection(
+            opc_factory, connection['server_ip'], connection['server_port']))
+        
     # Wait forever
     try:
         results = await asyncio.gather(
