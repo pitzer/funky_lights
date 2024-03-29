@@ -190,17 +190,17 @@ function SidebarLoadConfig( editor ) {
                 }
 
                 // Update mesh color
-                let center = centerOrientations.get(object_id);
-                let orientation = currentOrientations.get(object_id);
-                let angle = 180 - Math.abs(Math.abs(orientation - center) - 180); 
-                let meshMaterial = solidObjectMaterials.get(object_id);
-                if (meshMaterial !== undefined) {
-                    if (angle < Math.abs(20)) {
-                        meshMaterial.color.setStyle(material.mesh_color);
-                    } else {
-                        meshMaterial.color.setStyle('#ffffff');
-                    }
-                }
+                // let center = centerOrientations.get(object_id);
+                // let orientation = currentOrientations.get(object_id);
+                // let angle = 180 - Math.abs(Math.abs(orientation - center) - 180); 
+                // let meshMaterial = solidObjectMaterials.get(object_id);
+                // if (meshMaterial !== undefined) {
+                //     if (angle < Math.abs(20)) {
+                //         meshMaterial.color.setStyle(material.mesh_color);
+                //     } else {
+                //         meshMaterial.color.setStyle('#ffffff');
+                //     }
+                // }
             }
             editor.signals.sceneGraphChanged.dispatch();
         };
