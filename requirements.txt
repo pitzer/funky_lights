@@ -13,3 +13,5 @@ websockets
 libusb1
 pyusb
 scikit-learn
+paho-mqtt==1.6.1
+asyncio-mqtt==0.16.2

@@ -1,4 +1,5 @@
 import asyncio
+import asyncio_mqtt as aiomqtt
 import functools
 import json
 import lpminimk3
@@ -377,3 +378,16 @@ class PatternSelector:
         while True:
             # Wait for a controller event
             await self.dmxPoll()
+
+    async def mqttListener(self, mqtt_server, topic):
+        reconnect_interval = 5  # In seconds
+        while True:
+            try:
+                async with aiomqtt.Client(mqtt_server) as client:
+                    async with client.messages() as messages:
+                        await client.subscribe(topic)
+                        async for message in messages:
+                            print(message.payload.decode())
+            except aiomqtt.MqttError as error:
+                print(f'Error "{error}". Reconnecting in {reconnect_interval} seconds.')
+                await asyncio.sleep(reconnect_interval)

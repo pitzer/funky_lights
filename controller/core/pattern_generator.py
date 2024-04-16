@@ -54,7 +54,7 @@ class PatternGenerator:
 
             # Skip a frame if falling too far behind
             if time.time() > next_animation_time:
-                print("Falling behind. Skipping frame.")
+                # print("Falling behind. Skipping frame.")
                 continue
             
             # Pattern animation pipeline
