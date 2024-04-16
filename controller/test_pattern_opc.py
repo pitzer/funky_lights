@@ -4,7 +4,7 @@ from funky_lights import connection, messages
 import numpy as np
 from opclib import opc
 
-NUM_LEDS = 12
+NUM_LEDS = 500
 WHITE = 255
 
 def main():
@@ -39,7 +39,8 @@ def main():
 
     # Send messages to all the bars
     while(True):
-        client.put_pixels(rgbs, channel=1)
+        for channel in range(8):
+            client.put_pixels(rgbs, channel=channel)
         rgbs = np.roll(rgbs, 1, axis=0)
         time.sleep(1/60)
 
