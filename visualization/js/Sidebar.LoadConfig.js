@@ -20,6 +20,7 @@ function SidebarLoadConfig( editor ) {
     const signals = editor.signals;
 	const container = new UISpan();
 
+    const sceneObjects = new Map();
     const ledObjects = new Map();
     const ledObjectMaterials = new Map();
     const solidObjectMaterials = new Map();
@@ -76,6 +77,7 @@ function SidebarLoadConfig( editor ) {
                 }
 
                 editor.execute(new AddObjectCommand(editor, object));
+                sceneObjects.set(object_id, object);
 
                 // Add optional lights as a child
                 if (led_config !== undefined) {
@@ -178,17 +180,26 @@ function SidebarLoadConfig( editor ) {
         ws.onmessage = function (event) {
             var json = JSON.parse(event.data);
             for (let i = 0; i < json.length; i++) {
-                let material = json[i];
+                let object_data = json[i];
+                const object_id = object_data.object_id;
+                let object = sceneObjects.get(object_id);
 
                 // Update LED texture data
-                const object_id = material.object_id;
                 let ledMaterial = ledObjectMaterials.get(object_id);
                 if (ledMaterial !== undefined) {
-                    const data = Uint8Array.from(atob(material.texture_data), c => c.charCodeAt(0))
-                    ledMaterial.map = new THREE.DataTexture(data, textureWidth, textureHeight);
+                    const texture_data = Uint8Array.from(atob(object_data.texture_data), c => c.charCodeAt(0))
+                    ledMaterial.map = new THREE.DataTexture(texture_data, textureWidth, textureHeight);
                     ledMaterial.map.needsUpdate = true;
                 }
 
+                // Update object orientation
+                const orientation = object_data.orientation;
+                console.log(object_id, orientation);
+                const newRotation = new THREE.Euler(
+                    0, orientation * THREE.MathUtils.DEG2RAD, 0);
+                object.rotation.copy(newRotation);
+                object.updateMatrixWorld(true);
+                
                 // Update mesh color
                 // let center = centerOrientations.get(object_id);
                 // let orientation = currentOrientations.get(object_id);
@@ -196,7 +207,7 @@ function SidebarLoadConfig( editor ) {
                 // let meshMaterial = solidObjectMaterials.get(object_id);
                 // if (meshMaterial !== undefined) {
                 //     if (angle < Math.abs(20)) {
-                //         meshMaterial.color.setStyle(material.mesh_color);
+                //         meshMaterial.color.setStyle(data.mesh_color);
                 //     } else {
                 //         meshMaterial.color.setStyle('#ffffff');
                 //     }

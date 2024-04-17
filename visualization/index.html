@@ -43,6 +43,7 @@
     <script src="js/libs/jdataview.js"></script>
     <script src="js/libs/jparser.js"></script>
 
+
     <script type="importmap">
 			{
 				"imports": {
@@ -64,8 +65,9 @@
         import { AddObjectCommand } from './js/commands/AddObjectCommand.js';
         import { SetPositionCommand } from './js/commands/SetPositionCommand.js';
         import { SetRotationCommand } from './js/commands/SetRotationCommand.js';
-        import * as BufferGeometryUtils from './js/BufferGeometryUtils.js';
+        import { OBJLoader } from './js/OBJLoader.js';
 
+        
         window.URL = window.URL || window.webkitURL;
         window.BlobBuilder = window.BlobBuilder || window.WebKitBlobBuilder || window.MozBlobBuilder;
 
@@ -82,7 +84,7 @@
 
         window.editor = editor; // Expose editor to Console
         window.THREE = THREE; // Expose THREE to APP Scripts and Console
-       
+
         const viewport = new Viewport(editor);
         document.body.appendChild(viewport.dom);
 
@@ -113,126 +115,24 @@
 
         createRenderer();
 
-        // Load LED config from JSON
-        const requestURL = '../config/led_config.json';
-        const request = new Request(requestURL);
-        const response = await fetch(request);
-        const ledConfigData = await response.json();
-
-        // Remove and existing instantiation of the LED group
-        const ledObjectName = 'LED lights';
-        
-        // Create a 3D cube for each LED
-        const textureWidth = 128;
-        const textureHeight = 128;
-        const cubeWidth = 0.03;
-        var baseGeometry = new THREE.BoxGeometry(cubeWidth, cubeWidth, cubeWidth);
-        var cubes = [];
-        var index = 0;
-        for (var segment of ledConfigData.led_segments) {
-            for (var led_positions of segment.led_positions) {
-                var geometry = baseGeometry.clone();
-                geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(led_positions[0], led_positions[1], led_positions[2]));
-                // Colors are in order of the LED config. The texture is sized to a power of 2 for more efficient processing by the GPU.
-                const u = Math.floor(index / textureWidth) / (textureHeight - 1);
-                const v = (index % textureWidth) / (textureWidth - 1);
-                var uvAttribute = geometry.attributes.uv;
-                for (var i = 0; i < uvAttribute.count; i++) {
-                    // Not sure why v and u are flipped here. I would have expected them the other way around
-                    uvAttribute.setXY(i, v, u);
-                }
-                cubes.push(geometry);
-                index = index + 1;
-            }
+        // add some lights
+        {
+            const color = 0x222222;
+            const light = new THREE.AmbientLight(color);
+            light.name = 'AmbientLight';
+            editor.execute(new AddObjectCommand(editor, light));
         }
-        // Merge all geometries into one buffer for fast rendering.
-        const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(cubes, false);
-        const size = textureWidth * textureHeight;
-        const initialTextureData = new Uint8Array(4 * size);
-        for (let i = 0; i < size; i++) {
-            const stride = i * 4;
-            initialTextureData[stride] = 0;
-            initialTextureData[stride + 1] = 0;
-            initialTextureData[stride + 2] = 0;
-            initialTextureData[stride + 3] = 255;
-        }
-        const texture = new THREE.DataTexture(initialTextureData, textureWidth, textureHeight);
-        texture.needsUpdate = true;
-        var material = new THREE.MeshBasicMaterial({ map: texture });
-        ledLights = new THREE.Mesh(mergedGeometry, material);
-        ledLights.name = ledObjectName;
+        {
+            const color = 0xffffff;
+            const intensity = 1;
+            const distance = 0;
 
-        // Add mesh to scene graph
-        editor.execute(new AddObjectCommand(editor, ledLights));
+            const light = new THREE.PointLight(color, intensity, distance);
+            light.position.set(50, 50, 50);
+            light.name = 'PointLight';
 
-        // Update position and orientation
-        var ledLights = editor.scene.getObjectByName(ledObjectName);
-        const newPosition = new THREE.Vector3(5, 1.1, 0);
-        editor.execute(new SetPositionCommand(editor, ledLights, newPosition));
-        const newRotation = new THREE.Euler(0, 90 * THREE.MathUtils.DEG2RAD, 0);
-        editor.execute(new SetRotationCommand(editor, ledLights, newRotation));
-
-        // Start listening to websockets for LED updates
-        function startWebSocketForLedMessages() {
-            var ws = new WebSocket("ws://" + window.location.hostname + ":5678/");
-            ws.binaryType = 'arraybuffer';
-            ws.onmessage = function (event) {
-                const data = new Uint8Array(event.data);
-                material.map = new THREE.DataTexture(data, textureWidth, textureHeight);
-                material.map.needsUpdate = true;
-                editor.signals.sceneGraphChanged.dispatch();
-            };
-            ws.onclose = function (e) {
-                console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
-                setTimeout(function () {
-                    startWebSocketForLedMessages();
-                }, 1000);
-            };
-            ws.onerror = function (err) {
-                ws.close();
-            };
+            editor.execute(new AddObjectCommand(editor, light));
         }
-        startWebSocketForLedMessages();
-        
-        // Start listening and sending launchpad messages
-        function startWebSocketForLaunchpadMessages() {
-            var ws = new WebSocket("ws://" + window.location.hostname + ":5679/");
-            ws.onmessage = function (event) {
-                const message = event.data;
-                editor.signals.launchpadMessageReceived.dispatch(message);
-            };
-            function onLaunchpadButtonPressed(button_name) {
-                const event = {
-                    type: 'button_pressed',
-                    button: button_name,
-                };
-                ws.send(JSON.stringify(event));
-            };
-            function onLaunchpadButtonReleased(button_name) {
-                const event = {
-                    type: 'button_released',
-                    button: button_name,
-                };
-                ws.send(JSON.stringify(event));
-            };
-            ws.onopen = function (event) {
-                signals.launchpadButtonPressed.add(onLaunchpadButtonPressed);
-                signals.launchpadButtonReleased.add(onLaunchpadButtonReleased);
-            };
-            ws.onclose = function (e) {
-                console.log('Launchpad WebSocket is closed. Reconnect will be attempted in 1 second.', e.reason);
-                signals.launchpadButtonPressed.remove(onLaunchpadButtonPressed);
-                signals.launchpadButtonReleased.remove(onLaunchpadButtonReleased);
-                setTimeout(function () {
-                    startWebSocketForLaunchpadMessages();
-                }, 1000);
-            };
-            ws.onerror = function (err) {
-                ws.close();
-            };
-            
-        }
-        startWebSocketForLaunchpadMessages();
 
         //
 
@@ -257,7 +157,7 @@
 
         //
 
-        
+
 
     </script>
 </body>
