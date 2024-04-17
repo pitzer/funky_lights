@@ -384,11 +384,14 @@ class PatternSelector:
         reconnect_interval = 5  # In seconds
         while True:
             try:
-                async with aiomqtt.Client(mqtt_server, queue_type=asyncio.LifoQueue) as client:
+                async with aiomqtt.Client(mqtt_server) as client:
                     await client.subscribe(topic)
                     async for message in client.messages:
-                        self.head_orientation = float(message.payload.decode())
-                        print(self.head_orientation)
+                        try:
+                            self.head_orientation = 360.0 - float(message.payload.decode())
+                        except ValueError as error:
+                            print(f'Error "{error}".')
+    
             except aiomqtt.MqttError as error:
                 print(f'Error "{error}". Reconnecting in {reconnect_interval} seconds.')
                 await asyncio.sleep(reconnect_interval)
