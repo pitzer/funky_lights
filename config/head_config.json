@@ -65,9 +65,13 @@
             "led_pattern_id": "7x0",
             "solid_config": "../config/led_config_solid.json",
             "solid_pattern_id": "1x1",
-            "opc_connection": {
+            "opc": {
                 "server_ip": "192.168.86.50",
                 "server_port": 7890
+            },
+            "mqtt": {
+                "hostname": "localhost",
+                "orientation_topic": "orientation/x"
             }
         },
         {

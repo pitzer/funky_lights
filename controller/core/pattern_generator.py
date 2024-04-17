@@ -8,6 +8,13 @@ from patterns import pattern_config
 
 
 class PatternGenerator:
+
+    class Results:
+        def __init__(self, led_segments, head_orientation):
+            self.led_segments = led_segments
+            self.head_orientation = head_orientation
+
+
     def __init__(self, args, config):
         self.args = args
         self.config = config
@@ -54,11 +61,11 @@ class PatternGenerator:
 
             # Skip a frame if falling too far behind
             if time.time() > next_animation_time:
-                print("Falling behind. Skipping frame.")
+                # print("Falling behind. Skipping frame.")
                 continue
             
             # Pattern animation pipeline
-            led_segments = {}
+            results = {}
             for object_id in self.object_ids:
                 selector = self.pattern_selectors[object_id]
                 patterns = selector.update(cur_animation_time)
@@ -69,10 +76,10 @@ class PatternGenerator:
 
                 mixer = selector.pattern_mix
                 segments = await mixer.update()
-                led_segments[object_id] = segments
+                results[object_id] = self.Results(segments, selector.head_orientation)
 
             # Update results future for processing by IO
-            self.result.set_result(led_segments)
+            self.result.set_result(results)
             self.result = asyncio.Future()
 
             # Output update rate to console

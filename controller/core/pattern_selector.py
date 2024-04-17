@@ -1,4 +1,5 @@
 import asyncio
+import aiomqtt
 import functools
 import json
 import lpminimk3
@@ -39,6 +40,7 @@ class PatternSelector:
         self.led_config = led_config
         self.dmx_config = dmx_config
         self.args = args
+        self.head_orientation = 0
 
         # Pattern rotation and related
         self.current_pattern_id = self.pattern_manager.pattern_rotation[0]
@@ -377,3 +379,16 @@ class PatternSelector:
         while True:
             # Wait for a controller event
             await self.dmxPoll()
+
+    async def mqttListener(self, mqtt_server, topic):
+        reconnect_interval = 5  # In seconds
+        while True:
+            try:
+                async with aiomqtt.Client(mqtt_server, queue_type=asyncio.LifoQueue) as client:
+                    await client.subscribe(topic)
+                    async for message in client.messages:
+                        self.head_orientation = float(message.payload.decode())
+                        print(self.head_orientation)
+            except aiomqtt.MqttError as error:
+                print(f'Error "{error}". Reconnecting in {reconnect_interval} seconds.')
+                await asyncio.sleep(reconnect_interval)

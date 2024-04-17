@@ -86,12 +86,12 @@ class OpenPixelControlProtocol(asyncio.Protocol):
 
     async def serve(self):
         while True:
-            led_segments = await asyncio.shield(self.generator.result)
-            for object_id, segments in led_segments.items():
+            results = await asyncio.shield(self.generator.result)
+            for object_id, result in results.items():
                 # Only push pixels for this objects
                 if object_id != self.object_id:
                     continue
             
                 self._debug('Sending OPC packet to object: %s' % object_id)
-                for channel, segment in enumerate(segments):
+                for channel, segment in enumerate(result.led_segments):
                     self.put_pixels(segment.colors, channel+1)

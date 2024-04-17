@@ -84,20 +84,24 @@ async def main():
     #     futures.append(serial_asyncio.create_serial_connection(
     #         loop, serial_serve_handler, bus['device'], baudrate=bus['baudrate']))
     
-    # Start Open Pixel Control
     loop = asyncio.get_event_loop()
     for o in config['objects']:
         object_id = o['id']
-        if not 'opc_connection' in o.keys():
-            continue
-        connection = o['opc_connection']
-        opc_factory = functools.partial(
-            OpenPixelControlProtocol, 
-            generator=pattern_generator, 
-            object_id=object_id)
-        futures.append(loop.create_connection(
-            opc_factory, connection['server_ip'], connection['server_port']))
-        
+        # Start Open Pixel Control
+        if 'opc' in o.keys():
+            opc = o['opc']
+            opc_factory = functools.partial(
+                OpenPixelControlProtocol, 
+                generator=pattern_generator, 
+                object_id=object_id)
+            futures.append(loop.create_connection(
+                opc_factory, opc['server_ip'], opc['server_port']))
+        # Start MQTT clients
+        if 'mqtt' in o.keys():
+            mqtt = o['mqtt']
+            pattern_selector = pattern_generator.pattern_selectors[object_id]
+            futures.append(pattern_selector.mqttListener(mqtt['hostname'], mqtt['orientation_topic']))
+
     # Wait forever
     try:
         results = await asyncio.gather(
