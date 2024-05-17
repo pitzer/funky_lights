@@ -65,13 +65,14 @@
             "led_pattern_id": "7x0",
             "solid_config": "../config/led_config_solid.json",
             "solid_pattern_id": "1x1",
+            "imu": {
+                "server_ip": "192.168.86.50",
+                "server_port": 7891,
+                "channel": "imu/orientation_x"
+            },
             "opc": {
                 "server_ip": "192.168.86.50",
                 "server_port": 7890
-            },
-            "mqtt": {
-                "hostname": "localhost",
-                "orientation_topic": "orientation/x"
             }
         },
         {
@@ -86,7 +87,12 @@
             "led_config": "../config/led_config_impossible_dialogue.json",
             "led_pattern_id": "1x0",
             "solid_config": "../config/led_config_solid.json",
-            "solid_pattern_id": "1x1"
+            "solid_pattern_id": "1x1",
+            "imu": {
+                "server_ip": "192.168.86.50",
+                "server_port": 7891,
+                "channel": "imu/orientation_x"
+            }
         },
         {
             "id": "head_3",
@@ -100,7 +106,12 @@
             "led_config": "../config/led_config_impossible_dialogue.json",
             "led_pattern_id": "2x0",
             "solid_config": "../config/led_config_solid.json",
-            "solid_pattern_id": "1x1"
+            "solid_pattern_id": "1x1",
+            "imu": {
+                "server_ip": "192.168.86.50",
+                "server_port": 7891,
+                "channel": "imu/orientation_x"
+            }
         },
         {
             "id": "head_4",
@@ -114,7 +125,12 @@
             "led_config": "../config/led_config_impossible_dialogue.json",
             "led_pattern_id": "3x0",
             "solid_config": "../config/led_config_solid.json",
-            "solid_pattern_id": "1x1"
+            "solid_pattern_id": "1x1",
+            "imu": {
+                "server_ip": "192.168.86.50",
+                "server_port": 7891,
+                "channel": "imu/orientation_x"
+            }
         },
         {
             "id": "head_5",
@@ -128,7 +144,12 @@
             "led_config": "../config/led_config_impossible_dialogue.json",
             "led_pattern_id": "4x0",
             "solid_config": "../config/led_config_solid.json",
-            "solid_pattern_id": "1x1"
+            "solid_pattern_id": "1x1",
+            "imu": {
+                "server_ip": "192.168.86.50",
+                "server_port": 7891,
+                "channel": "imu/orientation_x"
+            }
         },
         {
             "id": "head_6",
@@ -142,7 +163,12 @@
             "led_config": "../config/led_config_impossible_dialogue.json",
             "led_pattern_id": "5x0",
             "solid_config": "../config/led_config_solid.json",
-            "solid_pattern_id": "1x1"
+            "solid_pattern_id": "1x1",
+            "imu": {
+                "server_ip": "192.168.86.50",
+                "server_port": 7891,
+                "channel": "imu/orientation_x"
+            }
         }
     ]
 }

@@ -96,11 +96,12 @@ async def main():
                 object_id=object_id)
             futures.append(loop.create_connection(
                 opc_factory, opc['server_ip'], opc['server_port']))
-        # Start MQTT clients
-        if 'mqtt' in o.keys():
-            mqtt = o['mqtt']
+        if 'imu' in o.keys():
+            imu = o['imu']
+            url = "ws://" + imu['server_ip'] + ":" + str(imu['server_port'])
+            channel = imu['channel'] 
             pattern_selector = pattern_generator.pattern_selectors[object_id]
-            futures.append(pattern_selector.mqttListener(mqtt['hostname'], mqtt['orientation_topic']))
+            futures.append(pattern_selector.orientationWSListener(url, channel))
 
     # Wait forever
     try:

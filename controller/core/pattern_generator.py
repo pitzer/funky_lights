@@ -68,8 +68,7 @@ class PatternGenerator:
             results = {}
             for object_id in self.object_ids:
                 selector = self.pattern_selectors[object_id]
-                patterns = selector.update(cur_animation_time)
-                
+                patterns = await selector.update(cur_animation_time)
                 manager = self.pattern_managers[object_id] 
                 manager.update_pattern_selection(patterns)
                 await manager.animate(animation_time_delta)

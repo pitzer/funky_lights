@@ -94,4 +94,6 @@ class OpenPixelControlProtocol(asyncio.Protocol):
             
                 self._debug('Sending OPC packet to object: %s' % object_id)
                 for channel, segment in enumerate(result.led_segments):
+                    if channel > 8: 
+                        continue
                     self.put_pixels(segment.colors, channel+1)

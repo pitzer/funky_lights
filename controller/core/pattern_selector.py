@@ -1,5 +1,4 @@
 import asyncio
-import aiomqtt
 import functools
 import json
 import lpminimk3
@@ -201,7 +200,7 @@ class PatternSelector:
          # Clear updates
         self.pattern_mix_updates.clear()
 
-    def update(self, pattern_time):
+    async def update(self, pattern_time):
         self.handle_pattern_mix_updates(pattern_time)
         self.handle_buttons(pattern_time)
         self.handle_pattern_timer(pattern_time)
@@ -380,18 +379,19 @@ class PatternSelector:
             # Wait for a controller event
             await self.dmxPoll()
 
-    async def mqttListener(self, mqtt_server, topic):
-        reconnect_interval = 5  # In seconds
+    async def orientationWSListener(self, url, channel):
+        poll_interval = 1.0/10.0  # In seconds
+        reconnect_interval = 5.0  # In seconds
         while True:
-            try:
-                async with aiomqtt.Client(mqtt_server) as client:
-                    await client.subscribe(topic)
-                    async for message in client.messages:
-                        try:
-                            self.head_orientation = 360.0 - float(message.payload.decode())
-                        except ValueError as error:
-                            print(f'Error "{error}".')
-    
-            except aiomqtt.MqttError as error:
-                print(f'Error "{error}". Reconnecting in {reconnect_interval} seconds.')
-                await asyncio.sleep(reconnect_interval)
+            print(f'Connecting to orientation WS server at {url}.')
+            async with websockets.connect(url) as websocket:
+                while True:
+                    try:
+                        await websocket.send(channel)
+                        res = await websocket.recv()
+                        self.head_orientation = 360.0 - float(res)
+                        await asyncio.sleep(poll_interval)
+                    except websockets.ConnectionClosed as exc:
+                        print(f'Error "{exc}". Reconnecting in {reconnect_interval} seconds.')
+                        await asyncio.sleep(reconnect_interval)
+                        break
