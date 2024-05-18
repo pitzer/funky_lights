@@ -1,6 +1,23 @@
 import asyncio
+import functools
 import struct
 import sys
+
+
+async def connect_opc(loop, object_id, pattern_generator, server_ip, server_port):
+    reconnect_interval = 5.0  # In seconds
+    while True:
+        print(f'Connecting to OPC server at  {server_ip}:{server_port}')
+        opc_factory = functools.partial(
+            OpenPixelControlProtocol,
+            generator=pattern_generator,
+            object_id=object_id)
+        await loop.create_connection(
+            opc_factory, server_ip, server_port)
+
+        print(
+            f'OPC connection to {server_ip}:{server_port} closed. Retrying in {reconnect_interval} seconds.')
+        await asyncio.sleep(reconnect_interval)
 
 
 class OpenPixelControlProtocol(asyncio.Protocol):
@@ -12,11 +29,9 @@ class OpenPixelControlProtocol(asyncio.Protocol):
         self.object_id = object_id
         self.verbose = False
 
-
     def _debug(self, m):
         if self.verbose:
             print('    %s' % str(m))
-
 
     def connection_made(self, transport):
         """Store the OpenPixelControl transport and schedule the task to send data.
@@ -25,10 +40,8 @@ class OpenPixelControlProtocol(asyncio.Protocol):
         asyncio.ensure_future(self.serve())
         print('OpenPixelControlClient.send() scheduled')
 
-
     def connection_lost(self, exc):
         print('OpenPixelControlClient closed')
-
 
     def put_pixels(self, pixels, channel=0):
         """Send the list of pixel colors to the OPC server on the given channel.
@@ -64,12 +77,13 @@ class OpenPixelControlProtocol(asyncio.Protocol):
         len_lo_byte = (len(pixels)*3) % 256
         command = 0  # set pixel colors from openpixelcontrol.org
 
-        header = struct.pack("BBBB", channel, command, len_hi_byte, len_lo_byte)
+        header = struct.pack("BBBB", channel, command,
+                             len_hi_byte, len_lo_byte)
 
-        pieces = [ struct.pack( "BBB",
-                     min(255, max(0, int(r))),
-                     min(255, max(0, int(g))),
-                     min(255, max(0, int(b)))) for r, g, b in pixels ]
+        pieces = [struct.pack("BBB",
+                              min(255, max(0, int(r))),
+                              min(255, max(0, int(g))),
+                              min(255, max(0, int(b)))) for r, g, b in pixels]
 
         if sys.version_info[0] == 3:
             # bytes!
@@ -83,7 +97,6 @@ class OpenPixelControlProtocol(asyncio.Protocol):
 
         return True
 
-
     async def serve(self):
         while True:
             results = await asyncio.shield(self.generator.result)
@@ -91,9 +104,9 @@ class OpenPixelControlProtocol(asyncio.Protocol):
                 # Only push pixels for this objects
                 if object_id != self.object_id:
                     continue
-            
+
                 self._debug('Sending OPC packet to object: %s' % object_id)
                 for channel, segment in enumerate(result.led_segments):
-                    if channel > 8: 
+                    if channel > 8:
                         continue
                     self.put_pixels(segment.colors, channel+1)

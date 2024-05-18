@@ -10,7 +10,7 @@ import time
 import traceback
 
 from funky_lights import connection, messages
-from core.opc import OpenPixelControlProtocol
+from core.opc import OpenPixelControlProtocol, connect_opc
 from core.serial import SerialWriter
 from core.pattern_generator import PatternGenerator
 from core.websockets import TextureWebSocketsServer, PatternMixWebSocketsServer
@@ -87,15 +87,9 @@ async def main():
     loop = asyncio.get_event_loop()
     for o in config['objects']:
         object_id = o['id']
-        # Start Open Pixel Control
         if 'opc' in o.keys():
             opc = o['opc']
-            opc_factory = functools.partial(
-                OpenPixelControlProtocol, 
-                generator=pattern_generator, 
-                object_id=object_id)
-            futures.append(loop.create_connection(
-                opc_factory, opc['server_ip'], opc['server_port']))
+            futures.append(connect_opc(loop, object_id, pattern_generator, opc['server_ip'], opc['server_port']))
         if 'imu' in o.keys():
             imu = o['imu']
             url = "ws://" + imu['server_ip'] + ":" + str(imu['server_port'])

@@ -405,7 +405,7 @@ class PatternSelector:
             self.imu_ws = await websockets.connect(url)
             while True:
                 if self.imu_ws.closed: 
-                    print(f'Websocket connection closed. Reconnecting in {reconnect_interval} seconds.')
+                    print(f'Websocket connection to {url} closed. Reconnecting in {reconnect_interval} seconds.')
                     break
                 await asyncio.sleep(poll_interval)
             await asyncio.sleep(reconnect_interval)
