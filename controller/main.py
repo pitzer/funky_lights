@@ -101,7 +101,8 @@ async def main():
             url = "ws://" + imu['server_ip'] + ":" + str(imu['server_port'])
             channel = imu['channel'] 
             pattern_selector = pattern_generator.pattern_selectors[object_id]
-            futures.append(pattern_selector.orientationWSListener(url, channel))
+            pattern_selector.imu_orientation_channel = channel
+            futures.append(pattern_selector.orientationWSListener(url))
 
     # Wait forever
     try:

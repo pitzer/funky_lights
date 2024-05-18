@@ -41,6 +41,9 @@ class PatternSelector:
         self.args = args
         self.head_orientation = 0
 
+        self.imu_ws = None
+        self.imu_orientation_channel = None
+
         # Pattern rotation and related
         self.current_pattern_id = self.pattern_manager.pattern_rotation[0]
         self.pattern_start_time = time.time()
@@ -200,7 +203,22 @@ class PatternSelector:
          # Clear updates
         self.pattern_mix_updates.clear()
 
+
+    async def updateHeadOrientation(self):
+        if not self.imu_ws or self.imu_ws.closed:
+            return
+
+        try:
+            await self.imu_ws.send(self.imu_orientation_channel)
+            res = await self.imu_ws.recv()
+            self.head_orientation = 360.0 - float(res)
+        except Exception as exc:
+            print(f'Websocket Error: {exc}')
+             
+    
     async def update(self, pattern_time):
+        await self.updateHeadOrientation()
+
         self.handle_pattern_mix_updates(pattern_time)
         self.handle_buttons(pattern_time)
         self.handle_pattern_timer(pattern_time)
@@ -379,19 +397,15 @@ class PatternSelector:
             # Wait for a controller event
             await self.dmxPoll()
 
-    async def orientationWSListener(self, url, channel):
-        poll_interval = 1.0/10.0  # In seconds
+    async def orientationWSListener(self, url):
+        poll_interval = 0.1  # In seconds
         reconnect_interval = 5.0  # In seconds
         while True:
-            print(f'Connecting to orientation WS server at {url}.')
-            async with websockets.connect(url) as websocket:
-                while True:
-                    try:
-                        await websocket.send(channel)
-                        res = await websocket.recv()
-                        self.head_orientation = 360.0 - float(res)
-                        await asyncio.sleep(poll_interval)
-                    except websockets.ConnectionClosed as exc:
-                        print(f'Error "{exc}". Reconnecting in {reconnect_interval} seconds.')
-                        await asyncio.sleep(reconnect_interval)
-                        break
+            print(f'Connecting to orientation WS server at {url}')
+            self.imu_ws = await websockets.connect(url)
+            while True:
+                if self.imu_ws.closed: 
+                    print(f'Websocket connection closed. Reconnecting in {reconnect_interval} seconds.')
+                    break
+                await asyncio.sleep(poll_interval)
+            await asyncio.sleep(reconnect_interval)
