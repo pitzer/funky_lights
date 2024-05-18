@@ -4,16 +4,19 @@ import struct
 import sys
 
 
-async def connect_opc(loop, object_id, pattern_generator, server_ip, server_port):
+async def connect_to_opc(loop, object_id, pattern_generator, server_ip, server_port):
     reconnect_interval = 5.0  # In seconds
     while True:
-        print(f'Connecting to OPC server at  {server_ip}:{server_port}')
+        print(f'Connecting to OPC server at {server_ip}:{server_port}')
         opc_factory = functools.partial(
             OpenPixelControlProtocol,
             generator=pattern_generator,
             object_id=object_id)
-        await loop.create_connection(
-            opc_factory, server_ip, server_port)
+        try:
+            await loop.create_connection(
+                opc_factory, server_ip, server_port)
+        except Exception as exc:
+            print(f'Connection error: {exc}')
 
         print(
             f'OPC connection to {server_ip}:{server_port} closed. Retrying in {reconnect_interval} seconds.')

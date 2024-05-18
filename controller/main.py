@@ -1,20 +1,13 @@
 import argparse
 import json
-import time
-import sys
 import asyncio
 
 import websockets
-import functools
-import time
 import traceback
 
-from funky_lights import connection, messages
-from core.opc import OpenPixelControlProtocol, connect_opc
-from core.serial import SerialWriter
+from core.opc import connect_to_opc
 from core.pattern_generator import PatternGenerator
-from core.websockets import TextureWebSocketsServer, PatternMixWebSocketsServer
-
+from core.websockets import TextureWebSocketsServer
 
 
 async def main():
@@ -57,45 +50,21 @@ async def main():
     ws_texture = TextureWebSocketsServer(pattern_generator)
     futures.append(websockets.serve(ws_texture.serve,
                    '0.0.0.0', args.ws_port_texture))
-    # futures.append(websockets.serve(pattern_selector.launchpadWSListener,
-    #                '0.0.0.0', args.ws_port_launchpad))
-
-    # Publisher and subscriber for pattern mix
-    if args.enable_pattern_mix_publisher:
-        ws_pattern_mix_publish = PatternMixWebSocketsServer(pattern_generator) 
-        futures.append(websockets.serve(ws_pattern_mix_publish.serve, '0.0.0.0', args.pattern_mix_publish_port))
-    
-    # if args.enable_pattern_mix_subscriber:
-    #     futures.append(pattern_selector.patternMixWSListener(args.pattern_mix_subscribe_uri))
-
-    # Start serial
-    # loop = asyncio.get_event_loop()
-    # for bus in bus_config['led_busses']:
-    #     # Start the light app
-    #     serial_port = connection.InitializeController(bus['device'], baudrate=bus['baudrate'])
-    #     serial_port.close()
-
-    #     # Start async serial handlers
-    #     serial_serve_handler = functools.partial(
-    #         SerialWriter, 
-    #         generator=pattern_generator, 
-    #         uids=bus['uids'], 
-    #         color_format=messages.ColorFormat[bus['color_format']])
-    #     futures.append(serial_asyncio.create_serial_connection(
-    #         loop, serial_serve_handler, bus['device'], baudrate=bus['baudrate']))
-    
+  
     loop = asyncio.get_event_loop()
     for o in config['objects']:
         object_id = o['id']
         if 'opc' in o.keys():
             opc = o['opc']
-            futures.append(connect_opc(loop, object_id, pattern_generator, opc['server_ip'], opc['server_port']))
+            # Start OPC client
+            futures.append(connect_to_opc(loop, object_id, pattern_generator, opc['server_ip'], opc['server_port']))
         if 'imu' in o.keys():
             imu = o['imu']
             url = "ws://" + imu['server_ip'] + ":" + str(imu['server_port'])
             channel = imu['channel'] 
             pattern_selector = pattern_generator.pattern_selectors[object_id]
             pattern_selector.imu_orientation_channel = channel
+            # Start IMU websocket client
             futures.append(pattern_selector.orientationWSListener(url))
 
     # Wait forever
