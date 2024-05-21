@@ -402,7 +402,11 @@ class PatternSelector:
         reconnect_interval = 5.0  # In seconds
         while True:
             print(f'Connecting to orientation WS server at {url}')
-            self.imu_ws = await websockets.connect(url)
+            try:
+                self.imu_ws = await websockets.connect(url)
+            except Exception as exc:
+                print(f'Connection error: {exc}')
+
             while True:
                 if self.imu_ws.closed: 
                     print(f'Websocket connection to {url} closed. Reconnecting in {reconnect_interval} seconds.')
