@@ -406,6 +406,8 @@ class PatternSelector:
                 self.imu_ws = await websockets.connect(url)
             except Exception as exc:
                 print(f'Connection error: {exc}')
+                await asyncio.sleep(reconnect_interval)
+                continue
 
             while True:
                 if self.imu_ws.closed: 
