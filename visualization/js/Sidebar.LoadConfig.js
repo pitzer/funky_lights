@@ -8,7 +8,6 @@ import { MeshPhongMaterial } from 'three';
 
 
 // constants
-const yOffset = 0.55;
 const textureWidth = 128;
 const textureHeight = 128;
 const cubeWidth = 0.03;
@@ -64,7 +63,7 @@ function SidebarLoadConfig( editor ) {
             object_config.mesh,
             function (object) {
                 object.name = object_id;
-                object.position.set(position.x, position.y + yOffset, position.z);
+                object.position.set(position.x, position.y, position.z);
                 object.rotateY(orientation * THREE.MathUtils.DEG2RAD)
                 centerOrientations.set(object_id, object.rotation.y * THREE.MathUtils.RAD2DEG);
                 currentOrientations.set(object_id, object.rotation.y * THREE.MathUtils.RAD2DEG);
