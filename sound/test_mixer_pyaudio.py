@@ -121,16 +121,18 @@ async def main(** kwargs):
     q_mix1 = asyncio.Queue(maxsize=args.buffersize)
     q_mix2 = asyncio.Queue(maxsize=args.buffersize)
     
-    async with asyncio.TaskGroup() as tg:
-        tg.create_task(inputstream_generator(q_in1, '1.wav'))
-        tg.create_task(inputstream_generator(q_in2, '2.wav'))
-        tg.create_task(inputstream_generator(q_in3, '3.wav'))
-        tg.create_task(inputstream_generator(q_in4, '4.wav'))
-        tg.create_task(streammixer_generator(q_mix1, [q_in1, q_in2]))
-        tg.create_task(streammixer_generator(q_mix2, [q_in3, q_in4]))
-        tg.create_task(outputstream_generator(q_mix1, 0))
-        tg.create_task(outputstream_generator(q_mix2, 1))
 
+    tasks = [
+        asyncio.create_task(inputstream_generator(q_in1, '1.wav')),
+        asyncio.create_task(inputstream_generator(q_in2, '2.wav')),
+        asyncio.create_task(inputstream_generator(q_in3, '3.wav')),
+        asyncio.create_task(inputstream_generator(q_in4, '4.wav')),
+        asyncio.create_task(streammixer_generator(q_mix1, [q_in1, q_in2])),
+        asyncio.create_task(streammixer_generator(q_mix2, [q_in3, q_in4])),
+        asyncio.create_task(outputstream_generator(q_mix1, 6)),
+        asyncio.create_task(outputstream_generator(q_mix2, 7))
+    ]
+    done, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
 
 if __name__ == "__main__":
     try:
