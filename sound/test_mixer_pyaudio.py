@@ -36,10 +36,7 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter,
     parents=[parser])
 parser.add_argument(
-    '-d', '--device', type=int_or_str,
-    help='input device (numeric ID or substring)')
-parser.add_argument(
-    '-r', '--samplerate', type=int, default=44100, help='sampling rate')
+    '-r', '--samplerate', type=int, default=48000, help='sampling rate')
 parser.add_argument(
     '-c', '--channels', type=int, default=2, help='number of input channels')
 parser.add_argument(
@@ -83,7 +80,7 @@ async def streammixer_generator(q_out, input_streams):
         await q_out.put(out)
 
 
-async def outputstream_generator(q_in):
+async def outputstream_generator(q_in, device_index):
     """Generator that streams blocks of audio data to a PyAudio output stream."""
     
     def callback(in_data, frame_count, time_info, status):
@@ -100,6 +97,7 @@ async def outputstream_generator(q_in):
         channels=args.channels,
         rate=args.samplerate,
         output=True,
+        output_device_index=device_index,
         frames_per_buffer=args.blocksize,
         stream_callback=callback
     )
@@ -120,15 +118,18 @@ async def main(** kwargs):
     q_in2 = asyncio.Queue(maxsize=args.buffersize)
     q_in3 = asyncio.Queue(maxsize=args.buffersize)
     q_in4 = asyncio.Queue(maxsize=args.buffersize)
-    q_mix = asyncio.Queue(maxsize=args.buffersize)
+    q_mix1 = asyncio.Queue(maxsize=args.buffersize)
+    q_mix2 = asyncio.Queue(maxsize=args.buffersize)
     
     async with asyncio.TaskGroup() as tg:
         tg.create_task(inputstream_generator(q_in1, '1.wav'))
         tg.create_task(inputstream_generator(q_in2, '2.wav'))
         tg.create_task(inputstream_generator(q_in3, '3.wav'))
         tg.create_task(inputstream_generator(q_in4, '4.wav'))
-        tg.create_task(streammixer_generator(q_mix, [q_in1, q_in2, q_in3, q_in4]))
-        tg.create_task(outputstream_generator(q_mix))
+        tg.create_task(streammixer_generator(q_mix1, [q_in1, q_in2]))
+        tg.create_task(streammixer_generator(q_mix2, [q_in3, q_in4]))
+        tg.create_task(outputstream_generator(q_mix1, 0))
+        tg.create_task(outputstream_generator(q_mix2, 1))
 
 
 if __name__ == "__main__":
