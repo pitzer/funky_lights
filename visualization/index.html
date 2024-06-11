@@ -57,6 +57,7 @@
         import * as THREE from 'three';
 
         import { Editor } from './js/Editor.js';
+        import { HeadManager } from './js/HeadManager.js';
         import { Viewport } from './js/Viewport.js';
         import { Toolbar } from './js/Toolbar.js';
         import { Sidebar } from './js/Sidebar.js';
@@ -81,8 +82,10 @@
 
         const editor = new Editor();
         const signals = editor.signals;
+        const head_manager = new HeadManager(editor);
 
         window.editor = editor; // Expose editor to Console
+        window.head_manager = head_manager;
         window.THREE = THREE; // Expose THREE to APP Scripts and Console
 
         const viewport = new Viewport(editor);

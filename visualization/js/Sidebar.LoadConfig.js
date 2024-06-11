@@ -12,8 +12,7 @@ const textureWidth = 128;
 const textureHeight = 128;
 const cubeWidth = 0.03;
 
-function SidebarLoadConfig( editor ) {
-
+function SidebarLoadConfig( editor) {
 	const config = editor.config;
 	const strings = editor.strings;
     const signals = editor.signals;
@@ -23,8 +22,6 @@ function SidebarLoadConfig( editor ) {
     const ledObjects = new Map();
     const ledObjectMaterials = new Map();
     const solidObjectMaterials = new Map();
-    const centerOrientations = new Map();
-    const currentOrientations = new Map();
 
     const loader = new THREE.FileLoader();
 
@@ -35,7 +32,13 @@ function SidebarLoadConfig( editor ) {
         function (data) {
             let json = JSON.parse(data);
             for (var obj of json.objects) {
+                // Create threejs objects
                 createObject(obj);
+
+                // Create a head object.
+                if (obj.type == "head") {
+                    signals.addHead.dispatch(obj);
+                }
             }
         },
 
@@ -64,9 +67,13 @@ function SidebarLoadConfig( editor ) {
             function (object) {
                 object.name = object_id;
                 object.position.set(position.x, position.y, position.z);
-                object.rotateY(orientation * THREE.MathUtils.DEG2RAD)
-                centerOrientations.set(object_id, object.rotation.y * THREE.MathUtils.RAD2DEG);
-                currentOrientations.set(object_id, object.rotation.y * THREE.MathUtils.RAD2DEG);
+                const rotation = new THREE.Euler(
+                    0, orientation * THREE.MathUtils.DEG2RAD, 0);
+                object.rotation.copy(rotation);
+
+                console.log(object_id + ' ' + object.rotation.y * THREE.MathUtils.RAD2DEG);
+
+                // object.rotateY(orientation * THREE.MathUtils.DEG2RAD);
                 if (solid_config !== undefined) {
                     const material = createMaterialForMesh();
                     for (let i = 0; i < object.children.length; i++) {
@@ -74,7 +81,6 @@ function SidebarLoadConfig( editor ) {
                     }
                     solidObjectMaterials.set(object_id, material);
                 }
-
                 editor.execute(new AddObjectCommand(editor, object));
                 sceneObjects.set(object_id, object);
 
@@ -225,14 +231,6 @@ function SidebarLoadConfig( editor ) {
         };
     }
     startWebSocketForLedMessages();
-
-    signals.objectChanged.add(function (object) {
-
-        if (object !== editor.selected) return;
-
-        currentOrientations.set(object.name, object.rotation.y * THREE.MathUtils.RAD2DEG);
-
-    });
 
 	return container;
 }

@@ -16,6 +16,11 @@ function Editor() {
 
 	this.signals = {
 
+        // Heads
+
+        addHead: new Signal(),
+        headChanged: new Signal(),
+
         // launchpad
 
         launchpadButtonPressed: new Signal(),
@@ -128,6 +133,7 @@ function Editor() {
 
 	this.addCamera( this.camera );
 
+    
 }
 
 Editor.prototype = {
