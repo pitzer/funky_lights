@@ -9,6 +9,7 @@ import asyncio
 import json
 import queue
 import sys
+import traceback
 
 import numpy as np
 import pyaudio
@@ -22,6 +23,7 @@ def int_or_str(text):
         return int(text)
     except ValueError:
         return text
+
 
 pa = pyaudio.PyAudio()
 parser = argparse.ArgumentParser(add_help=False)
@@ -45,7 +47,7 @@ parser.add_argument(
     '-b', '--blocksize', type=int, default=512,
     help='block size (default: %(default)s)')
 parser.add_argument(
-    '-q', '--buffersize', type=int, default=100,
+    '-q', '--buffersize', type=int, default=50,
     help='number of blocks used for buffering (default: %(default)s)')
 parser.add_argument(
     '-p', '--ws_port', type=int, default=5680,
@@ -58,6 +60,7 @@ if args.buffersize < 1:
 args = parser.parse_args(remaining)
 
 head_orientations = {}
+
 
 async def serve_handler(ws):
     """Main loop for receiving head_state updates from an active WebSocket connection."""
@@ -88,11 +91,17 @@ async def update_heads():
             await asyncio.Future()
 
 
-async def inputstream_generator(q_out, filename):
+async def inputstream_generator(q_out, filename, volume=1.0):
     """Generator that fills q_out with blocks of input data as NumPy arrays read from a sound file."""
     while True:
         with sf.SoundFile(filename) as f:
             for block in f.blocks(blocksize=args.blocksize, dtype='float32'):
+                if f.channels == 1:
+                    block = np.column_stack([block, block])
+                if len(block) < args.blocksize:
+                    break
+                if volume != 1.0:
+                    block = block * volume
                 await q_out.put(block)
 
 
@@ -102,7 +111,8 @@ async def headmixer_generator(q_out, input_stream1, input_stream2, head_id):
     It generates the audio by mixing two input streams based on the head orientation.
 
     """
-    stream_data = np.ndarray((2, args.blocksize, args.channels), dtype='float32')
+    stream_data = np.ndarray(
+        (2, args.blocksize, args.channels), dtype='float32')
     while True:
         global head_orientations
         orientation = head_orientations[head_id]
@@ -112,7 +122,7 @@ async def headmixer_generator(q_out, input_stream1, input_stream2, head_id):
         stream_data[0, :] = (1.0 - head_diff_fraction) * data
         data = await input_stream2.get()
         stream_data[1, :] = (head_diff_fraction) * data
-        
+
         # Sum audio blocks.
         out = stream_data.sum(axis=0)
         await q_out.put(out)
@@ -124,28 +134,29 @@ async def mastermixer_generator(q_out, input_streams):
     It generates the audio by averaging all input streams.
 
     """
-    stream_data = np.ndarray((len(input_streams), args.blocksize, args.channels), dtype='float32')
+    stream_data = np.ndarray(
+        (len(input_streams), args.blocksize, args.channels), dtype='float32')
     while True:
         # Get a block of audio data from each stream.
         for (i, stream) in enumerate(input_streams):
             data = await stream.get()
             stream_data[i, :] = data
-        
+
         # Average audio blocks.
-        out = stream_data.mean(axis=0)
+        out = stream_data.sum(axis=0)
         await q_out.put(out)
 
 
 async def outputstream_generator(q_in, device_index):
     """Generator that streams blocks of audio data to a PyAudio output stream."""
-    
+
     def callback(in_data, frame_count, time_info, status):
         assert frame_count == args.blocksize
         try:
             data = q_in.get_nowait()
         except asyncio.QueueEmpty:
             print('Buffer is empty: increase buffersize?', file=sys.stderr)
-            data = b'\x00' * frame_count * sys.getsizeof(pyaudio.paFloat32)
+            data = np.zeros((args.blocksize, args.channels), dtype='float32')
         return (data, pyaudio.paContinue)
 
     stream = pa.open(
@@ -161,10 +172,10 @@ async def outputstream_generator(q_in, device_index):
     # Wait for stream to finish.
     while stream.is_active():
         await asyncio.sleep(1.0)
-    
+
     # Close the stream.
     stream.close()
-    
+
     # Release PortAudio system resources.
     pa.terminate()
 
@@ -182,30 +193,55 @@ async def main(** kwargs):
     head4_audio = asyncio.Queue(maxsize=args.buffersize)
     head4_noise = asyncio.Queue(maxsize=args.buffersize)
     head4_mix = asyncio.Queue(maxsize=args.buffersize)
+    head5_audio = asyncio.Queue(maxsize=args.buffersize)
+    head5_noise = asyncio.Queue(maxsize=args.buffersize)
+    head5_mix = asyncio.Queue(maxsize=args.buffersize)
+    head6_audio = asyncio.Queue(maxsize=args.buffersize)
+    head6_noise = asyncio.Queue(maxsize=args.buffersize)
+    head6_mix = asyncio.Queue(maxsize=args.buffersize)
     master_mix = asyncio.Queue(maxsize=args.buffersize)
-    
+
     # Pre-fill head-orientations.
-    for head_id in ["head_1", "head_2", "head_3", "head_4"]:
+    for head_id in ["head_1", "head_2", "head_3", "head_4", "head_5", "head_6"]:
         head_orientations[head_id] = 0.0
 
     futures = [
         update_heads(),
-        inputstream_generator(head1_audio, '1.wav'),
-        inputstream_generator(head1_noise, 'noise_garden_17.wav'),
+        inputstream_generator(
+            head1_audio, 'media/sampler/head_1.wav'),
+        inputstream_generator(
+            head1_noise, 'media/sampler/noise_1.wav', volume=0.3),
         headmixer_generator(head1_mix, head1_audio, head1_noise, 'head_1'),
-        inputstream_generator(head2_audio, '2.wav'),
-        inputstream_generator(head2_noise, 'noise_garden_17.wav'),
+        inputstream_generator(
+            head2_audio, 'media/sampler/head_2.wav'),
+        inputstream_generator(
+            head2_noise, 'media/sampler/noise_2.wav', volume=0.3),
         headmixer_generator(head2_mix, head2_audio, head2_noise, 'head_2'),
-        inputstream_generator(head3_audio, '3.wav'),
-        inputstream_generator(head3_noise, 'noise_garden_17.wav'),
+        inputstream_generator(
+            head3_audio, 'media/sampler/head_3.wav'),
+        inputstream_generator(
+            head3_noise, 'media/sampler/noise_3.wav', volume=0.3),
         headmixer_generator(head3_mix, head3_audio, head3_noise, 'head_3'),
-        inputstream_generator(head4_audio, '4.wav'),
-        inputstream_generator(head4_noise, 'noise_garden_17.wav'),
+        inputstream_generator(
+            head4_audio, 'media/sampler/head_4.wav'),
+        inputstream_generator(
+            head4_noise, 'media/sampler/noise_4.wav', volume=0.3),
         headmixer_generator(head4_mix, head4_audio, head4_noise, 'head_4'),
-        mastermixer_generator(master_mix, [head1_mix, head2_mix, head3_mix, head4_mix]),
+        inputstream_generator(
+            head5_audio, 'media/sampler/head_5.wav'),
+        inputstream_generator(
+            head5_noise, 'media/sampler/noise_5.wav', volume=0.3),
+        headmixer_generator(head5_mix, head5_audio, head5_noise, 'head_5'),
+        inputstream_generator(
+            head6_audio, 'media/sampler/head_6.wav'),
+        inputstream_generator(
+            head6_noise, 'media/sampler/noise_6.wav', volume=0.3),
+        headmixer_generator(head6_mix, head6_audio, head6_noise, 'head_6'),
+        mastermixer_generator(
+            master_mix, [head1_mix, head2_mix, head3_mix, head4_mix, head5_mix, head6_mix]),
         outputstream_generator(master_mix, None),
     ]
-    
+
     # Wait forever
     try:
         results = await asyncio.gather(
