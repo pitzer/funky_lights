@@ -47,7 +47,7 @@ parser.add_argument(
     '-b', '--blocksize', type=int, default=512,
     help='block size (default: %(default)s)')
 parser.add_argument(
-    '-q', '--buffersize', type=int, default=50,
+    '-q', '--buffersize', type=int, default=100,
     help='number of blocks used for buffering (default: %(default)s)')
 parser.add_argument(
     '-p', '--ws_port', type=int, default=5680,
@@ -60,33 +60,63 @@ if args.buffersize < 1:
 args = parser.parse_args(remaining)
 
 head_orientations = {}
+imu_orientation_channel = "imu/head_orientation"
+head_orientations_ws_url = "ws://192.168.86.50:7891"
 
-
-async def serve_handler(ws):
-    """Main loop for receiving head_state updates from an active WebSocket connection."""
+async def orientation_ws_client(head_id, url):
     poll_interval = 0.1  # In seconds
+    reconnect_interval = 5.0  # In seconds
     while True:
         try:
-            await ws.send('head_state')
-            res = await ws.recv()
-            global head_orientations
-            head_state = json.loads(res)
-            for head in head_state["heads"]:
-                diff = head["orientation"] - head["center"]
-                if diff > 180.0:
-                    diff = diff - 360.0
-                if diff < -180.0:
-                    diff = diff + 360.0
-                head_orientations[head["id"]] = abs(diff)
-
+            imu_ws = await websockets.connect(url)
+            print(f'Connected to orientation WS server for {head_id} at {url}')
+            
         except Exception as exc:
-            print(f'Websocket Error: {exc}')
-        await asyncio.sleep(poll_interval)
+            print(f'Couldnt connect to orientation WS server for {head_id} at {url}: {exc}')
+            await asyncio.sleep(reconnect_interval)
+            continue
+
+        while True:
+            if imu_ws.closed: 
+                print(f'Websocket connection for {head_id} to {url} closed. Reconnecting in {reconnect_interval} seconds.')
+                break
+
+            try:
+                await imu_ws.send(imu_orientation_channel)
+                res = await imu_ws.recv()
+                head_orientations[head_id] = float(res)
+                print(head_orientations[head_id])
+            except Exception as exc:
+                print(f'Websocket Error: {exc}')
+            await asyncio.sleep(poll_interval)
+
+        await asyncio.sleep(reconnect_interval)
 
 
-async def update_heads():
+async def orientation_threejs_client():
     """Updates head_state with data received from a websocket connection."""
     while True:
+        # Handler for receiving head_state updates from an active WebSocket connection.
+        async def serve_handler(ws):
+            poll_interval = 0.1  # In seconds
+            while True:
+                try:
+                    await ws.send('head_state')
+                    res = await ws.recv()
+                    global head_orientations
+                    head_state = json.loads(res)
+                    for head in head_state["heads"]:
+                        diff = head["orientation"] - head["center"]
+                        if diff > 180.0:
+                            diff = diff - 360.0
+                        if diff < -180.0:
+                            diff = diff + 360.0
+                        head_orientations[head["id"]] = abs(diff)
+                except Exception as exc:
+                    print(f'Websocket Error: {exc}')
+                await asyncio.sleep(poll_interval)
+
+
         async with websockets.serve(serve_handler, '0.0.0.0', args.ws_port) as ws:
             await asyncio.Future()
 
@@ -116,7 +146,7 @@ async def headmixer_generator(q_out, input_stream1, input_stream2, head_id):
     while True:
         global head_orientations
         orientation = head_orientations[head_id]
-        head_diff_fraction = orientation / 180.0
+        head_diff_fraction = abs(orientation / 180.0)
 
         data = await input_stream1.get()
         stream_data[0, :] = (1.0 - head_diff_fraction) * data
@@ -203,10 +233,16 @@ async def main(** kwargs):
 
     # Pre-fill head-orientations.
     for head_id in ["head_1", "head_2", "head_3", "head_4", "head_5", "head_6"]:
-        head_orientations[head_id] = 0.0
+        head_orientations[head_id] = 180.0
 
     futures = [
-        update_heads(),
+        orientation_ws_client('head_1', head_orientations_ws_url),
+        # orientation_ws_client('head_2', head_orientations_ws_url),
+        # orientation_ws_client('head_3', head_orientations_ws_url),
+        # orientation_ws_client('head_4', head_orientations_ws_url),
+        # orientation_ws_client('head_5', head_orientations_ws_url),
+        # orientation_ws_client('head_6', head_orientations_ws_url),
+        # orientation_threejs_client(),
         inputstream_generator(
             head1_audio, 'media/sampler/head_1.wav'),
         inputstream_generator(
