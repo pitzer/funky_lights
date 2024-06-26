@@ -211,7 +211,12 @@ class PatternSelector:
         try:
             await self.imu_ws.send(self.imu_orientation_channel)
             res = await self.imu_ws.recv()
-            self.head_orientation = 360.0 - float(res)
+            if res == "error":
+                print(f'Received and error from websocket server.')
+            else:   
+                self.head_orientation = float(res)
+
+            
         except Exception as exc:
             print(f'Websocket Error: {exc}')
              
@@ -397,21 +402,22 @@ class PatternSelector:
             # Wait for a controller event
             await self.dmxPoll()
 
-    async def orientationWSListener(self, url):
+
+    async def orientationWSListener(self, url, lock):
         poll_interval = 0.1  # In seconds
         reconnect_interval = 5.0  # In seconds
         while True:
-            print(f'Connecting to orientation WS server at {url}')
             try:
                 self.imu_ws = await websockets.connect(url)
-            except Exception as exc:
-                print(f'Connection error: {exc}')
-                await asyncio.sleep(reconnect_interval)
-                continue
+                print(f'Connected to orientation WS server at {url}')
+                while True:
+                    if self.imu_ws.closed: 
+                        print(f'Websocket connection to {url} closed. Reconnecting in {reconnect_interval} seconds.')
+                        break
 
-            while True:
-                if self.imu_ws.closed: 
-                    print(f'Websocket connection to {url} closed. Reconnecting in {reconnect_interval} seconds.')
-                    break
-                await asyncio.sleep(poll_interval)
+                    await asyncio.sleep(poll_interval)
+
+            except Exception as exc:
+                print(f'Websocket Error: {exc}')
+            
             await asyncio.sleep(reconnect_interval)
