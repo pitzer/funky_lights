@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { Config } from './Config.js';
 import { History as _History } from './History.js';
 import { Strings } from './Strings.js';
+import { Selector } from './Viewport.Selector.js';
 
 var _DEFAULT_CAMERA = new THREE.PerspectiveCamera( 50, 1, 0.01, 1000 );
 _DEFAULT_CAMERA.name = 'Camera';
@@ -14,6 +15,11 @@ function Editor() {
 	const Signal = signals.Signal; // eslint-disable-line no-undef
 
 	this.signals = {
+
+        // Heads
+
+        addHead: new Signal(),
+        headChanged: new Signal(),
 
         // launchpad
 
@@ -98,7 +104,7 @@ function Editor() {
 	this.history = new _History( this );
 	// this.storage = new _Storage();
 	this.strings = new Strings( this.config );
-	// this.selector = new Selector( this );
+	this.selector = new Selector( this );
 
 	// this.loader = new Loader( this );
 
@@ -127,6 +133,7 @@ function Editor() {
 
 	this.addCamera( this.camera );
 
+    
 }
 
 Editor.prototype = {
@@ -542,7 +549,7 @@ Editor.prototype = {
 
 	select: function ( object ) {
 
-		// this.selector.select( object );
+		this.selector.select( object );
 
 	},
 
@@ -577,7 +584,7 @@ Editor.prototype = {
 
 	deselect: function () {
 
-		// this.selector.deselect();
+		this.selector.deselect();
 
 	},
 

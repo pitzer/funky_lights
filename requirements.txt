@@ -13,3 +13,7 @@ websockets
 libusb1
 pyusb
 scikit-learn
+paho-mqtt==2.0.0
+aiomqtt@git+https://github.com/sbtinstruments/aiomqtt.git
+sounddevice
+soundfile

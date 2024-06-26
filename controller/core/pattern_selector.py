@@ -10,6 +10,7 @@ import websockets
 from core.pattern_cache import PatternCache
 from core.pattern_mixer import PatternMix
 
+
 def run_in_executor(f):
     @functools.wraps(f)
     def inner(*args, **kwargs):
@@ -18,7 +19,8 @@ def run_in_executor(f):
 
     return inner
 
-def parse_dmx(channels, size, color = np.array([0,0,0])):
+
+def parse_dmx(channels, size, color=np.array([0, 0, 0])):
     offset = 4
     assigned_ch = 1
     all = np.array([])
@@ -29,44 +31,30 @@ def parse_dmx(channels, size, color = np.array([0,0,0])):
         except:
             continue
     return color
-    
 
 
 class PatternSelector:
-    def __init__(self, pattern_config, led_config, dmx_config, args):
-        self.pattern_config = pattern_config
+    def __init__(self, pattern_manager, led_config, dmx_config, args):
+        self.pattern_manager = pattern_manager
         self.led_config = led_config
         self.dmx_config = dmx_config
         self.args = args
+        self.head_orientation = 0
 
-        # Pattern cache
-        self.enable_cache = args.enable_cache
-        self.cached_patterns = []
-        if args.enable_cache:
-            self.pattern_cache = PatternCache(pattern_config, led_config, args)
-        else:
-            self.pattern_cache = None
-
-        # Dict of all patterns
-        self.patterns = {}
-
-        # List of pattern ids per group
-        self.pattern_rotation = list(pattern_config.rotation.keys())
-        self.pattern_manual = list(pattern_config.manual.keys())
-        self.pattern_effects = list(pattern_config.special_effects.keys())
-        self.pattern_eyes = list(pattern_config.eyes.keys())
-        self.pattern_all = [pattern_id for pattern_id, _ in self.all_patterns_configs()]
+        self.imu_ws = None
+        self.imu_orientation_channel = None
 
         # Pattern rotation and related
-        self.current_pattern_id = self.pattern_rotation[0]
+        self.current_pattern_id = self.pattern_manager.pattern_rotation[0]
         self.pattern_start_time = time.time()
+        self.pattern_rotation = self.pattern_manager.pattern_rotation
         self.pattern_rotation_index = 0
-        self.current_pattern_eye_id = self.pattern_eyes[0]
+        self.current_pattern_eye_id = pattern_manager.pattern_eyes[0]
         self.current_effect_pattern_ids = []
         self.replace_pattern_ids = [self.current_pattern_eye_id]
 
         # Pattern mixer
-        self.pattern_mix = PatternMix(self.patterns, self.pattern_cache)
+        self.pattern_mix = PatternMix(pattern_manager)
 
         # Launchpad
         self.launchpad = None
@@ -86,51 +74,25 @@ class PatternSelector:
 
         # DMX
         self.dmx = None
-        self.channels = bytearray(dmx_config['universe_size'])
+        if dmx_config:
+            self.channels = bytearray(dmx_config['universe_size'])
         self.color = np.array([0, 0, 0])
 
         # Pattern Mix Subscriber
         self.pattern_mix_updates = []
 
 
+    async def initialize(self):
+        self.pattern_mix.prepareSegments(self.led_config)
+        self.pattern_mix.initialize()
+
+
     def get_pattern_mix(self):
         return {
             'current_pattern_id': self.current_pattern_id,
             'replace_pattern_ids': self.replace_pattern_ids,
-            'current_effect_pattern_ids': self.current_effect_pattern_ids,
+            'current_effeselfct_pattern_ids': self.current_effect_pattern_ids,
         }
-
-
-    def all_patterns_configs(self):
-        for d in self.pattern_config:
-            for pattern_id, config in d.items():
-                yield pattern_id, config
-
-
-    def maybe_cached_pattern(self, pattern_id):
-        if self.pattern_cache and pattern_id in self.pattern_cache.patterns:
-            return self.pattern_cache.patterns[pattern_id]
-        else:
-            return self.patterns[pattern_id]
-
-
-    async def initializePatterns(self):
-        # Initialize all patterns
-        for pattern_id, (cls, params) in self.all_patterns_configs():
-            pattern = cls()
-            for key in params:
-                setattr(pattern.params, key, params[key])
-            pattern.prepareSegments(self.led_config)
-            pattern.initialize()
-            self.patterns[pattern_id] = pattern  
-        
-        # Initialize cached patterns
-        if self.args.enable_cache:
-            await self.pattern_cache.initialize_patterns()
-
-        # Initialize pattern mix
-        self.pattern_mix.prepareSegments(self.led_config)
-        self.pattern_mix.initialize()
 
     def handle_rotation_buttons(self, button, pattern_time):
         # Deactivate button corresponding to previous pattern
@@ -141,8 +103,7 @@ class PatternSelector:
         self.activateButton(button)
         # Update pattern index based on button press
         self.current_pattern_id = button
-        self.pattern_start_time = pattern_time    
-
+        self.pattern_start_time = pattern_time
 
     def handle_manual_buttons(self, button, pattern_time):
         # Deactivate button corresponding to previous pattern
@@ -153,17 +114,15 @@ class PatternSelector:
         self.current_pattern_id = button
         self.pattern_start_time = pattern_time
 
-
     def handle_effect_buttons(self, button, pattern_time, released=False):
         if released:
             self.deactivateButton(button)
             while button in self.current_effect_pattern_ids:
                 self.current_effect_pattern_ids.remove(button)
-            self.maybe_cached_pattern(button).reset()
+            self.pattern_manager.resetPattern(button)
         else:
             self.activateButton(button)
             self.current_effect_pattern_ids.append(button)
-
 
     def handle_eye_buttons(self, button, pattern_time):
         if self.current_pattern_eye_id:
@@ -176,9 +135,8 @@ class PatternSelector:
         else:
             # Activate eye pattern
             self.activateButton(button)
-            self.replace_pattern_ids.append(button)     
+            self.replace_pattern_ids.append(button)
             self.current_pattern_eye_id = button
-
 
     def handle_buttons(self, pattern_time):
         # Only consider the last button for now.
@@ -209,7 +167,8 @@ class PatternSelector:
         # Deactivate button corresponding to previous pattern
         self.deactivateButton(self.current_pattern_id)
         # Rotate patterns
-        self.pattern_rotation_index = (self.pattern_rotation_index + 1) % len(self.pattern_rotation)
+        self.pattern_rotation_index = (
+            self.pattern_rotation_index + 1) % len(self.pattern_rotation)
         # Activate button corresponding to current pattern
         self.activateButton(self.pattern_rotation[self.pattern_rotation_index])
         self.current_pattern_id = self.pattern_rotation[self.pattern_rotation_index]
@@ -223,42 +182,61 @@ class PatternSelector:
                 if pid != self.current_pattern_id:
                     self.pattern_start_time = pattern_time
                 self.current_pattern_id = pid
-            
+
             # Handle replace_pattern_ids
             self.replace_pattern_ids.clear()
             for pid in pattern_mix['replace_pattern_ids']:
                 if pid in self.patterns:
                     self.replace_pattern_ids.append(pid)
-            
+
             # Handle removed effects and reset
             for pid in self.current_effect_pattern_ids:
                 if pid not in pattern_mix['current_effect_pattern_ids']:
                     self.maybe_cached_pattern(pid).reset()
 
-            # Update current_effect_pattern_ids    
+            # Update current_effect_pattern_ids
             self.current_effect_pattern_ids.clear()
             for pid in pattern_mix['current_effect_pattern_ids']:
-                if pid  in self.patterns:
+                if pid in self.patterns:
                     self.current_effect_pattern_ids.append(pid)
 
          # Clear updates
         self.pattern_mix_updates.clear()
 
-    def update(self, pattern_time):
+
+    async def updateHeadOrientation(self):
+        if not self.imu_ws or self.imu_ws.closed:
+            return
+
+        try:
+            await self.imu_ws.send(self.imu_orientation_channel)
+            res = await self.imu_ws.recv()
+            if res == "error":
+                print(f'Received and error from websocket server.')
+            else:   
+                self.head_orientation = float(res)
+
+            
+        except Exception as exc:
+            print(f'Websocket Error: {exc}')
+             
+    
+    async def update(self, pattern_time):
+        await self.updateHeadOrientation()
+
         self.handle_pattern_mix_updates(pattern_time)
         self.handle_buttons(pattern_time)
         self.handle_pattern_timer(pattern_time)
-        
+
         if self.dmx:
             self.patterns[self.current_pattern_id].params.color = self.color
 
-        self.pattern_mix.update_mix(
-            base_pattern_ids=[self.current_pattern_id], 
+        self.pattern_mix.set_mix(
+            base_pattern_ids=[self.current_pattern_id],
             replace_pattern_ids=self.replace_pattern_ids,
             mix_pattern_ids=self.current_effect_pattern_ids)
-
-        return self.pattern_mix
-   
+        
+        return [self.current_pattern_id] + self.replace_pattern_ids + self.current_effect_pattern_ids
 
     def activateButton(self, button_name):
         if not button_name:
@@ -281,7 +259,6 @@ class PatternSelector:
             for button in button_group:
                 button.led.color = button_color
 
-
     def deactivateButton(self, button_name):
         if not button_name:
             return
@@ -301,22 +278,23 @@ class PatternSelector:
 
             button_group = self.launchpad.panel.buttons(button_name)
             for button in button_group:
-                button.led.color = button_color        
-
+                button.led.color = button_color
 
     @run_in_executor
-    def dmxPoll(self): 
+    def dmxPoll(self):
 
         if self.dmx:
-            #Check for waiting messages from DMX controller
+            # Check for waiting messages from DMX controller
             if self.dmx.inWaiting() > 0:
-                bytes = self.dmx.read_until(expected = bytearray([self.dmx_config['start_byte']]))
+                bytes = self.dmx.read_until(
+                    expected=bytearray([self.dmx_config['start_byte']]))
                 while self.dmx.inWaiting() > 0:
-                    self.channels = self.dmx.read_until(expected = bytearray([self.dmx_config['stop_byte']]))
-                self.color = parse_dmx(self.channels, self.dmx_config['universe_size'], self.color)
+                    self.channels = self.dmx.read_until(
+                        expected=bytearray([self.dmx_config['stop_byte']]))
+                self.color = parse_dmx(
+                    self.channels, self.dmx_config['universe_size'], self.color)
             else:
-                pass    
-
+                pass
 
     def initializeLaunchpadButtons(self):
         for button in self.launchpad.panel.buttons():
@@ -340,10 +318,9 @@ class PatternSelector:
                     button.led.color = self._LED_COLOR_EYES_ACTIVE
                 else:
                     button.led.color = self._LED_COLOR_EYES_INACTIVE
-            else: 
+            else:
                 button.led.color = 0
-            
-    
+
     @run_in_executor
     def launchpadListener(self):
         # Outer loop to find launchpads
@@ -362,11 +339,12 @@ class PatternSelector:
                     time.sleep(1)
                     continue
             except Exception as err:
-                print(f"Unexpected {err=}, {type(err)=} while connecting to launchpad.")
+                print(
+                    f"Unexpected {err=}, {type(err)=} while connecting to launchpad.")
                 # sleep for 1 second and continue
                 time.sleep(1)
                 continue
-            
+
             # Initialize button colors
             self.initializeLaunchpadButtons()
 
@@ -388,8 +366,6 @@ class PatternSelector:
                 elif button_event.type == lpminimk3.ButtonEvent.RELEASE:
                     self.buttons_released.append(button_event.button.name)
 
-
-
     async def patternMixWSListener(self, uri):
         async for websocket in websockets.connect(uri):
             try:
@@ -398,7 +374,6 @@ class PatternSelector:
                 self.pattern_mix_updates.append(pattern_mix)
             except websockets.ConnectionClosed:
                 continue
-
 
     async def launchpadWSListener(self, websocket, path):
         while True:
@@ -412,18 +387,37 @@ class PatternSelector:
             except websockets.ConnectionClosed as exc:
                 break
 
-
     async def dmxListener(self):
-        #Check for connected DMX controller
+        # Check for connected DMX controller
         try:
-            self.dmx = serial.Serial(self.dmx_config['device'], baudrate = self.dmx_config['baudrate'], stopbits = self.dmx_config['stop_bits'])
+            self.dmx = serial.Serial(
+                self.dmx_config['device'], baudrate=self.dmx_config['baudrate'], stopbits=self.dmx_config['stop_bits'])
         except:
             print("DMX controller not found")
             return
         if self.dmx:
             self.dmx.isOpen()
-        
+
         while True:
             # Wait for a controller event
             await self.dmxPoll()
+
+
+    async def orientationWSListener(self, url, lock):
+        poll_interval = 0.1  # In seconds
+        reconnect_interval = 5.0  # In seconds
+        while True:
+            try:
+                self.imu_ws = await websockets.connect(url)
+                print(f'Connected to orientation WS server at {url}')
+                while True:
+                    if self.imu_ws.closed: 
+                        print(f'Websocket connection to {url} closed. Reconnecting in {reconnect_interval} seconds.')
+                        break
+
+                    await asyncio.sleep(poll_interval)
+
+            except Exception as exc:
+                print(f'Websocket Error: {exc}')
             
+            await asyncio.sleep(reconnect_interval)

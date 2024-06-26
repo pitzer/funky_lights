@@ -96,7 +96,7 @@ class PatternCache:
         num_animation_steps = int(max_pattern_duration * self.animation_rate)
         index_file = cache_index_path(self.led_config_hash, pattern_id)
         if (force_update or not os.path.exists(index_file)):
-            print("Caching pattern %s of type %s" % (pattern_id, type(pattern).__name__))
+            print("   Caching pattern %s of type %s" % (pattern_id, type(pattern).__name__))
             for animation_index in range(num_animation_steps):
                 await pattern.animate(delta)
                 segment_colors = []

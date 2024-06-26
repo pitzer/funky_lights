@@ -102,8 +102,11 @@ class PatternUV(Pattern):
         offset = np.array([-min_y, -min_z])
         # Scale y and z axis to [0, 1].
         # Note: the axis are scaled independently which could lead to distortions
-        scale = np.array([(height - 1) / (max_y - min_y),
-                          (width - 1) / (max_z - min_z)])
+        if max_y - min_y == 0 or max_z - min_z == 0:
+            scale = 1
+        else:
+            scale = np.array([(height - 1) / (max_y - min_y),
+                            (width - 1) / (max_z - min_z)])
         for segment in self.getSegments():
             uv = []
             for p in segment.led_positions:

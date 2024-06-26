@@ -1,20 +1,25 @@
 import { UITabbedPanel, UISpan } from './libs/ui.js';
 
-import { SidebarLaunchpad } from './Sidebar.Launchpad.js';
+import { SidebarHeads } from './Sidebar.Heads.js';
+import { SidebarLoadConfig } from './Sidebar.LoadConfig.js';
+import { SidebarObject } from './Sidebar.Object.js';
 
-function Sidebar( editor ) {
+
+function Sidebar(editor) {
 
 	const strings = editor.strings;
 
 	const container = new UITabbedPanel();
 	container.setId( 'sidebar' );
-
-    const launchpad = new UISpan().add(
-        new SidebarLaunchpad( editor ),
-	);
     
-    container.addTab('scene', strings.getKey('sidebar/scene'), launchpad );
-    container.select( 'scene' );
+    const heads = new SidebarHeads(editor);
+    const config = new SidebarLoadConfig(editor);
+    const object = new SidebarObject(editor);
+
+    container.addTab('heads', 'Heads', heads);
+    container.addTab('config', 'Config', config);
+    container.addTab('object', 'Object', object);
+    container.select( 'heads' );
 
 	return container;
 

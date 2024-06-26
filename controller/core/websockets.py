@@ -1,4 +1,5 @@
 import asyncio
+import base64
 from functools import reduce
 import json
 import numpy as np
@@ -26,9 +27,20 @@ class TextureWebSocketsServer:
 
     async def serve(self, websocket, path):
         while True:
-            segments = await asyncio.shield(self.pattern_generator.result)
+            results = await asyncio.shield(self.pattern_generator.result)
+            event = []
+            for object_id, result in results.items():
+                object_data = {}
+                object_data['object_id'] = object_id
+                texture_bytes = await self.PrepareTextureMsg(result.led_segments)
+                encoded_data = base64.b64encode(texture_bytes)
+                object_data['texture_data'] = encoded_data.decode("utf-8")
+                object_data['orientation'] = result.head_orientation
+
+                event.append(object_data)
+
             try:
-                await websocket.send(await self.PrepareTextureMsg(segments))
+                await websocket.send(json.dumps(event))
             except websockets.ConnectionClosed as exc:
                 break
 
