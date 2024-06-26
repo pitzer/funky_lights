@@ -7,30 +7,41 @@ import sys
 async def connect_to_opc(loop, object_id, pattern_generator, server_ip, server_port):
     reconnect_interval = 5.0  # In seconds
     while True:
+        on_con_lost = loop.create_future()
+
         print(f'Connecting to OPC server at {server_ip}:{server_port}')
         opc_factory = functools.partial(
             OpenPixelControlProtocol,
             generator=pattern_generator,
-            object_id=object_id)
+            object_id=object_id,
+            on_con_lost=on_con_lost)
         try:
-            await loop.create_connection(
-                opc_factory, server_ip, server_port)
+            transport, protocol = await loop.create_connection(opc_factory, server_ip, server_port)
         except Exception as exc:
-            print(f'Connection error: {exc}')
+            print(f'Could not connect to OPC server: {exc}. Retrying in {reconnect_interval} seconds.')
+            await asyncio.sleep(reconnect_interval)
+            continue
 
+        # Wait until the protocol signals that the connection
+        # is lost and close the transport.
+        try:
+            await on_con_lost
+        finally:
+            transport.close()
         print(
             f'OPC connection to {server_ip}:{server_port} closed. Retrying in {reconnect_interval} seconds.')
         await asyncio.sleep(reconnect_interval)
 
 
 class OpenPixelControlProtocol(asyncio.Protocol):
-    def __init__(self, generator, object_id):
+    def __init__(self, generator, object_id, on_con_lost):
         super().__init__()
         self.transport = None
         self.opc = None
         self.generator = generator
         self.object_id = object_id
         self.verbose = False
+        self.on_con_lost = on_con_lost
 
     def _debug(self, m):
         if self.verbose:
@@ -41,10 +52,10 @@ class OpenPixelControlProtocol(asyncio.Protocol):
         """
         self.transport = transport
         asyncio.ensure_future(self.serve())
-        print('OpenPixelControlClient.send() scheduled')
 
     def connection_lost(self, exc):
-        print('OpenPixelControlClient closed')
+        print('OpenPixelControlProtocol closed')
+        self.on_con_lost.set_result(True)
 
     def put_pixels(self, pixels, channel=0):
         """Send the list of pixel colors to the OPC server on the given channel.
@@ -110,6 +121,6 @@ class OpenPixelControlProtocol(asyncio.Protocol):
 
                 self._debug('Sending OPC packet to object: %s' % object_id)
                 for channel, segment in enumerate(result.led_segments):
-                    if channel > 8:
+                    if channel > 7:
                         continue
                     self.put_pixels(segment.colors, channel+1)
