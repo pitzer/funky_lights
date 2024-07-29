@@ -1,0 +1,17 @@
+{
+    "led_busses": [
+        {
+            "name": "dome",
+            "uids": [
+                2,
+                3,
+                120,
+                121
+            ],
+            "opc": {
+                "server_ip": "10.10.3.10",
+                "server_port": 7890
+            }
+        }
+    ]
+}

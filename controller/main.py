@@ -1,5 +1,6 @@
 import argparse
 import json
+import logging
 import time
 import sys
 import asyncio
@@ -11,8 +12,15 @@ import traceback
 
 from funky_lights import connection, messages
 from core.pattern_selector import PatternSelector
+from core.opc import connect_to_opc
 from core.websockets import TextureWebSocketsServer, PatternMixWebSocketsServer
 from patterns import pattern_config
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s %(asctime)s,%(msecs)d %(filename)s(%(lineno)d) %(funcName)s: %(message)s",
+    datefmt="%H:%M:%S",
+)
 
 
 class SerialWriter(asyncio.Protocol):
@@ -201,18 +209,27 @@ async def main():
     # Start serial
     loop = asyncio.get_event_loop()
     for bus in bus_config['led_busses']:
-        # Start the light app
-        serial_port = connection.InitializeController(bus['device'], baudrate=bus['baudrate'])
-        serial_port.close()
+        if "device" in bus:
+            # Start the light app
+            serial_port = connection.InitializeController(bus['device'], baudrate=bus['baudrate'])
+            serial_port.close()
 
-        # Start async serial handlers
-        serial_serve_handler = functools.partial(
-            SerialWriter, 
-            generator=pattern_generator, 
-            uids=bus['uids'], 
-            color_format=messages.ColorFormat[bus['color_format']])
-        futures.append(serial_asyncio.create_serial_connection(
-            loop, serial_serve_handler, bus['device'], baudrate=bus['baudrate']))
+            # Start async serial handlers
+            serial_serve_handler = functools.partial(
+                SerialWriter, 
+                generator=pattern_generator, 
+                uids=bus['uids'], 
+                color_format=messages.ColorFormat[bus['color_format']])
+            futures.append(serial_asyncio.create_serial_connection(
+                loop, serial_serve_handler, bus['device'], baudrate=bus['baudrate']))
+
+        if "opc" in bus:
+            opc = bus["opc"]
+            futures.append(connect_to_opc(
+                generator=pattern_generator,
+                uids=bus['uids'], 
+                server_ip=opc['server_ip'], 
+                server_port=opc['server_port']))
     
     # Wait forever
     try:
