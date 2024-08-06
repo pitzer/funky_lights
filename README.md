@@ -81,6 +81,7 @@ To start the light controller:
 cd controller
 python main.py
 ``` 
+Depending on your default python engine, you may need to run `python3 main.py` instead.
 
 ### Adding basic patterns
 
