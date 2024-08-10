@@ -122,5 +122,7 @@ class OpenPixelControlProtocol(asyncio.Protocol):
             segments = await asyncio.shield(self.generator.result)
             for segment in segments:
                 if segment.uid in self.uids:
+                    # if segment.uid == x: then segment.colors[0] = segment.colors[1]
+                    
                     channel = self.uids.index(segment.uid) + 1
                     self.put_pixels(segment.colors, channel)
