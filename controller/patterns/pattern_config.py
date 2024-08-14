@@ -68,7 +68,7 @@ DEFAULT_CONFIG = PatternConfig(
 
     # Eye patterns
     eyes = {
-        '0x3': (VideoPattern, dict(file='media/eyes.mp4', include_segments=[27, 271])),
+        '0x3': (VideoPattern, dict(file='media/eyes.mp4', include_segments=[271, 272])),
     }
 ) 
 

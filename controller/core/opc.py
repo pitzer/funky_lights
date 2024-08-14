@@ -4,6 +4,7 @@ import logging
 import struct
 import sys
 import traceback
+import numpy as np
 
 
 async def connect_to_opc(generator, uids, server_ip, server_port):
@@ -122,7 +123,13 @@ class OpenPixelControlProtocol(asyncio.Protocol):
             segments = await asyncio.shield(self.generator.result)
             for segment in segments:
                 if segment.uid in self.uids:
-                    # if segment.uid == x: then segment.colors[0] = segment.colors[1]
+                    # Swap red and green channels for tusks
+                    if segment.uid == 28:
+                        original_colors = segment.colors.copy()
+                        segment.colors[0][1] = original_colors[0][2]
+                        segment.colors[0][2] = original_colors[0][1]
+                        segment.colors[1][1] = original_colors[1][0]
+                        segment.colors[1][0] = original_colors[1][1]  
                     
                     channel = self.uids.index(segment.uid) + 1
                     self.put_pixels(segment.colors, channel)
