@@ -128,8 +128,8 @@ class OpenPixelControlProtocol(asyncio.Protocol):
                         original_colors = segment.colors.copy()
                         segment.colors[0][1] = original_colors[0][2]
                         segment.colors[0][2] = original_colors[0][1]
-                        segment.colors[1][1] = original_colors[1][0]
-                        segment.colors[1][0] = original_colors[1][1]  
+                        segment.colors[1][1] = original_colors[1][2]
+                        segment.colors[1][2] = original_colors[1][1]  
                     
                     channel = self.uids.index(segment.uid) + 1
                     self.put_pixels(segment.colors, channel)
