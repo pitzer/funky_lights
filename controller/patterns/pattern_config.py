@@ -72,3 +72,13 @@ DEFAULT_CONFIG = PatternConfig(
     }
 ) 
 
+BED_CONFIG = PatternConfig(
+    rotation={
+        'fire': (FirePatternUV, dict(palette=palettes.FIRE, width=2, height=100)),
+        'space_warp': (VideoPattern, dict(file='media/space_warp.mp4')),
+        'rainbow': (RainbowWavesPattern, dict()),
+    },
+    manual={},
+    special_effects={},
+    eyes={}
+)

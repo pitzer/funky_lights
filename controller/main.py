@@ -139,7 +139,7 @@ class PatternGenerator:
 async def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("-l", "--led_config", type=argparse.FileType('r'), default="../config/led_config.json", 
+    parser.add_argument("-l", "--led_config", type=argparse.FileType('r'), default="../config/led_config_bed.json", 
                         help="LED config file")
     parser.add_argument("-b", "--bus_config", type=argparse.FileType('r'), default="../config/bus_config.json", 
                         help="Bus config file")
