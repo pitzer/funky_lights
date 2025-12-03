@@ -5,7 +5,7 @@ intelhex
 lpminimk3@git+https://github.com/obeezzy/lpminimk3.git
 matplotlib
 numpy
-opencv_python==4.5.5.62
+opencv_python
 pyserial
 pyserial_asyncio
 setuptools
