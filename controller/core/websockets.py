@@ -24,7 +24,7 @@ class TextureWebSocketsServer:
         out[2:color_bytes:4] = b
         return bytearray(out)
 
-    async def serve(self, websocket, path):
+    async def serve(self, websocket):
         while True:
             segments = await asyncio.shield(self.pattern_generator.result)
             try:
