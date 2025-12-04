@@ -7,11 +7,11 @@ class RainbowWavesPattern(PatternUV):
     def __init__(self, width=100, height=100):
         super().__init__()
         # Frequency of color change (in Hz)
-        self.fps = 40
         self.offset = 0
         self.width = width
         self.height = height
         self.center = [self.width/2, self.height/2]
+        self.params.fps = 40
     
     def initialize(self):
         self.generateUVCoordinates(self.width, self.height)
@@ -23,7 +23,7 @@ class RainbowWavesPattern(PatternUV):
     
     async def animate(self, delta):
         self.cumulative_delta += delta
-        if self.cumulative_delta < 1 / self.fps:
+        if self.cumulative_delta < 1.0 / self.params.fps:
             return
 
         for u in range(self.width):
