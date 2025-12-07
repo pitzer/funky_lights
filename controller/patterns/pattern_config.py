@@ -75,7 +75,7 @@ DEFAULT_CONFIG = PatternConfig(
 
 BED_CONFIG = PatternConfig(
     rotation={
-        'fire': (FirePatternUV, dict(palette=palettes.FIRE, width=2, height=100)),
+        'fire': (FirePatternUV, dict(palette=palettes.FIRE, width=10, height=100)),
         'space_warp': (VideoPattern, dict(file='media/space_warp.mp4')),
         'abstract_gradient': (VideoPattern, dict(file='media/abstract_gradient_full.mp4')),
         'matrix': (VideoPattern, dict(file='media/matrix.mp4', crop=Rect(0, 100, 100, 1080))),
