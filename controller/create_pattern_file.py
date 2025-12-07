@@ -61,8 +61,6 @@ class PatternGenerator:
         num_pixels = 0
         for segment in pattern.segments:
             num_pixels += len(segment.colors)
-        print("num_pixels %d" % num_pixels)
-        print("num_animation_steps %d" % num_animation_steps)
     
         pixel_data = []
         for animation_index in range(num_animation_steps):
@@ -78,6 +76,7 @@ class PatternGenerator:
             await self.write_uint8(afp, WS2811_RGB)
             await self.write_uint16(afp, num_pixels)
             await self.write_uint16(afp, num_animation_steps)
+            await self.write_uint16(afp, max_pattern_duration)
             # Write data
             await afp.write((''.join(chr(i) for i in pixel_data)).encode('charmap'))
 
