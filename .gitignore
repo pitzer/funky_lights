@@ -15,3 +15,9 @@ attiny/build/libcore.a
 attiny/build/core
 attiny/build/userlibs
 controller/pattern_cache
+controller/media/abstract_gradient_full.mp4
+controller/media/abstract_green.mp4
+controller/media/blue_light_rays.mp4
+controller/media/flash.mp4
+controller/media/lava_lamp_full.mp4
+controller/media/matrix.mp4
