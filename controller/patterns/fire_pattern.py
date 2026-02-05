@@ -76,7 +76,7 @@ class FirePatternUV(PatternUV):
     def __init__(self):
         super().__init__()
         self.params.palette = palettes.FIRE
-        self.params.width = 2
+        self.params.width = 10
         self.params.height = 100
 
     def initialize(self):

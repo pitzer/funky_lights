@@ -1,6 +1,6 @@
 import numpy as np
 import sys
-
+from .utils import rotateLedPositions
 
 class Segment:
     def __init__(self, uid, num_leds, led_positions):
@@ -90,13 +90,22 @@ class PatternUV(Pattern):
         max_x = max_y = max_z = -sys.float_info.max
         min_x = min_y = min_z = sys.float_info.max
         for segment in self.getSegments():
-            for p in segment.led_positions:
+            rotated = rotateLedPositions(segment.led_positions, angle = 45)
+            for p in rotated:
                 max_x = max(max_x, p[0])
                 min_x = min(min_x, p[0])
                 max_y = max(max_y, p[1])
                 min_y = min(min_y, p[1])
                 max_z = max(max_z, p[2])
                 min_z = min(min_z, p[2])
+
+        # Add a little bit of margin to avoid edge cases where points are exactly on the border
+        min_x -= (max_x - min_x) * 0.01
+        max_x += (max_x - min_x) * 0.01
+        min_y -= (max_y - min_y) * 0.01
+        max_y += (max_y - min_y) * 0.01
+        min_z -= (max_z - min_z) * 0.01
+        max_z += (max_z - min_z) * 0.01
 
         # Shift 3D points so that min(y) and min(z) are at the origin
         offset = np.array([-min_y, -min_z])
@@ -106,7 +115,8 @@ class PatternUV(Pattern):
                           (width - 1) / (max_z - min_z)])
         for segment in self.getSegments():
             uv = []
-            for p in segment.led_positions:
+            rotated = rotateLedPositions(segment.led_positions, angle = 45)
+            for p in rotated:
                 pm = np.multiply(p[1:] + offset, scale).astype(int)
                 u = int(height) - 1 - pm[0] + offset_u
                 v = pm[1] + offset_v

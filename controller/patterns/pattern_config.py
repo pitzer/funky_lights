@@ -28,6 +28,7 @@ SegmentMask = namedtuple(
 DEFAULT_CONFIG = PatternConfig(
     # This is the default pattern rotation. These patterns are rotated unless manually changed.
     rotation = {
+        'fire': (FirePatternUV, dict(palette=palettes.FIRE, width=10, height=100)),
         'twilight_breath': (BreathingColorPattern, dict(
             headboard_color = (48, 44, 96), 
             center_color = (72, 36, 94),
@@ -42,7 +43,6 @@ DEFAULT_CONFIG = PatternConfig(
             front_color = (98, 56, 130),
             cage_color = (42, 18, 58)
             )),
-        'fire': (FirePatternUV, dict(palette=palettes.FIRE, width=10, height=100)),
         'space_warp': (VideoPattern, dict(file='media/space_warp.mp4')),
         'abstract_gradient': (VideoPattern, dict(file='media/abstract_gradient_full.mp4')),
         'matrix': (VideoPattern, dict(file='media/matrix.mp4', crop=Rect(0, 100, 100, 1080))),
@@ -80,6 +80,7 @@ DEFAULT_CONFIG = PatternConfig(
 
 BED_CONFIG = PatternConfig(
     rotation={
+        'fire': (FirePatternUV, dict(palette=palettes.FIRE, width=10, height=100)),
         'twilight_breath': (BreathingColorPattern, dict(
             headboard_color = (48, 44, 96), 
             center_color = (72, 36, 94),
@@ -88,7 +89,6 @@ BED_CONFIG = PatternConfig(
             breath_period_s = 10,
             breath_amplitude_percent = 0.2
             )),
-        'fire': (FirePatternUV, dict(palette=palettes.FIRE, width=10, height=100)),
         'space_warp': (VideoPattern, dict(file='media/space_warp.mp4')),
         'abstract_gradient': (VideoPattern, dict(file='media/abstract_gradient_full.mp4')),
         'matrix': (VideoPattern, dict(file='media/matrix.mp4', crop=Rect(0, 100, 100, 1080))),
