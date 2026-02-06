@@ -8,7 +8,7 @@ import sys
 # COOLING: How much does the air cool as it rises?
 # Less cooling = taller flames.  More cooling = shorter flames.
 # Default 550
-COOLING = 600
+COOLING = 500
 
 # SPARKING: What chance(out of 255) is there that a new spark will be lit?
 # Higher chance = more roaring fire.  Lower chance = more flickery fire.
@@ -100,8 +100,7 @@ class FirePatternUV(PatternUV):
 
         # Copy to segments
         for segment in self.segments:
-            i = 0
-            for color in segment.colors:
+            for i, color in enumerate(segment.colors):
                 uv = segment.uv[i]
-                np.copyto(color, self.frame[uv[0], uv[1]])
-                i += 1
+                # The base of the flames is very jittery, so we rescale the V coordinate to make it less extreme
+                np.copyto(color, self.frame[uv[0] * 9 // 10, uv[1]])
