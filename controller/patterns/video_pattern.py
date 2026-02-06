@@ -17,6 +17,7 @@ class VideoPattern(PatternUV):
         self.params.file = ''
         self.params.crop = None
         self.params.fps = None
+        self.params.horizontal_blur = None
 
     def initialize(self):
         self.video = cv2.VideoCapture(self.params.file)
@@ -63,9 +64,13 @@ class VideoPattern(PatternUV):
             self.current_frame = 0
             return
 
+        # Optional horizontal blur to make patterns more visible when sampled at low resolution
+        if self.params.horizontal_blur:
+            horizontal_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (self.params.horizontal_blur, 1))
+            frame = cv2.dilate(frame, horizontal_kernel)
+
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
         for segment in self.getSegments():
-            i = 0
-            for color in segment.colors:
+            for i, color in enumerate(segment.colors):
                 np.copyto(color, frame[segment.uv[i][0], segment.uv[i][1]])
-                i = i + 1

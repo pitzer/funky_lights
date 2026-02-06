@@ -14,17 +14,17 @@ class ColorRollPattern(Pattern):
                 if i >= segment.num_leds:
                     break 
                 col = int(i / PATTERN_SIZE_HALF * 255)
-                segment.colors[i] = [col, 255 - col, 0]
+                segment.colors[i] = [64 + col * 3 // 4, 0, 64 - col // 4]
             for i in range(PATTERN_SIZE_HALF, PATTERN_SIZE):
                 if i >= segment.num_leds:
                     break
                 col = int(255 - ((i - PATTERN_SIZE_HALF) / PATTERN_SIZE_HALF * 255))
-                segment.colors[i] = [col, 255 - col, 0]
+                segment.colors[i] = [64 + col * 3 // 4, 0, 64 - col // 4]
             for i in range(PATTERN_SIZE, segment.num_leds):
                 if i >= segment.num_leds:
                     break
                 col = 0
-                segment.colors[i] = [col, 255 - col, 0]
+                segment.colors[i] = [64 + col * 3 // 4, 0, 64 - col // 4]
 
     async def animate(self, delta):
         for segment in self.segments:

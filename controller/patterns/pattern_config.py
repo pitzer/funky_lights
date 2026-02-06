@@ -28,6 +28,8 @@ SegmentMask = namedtuple(
 DEFAULT_CONFIG = PatternConfig(
     # This is the default pattern rotation. These patterns are rotated unless manually changed.
     rotation = {
+        'color_roll': (ColorRollPattern, dict()),
+        'matrix': (VideoPattern, dict(file='media/matrix.mp4', crop=Rect(0, 100, 100, 1080), horizontal_blur=30)),
         'fire': (FirePatternUV, dict(palette=palettes.FIRE, width=10, height=100)),
         'twilight_breath': (BreathingColorPattern, dict(
             headboard_color = (48, 44, 96), 
@@ -45,10 +47,8 @@ DEFAULT_CONFIG = PatternConfig(
             )),
         'space_warp': (VideoPattern, dict(file='media/space_warp.mp4')),
         'abstract_gradient': (VideoPattern, dict(file='media/abstract_gradient_full.mp4')),
-        'matrix': (VideoPattern, dict(file='media/matrix.mp4', crop=Rect(0, 100, 100, 1080))),
         'blue_light_rays': (VideoPattern, dict(file='media/blue_light_rays.mp4')),
         'rainbow': (RainbowWavesPattern, dict(fps=5.0)),
-        'color_roll': (ColorRollPattern, dict()),
         'flash': (VideoPattern, dict(file='media/flash.mp4', fps=5.0)),
     },
 
