@@ -9,7 +9,7 @@ class ColorRollPattern(Pattern):
         PATTERN_SIZE = 30
         PATTERN_SIZE_HALF = int(PATTERN_SIZE / 2)
 
-        for segment in self.segments:
+        for segment in self.getSegments():
             for i in range(PATTERN_SIZE_HALF):
                 if i >= segment.num_leds:
                     break 
@@ -27,5 +27,5 @@ class ColorRollPattern(Pattern):
                 segment.colors[i] = [64 + col * 3 // 4, 0, 64 - col // 4]
 
     async def animate(self, delta):
-        for segment in self.segments:
+        for segment in self.getSegments():
             segment.colors = np.roll(segment.colors, 1, axis=0)

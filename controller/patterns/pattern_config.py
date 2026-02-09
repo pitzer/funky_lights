@@ -13,7 +13,7 @@ from patterns.sweep_pattern import SweepPattern
 from patterns.theater_chase_pattern import TheaterChasePattern
 from patterns.rainbow_pattern import RainbowPattern
 from patterns.starburst_pattern import StarburstPattern
-from controller.patterns.bed_patterns import StaticColorPattern, BreathingColorPattern
+from controller.patterns.bed_patterns import ZonedPattern, StaticColorPattern, BreathingColorPattern, MotionPattern
 from patterns.checkers_pattern import CheckersPattern
 from patterns.rainbow_waves_pattern import RainbowWavesPattern
 from patterns.bouncing_blocks_pattern import BouncingBlocksPattern
@@ -28,28 +28,32 @@ SegmentMask = namedtuple(
 DEFAULT_CONFIG = PatternConfig(
     # This is the default pattern rotation. These patterns are rotated unless manually changed.
     rotation = {
-        'color_roll': (ColorRollPattern, dict()),
-        'matrix': (VideoPattern, dict(file='media/matrix.mp4', crop=Rect(0, 100, 100, 1080), horizontal_blur=30)),
-        'fire': (FirePatternUV, dict(palette=palettes.FIRE, width=10, height=100)),
+        'test': (ZonedPattern, dict(pattern_defs={
+            "headboard+cage": (StaticColorPattern, dict(color=(255, 0, 0))),
+            "center": (StaticColorPattern, dict(color=(0, 255, 0))),
+            "front": (StaticColorPattern, dict(color=(0, 0, 255))),
+        })),
         'twilight_breath': (BreathingColorPattern, dict(
+            color = (48, 44, 96),
             headboard_color = (48, 44, 96), 
             center_color = (72, 36, 94),
             front_color = (98, 56, 130),
             cage_color = (42, 18, 58),
-            breath_period_s = 2,
-            breath_amplitude_percent = 0.1
+            breath_period_s = 30,
+            breath_amplitude_percent = 0.5,
+            vary_segments = False,
+            type = "ramp_and_hold",
             )),
-        'twilight_static': (StaticColorPattern, dict(
-            headboard_color = (48, 44, 96), 
-            center_color = (72, 36, 94),
-            front_color = (98, 56, 130),
-            cage_color = (42, 18, 58)
-            )),
-        'space_warp': (VideoPattern, dict(file='media/space_warp.mp4')),
-        'abstract_gradient': (VideoPattern, dict(file='media/abstract_gradient_full.mp4')),
-        'blue_light_rays': (VideoPattern, dict(file='media/blue_light_rays.mp4')),
+        'test1': (ColorRollPattern, dict()),
         'rainbow': (RainbowWavesPattern, dict(fps=5.0)),
-        'flash': (VideoPattern, dict(file='media/flash.mp4', fps=5.0)),
+
+        'motion': (MotionPattern, dict()),
+        'blue_light_rays': (VideoPattern, dict(file='media/blue_light_rays.mp4')),
+        'abstract_gradient': (VideoPattern, dict(file='media/abstract_gradient_full.mp4')),
+        'space_warp': (VideoPattern, dict(file='media/space_warp.mp4')),
+        'color_roll': (ColorRollPattern, dict()),
+        'matrix': (VideoPattern, dict(file='media/matrix.mp4', crop=Rect(0, 100, 100, 1080), horizontal_blur=30)),
+        'fire': (FirePatternUV, dict(palette=palettes.FIRE, width=10, height=100)),
     },
 
     # Manual patterns are not part of the pattern rotation. They will only play when selected 
