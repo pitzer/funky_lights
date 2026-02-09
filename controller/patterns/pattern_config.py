@@ -33,7 +33,8 @@ SegmentMask = namedtuple(
 DEFAULT_CONFIG = PatternConfig(
     # This is the default pattern rotation. These patterns are rotated unless manually changed.
     rotation = {
-        'circuit': (CircuitPattern, dict(color=(255, 0, 0), period_s=3.0, amplitude_pct=1.0)),
+        'circuit': (CircuitPattern, dict(color=(255, 0, 0), period_s=3.0, amplitude_pct=1.0, zones=["headboard"])),
+        'test': (ColorQuadrants, dict()),
         'fire': (FirePatternUV, dict(palette=palettes.FIRE, width=10, height=100)),
         'twilight_breath': (ZonedPattern, dict(pattern_defs={
             "headboard": (BreathingColorPattern, dict(

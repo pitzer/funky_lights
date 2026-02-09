@@ -3,6 +3,24 @@ import numpy as np
 def clamp(minimum, x, maximum):
     return max(minimum, min(x, maximum))
 
+def expandKeys(dictionnary, allowed_keys):
+    """ Given a dictionnary with string keys that are potentially condensed at 'key1+key2',
+    return a new dictionnary where the keys are expanded to the allowed keys, and the values are copied."""
+    new_dictionnary = {}
+    for key in dictionnary.keys():
+        if "+" in key:
+            keys = key.split("+")
+            for k in keys:
+                k = k.strip()
+                if k not in allowed_keys:
+                    raise ValueError(f"Invalid key: {k}")
+                new_dictionnary[k] = dictionnary[key]
+        else:
+            if key not in allowed_keys:
+                raise ValueError(f"Invalid key: {key}")
+            new_dictionnary[key] = dictionnary[key]
+    return new_dictionnary
+
 def rotateLedPositions(led_positions, angle):
     # Rotate the LED positions by the given angle (in degrees) around the Y-axis
     angle_rad = np.radians(angle)

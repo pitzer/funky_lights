@@ -8,7 +8,7 @@ class ColorQuadrants(Pattern):
         for segment in self.segments:
             for i in range(segment.num_leds):
                 pos = segment.led_positions[i]
-                if pos[0] < 0:
+                if pos[0] < 0.0:
                     segment.colors[i][0] = 0
                 else:
                     segment.colors[i][0] = 255
@@ -18,7 +18,7 @@ class ColorQuadrants(Pattern):
                 else:
                     segment.colors[i][1] = 255
                 
-                if pos[2] < -0.5:
+                if pos[2] < 0.0:
                     segment.colors[i][2] = 0
                 else:
                     segment.colors[i][2] = 255

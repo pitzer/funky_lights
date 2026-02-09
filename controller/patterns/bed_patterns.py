@@ -1,6 +1,6 @@
 from patterns.pattern import Pattern
 from patterns.pattern import PatternUV, UVGrid
-from .utils import rippleBrightnesses
+from .utils import expandKeys, rippleBrightnesses
 from collections import namedtuple
 import math
 import numpy as np
@@ -8,7 +8,7 @@ from copy import deepcopy
 
 
 ZoneSegment = namedtuple(
-    'ZoneSegment', ['name', 'segment_index', 'offset', 'num_leds'])
+    'ZoneSegment', ['name', 'segment_index', 'offset', 'num_leds', 'circuit_dir'])
 
 POST_RL_SEGMENT = 0
 POST_RR_SEGMENT = 1
@@ -16,48 +16,52 @@ POST_FL_SEGMENT = 2
 POST_FR_SEGMENT = 3
 HEADBOARD_SEGMENT = 4
 
+CIRCUIT_DIR_STRAIGHT = 0
+CIRCUIT_DIR_REVERSE = 1
+CIRCUIT_DIR_NONE = 2
+
 headboard_segments = [
-    ZoneSegment("Top left", HEADBOARD_SEGMENT, 0, 10),
-    ZoneSegment("Cross Top Left", HEADBOARD_SEGMENT, 10, 8),
-    ZoneSegment("Top Middle", HEADBOARD_SEGMENT, 18, 8),
-    ZoneSegment("Cross Top Right", HEADBOARD_SEGMENT, 26, 8),
-    ZoneSegment("Top Right", HEADBOARD_SEGMENT, 34, 10),
-    ZoneSegment("Right", HEADBOARD_SEGMENT, 44, 14),
-    ZoneSegment("Bottom Right", HEADBOARD_SEGMENT, 58, 10),
-    ZoneSegment("Cross Bottom Right", HEADBOARD_SEGMENT, 68, 8),
-    ZoneSegment("Bottom Middle", HEADBOARD_SEGMENT, 76, 8),
-    ZoneSegment("Cross Bottom Left", HEADBOARD_SEGMENT, 84, 8),
-    ZoneSegment("Bottom left", HEADBOARD_SEGMENT, 92, 10),
-    ZoneSegment("Left", HEADBOARD_SEGMENT, 102, 14)
+    ZoneSegment("Bottom Left"       , HEADBOARD_SEGMENT, 0 , 10 , CIRCUIT_DIR_STRAIGHT),
+    ZoneSegment("Cross Bottom Left" , HEADBOARD_SEGMENT, 10 , 8 , CIRCUIT_DIR_REVERSE),
+    ZoneSegment("Cross Top Right"   , HEADBOARD_SEGMENT, 68 , 8 , CIRCUIT_DIR_STRAIGHT),
+    ZoneSegment("Top Right"         , HEADBOARD_SEGMENT, 58 , 10, CIRCUIT_DIR_REVERSE),
+    ZoneSegment("Right"             , HEADBOARD_SEGMENT, 44 , 14, CIRCUIT_DIR_REVERSE),
+    ZoneSegment("Bottom Right"      , HEADBOARD_SEGMENT, 34 , 10, CIRCUIT_DIR_REVERSE),
+    ZoneSegment("Cross Bottom Right", HEADBOARD_SEGMENT, 26 , 8 , CIRCUIT_DIR_REVERSE),
+    ZoneSegment("Cross Top Left"    , HEADBOARD_SEGMENT, 84 , 8 , CIRCUIT_DIR_STRAIGHT),
+    ZoneSegment("Top Left"          , HEADBOARD_SEGMENT, 92 , 10, CIRCUIT_DIR_STRAIGHT),
+    ZoneSegment("Left"              , HEADBOARD_SEGMENT, 102, 14, CIRCUIT_DIR_STRAIGHT),
+    ZoneSegment("Bottom Middle"     , HEADBOARD_SEGMENT, 18 , 8 , CIRCUIT_DIR_NONE),
+    ZoneSegment("Top Middle"        , HEADBOARD_SEGMENT, 76 , 8 , CIRCUIT_DIR_NONE),
 ]
 
 cage_segments = [
-    ZoneSegment("Cage RL Left", POST_RL_SEGMENT, 0, 12),
-    ZoneSegment("Cage RL Right", POST_RL_SEGMENT, 12, 12),
-    ZoneSegment("Cage RR Left", POST_RR_SEGMENT, 0, 12),
-    ZoneSegment("Cage RR Right", POST_RR_SEGMENT, 12, 12),
-    ZoneSegment("Cage FL Left", POST_FL_SEGMENT, 0, 12),
-    ZoneSegment("Cage FL Right", POST_FL_SEGMENT, 12, 12),
-    ZoneSegment("Cage FR Left", POST_FR_SEGMENT, 0, 12),
-    ZoneSegment("Cage FR Right", POST_FR_SEGMENT, 12, 12)
+    ZoneSegment("Cage RL Outer", POST_RL_SEGMENT, 0 , 12, CIRCUIT_DIR_STRAIGHT),
+    ZoneSegment("Cage RL Inner", POST_RL_SEGMENT, 12, 12, CIRCUIT_DIR_STRAIGHT),
+    ZoneSegment("Cage RR Inner", POST_RR_SEGMENT, 12, 12, CIRCUIT_DIR_REVERSE),
+    ZoneSegment("Cage RR Outer", POST_RR_SEGMENT, 0 , 12, CIRCUIT_DIR_REVERSE),
+    ZoneSegment("Cage FR Outer", POST_FR_SEGMENT, 0 , 12, CIRCUIT_DIR_STRAIGHT),
+    ZoneSegment("Cage FR Inner", POST_FR_SEGMENT, 12, 12, CIRCUIT_DIR_STRAIGHT),
+    ZoneSegment("Cage FL Inner", POST_FL_SEGMENT, 12, 12, CIRCUIT_DIR_REVERSE),
+    ZoneSegment("Cage FL Outer", POST_FL_SEGMENT, 0 , 12, CIRCUIT_DIR_REVERSE),
 ]
 
 front_segments = [
-    ZoneSegment("Front FL Right", POST_FL_SEGMENT, 24, 21),
-    ZoneSegment("Front FL Left", POST_FL_SEGMENT, 45, 21),
-    ZoneSegment("Front FL Right", POST_FR_SEGMENT, 24, 21),
-    ZoneSegment("Front FL Left", POST_FR_SEGMENT, 45, 21)
+    ZoneSegment("Front FL Outer", POST_FL_SEGMENT, 24, 21, CIRCUIT_DIR_STRAIGHT),
+    ZoneSegment("Front FL Inner", POST_FL_SEGMENT, 45, 21, CIRCUIT_DIR_STRAIGHT),
+    ZoneSegment("Front FR Inner", POST_FR_SEGMENT, 45, 21, CIRCUIT_DIR_REVERSE),
+    ZoneSegment("Front FR Outer", POST_FR_SEGMENT, 24, 21, CIRCUIT_DIR_REVERSE),
 ]
 
 center_segments = [
-    ZoneSegment("Center RL Outer", POST_RL_SEGMENT, 45, 21),
-    ZoneSegment("Center RL Inner", POST_RL_SEGMENT, 24, 21),
-    ZoneSegment("Center RR Inner", POST_RR_SEGMENT, 24, 21),
-    ZoneSegment("Center RR Outer", POST_RR_SEGMENT, 45, 21),
-    ZoneSegment("Center FR Outer", POST_FR_SEGMENT, 87, 21),
-    ZoneSegment("Center FR Inner", POST_FR_SEGMENT, 66, 21),
-    ZoneSegment("Center FL Inner", POST_FL_SEGMENT, 66, 21),
-    ZoneSegment("Center FL Outer", POST_FL_SEGMENT, 87, 21),
+    ZoneSegment("Center RL Outer", POST_RL_SEGMENT, 45, 21, CIRCUIT_DIR_REVERSE),
+    ZoneSegment("Center RL Inner", POST_RL_SEGMENT, 24, 21, CIRCUIT_DIR_REVERSE),
+    ZoneSegment("Center RR Inner", POST_RR_SEGMENT, 24, 21, CIRCUIT_DIR_STRAIGHT),
+    ZoneSegment("Center RR Outer", POST_RR_SEGMENT, 45, 21, CIRCUIT_DIR_STRAIGHT),
+    ZoneSegment("Center FR Outer", POST_FR_SEGMENT, 87, 21, CIRCUIT_DIR_REVERSE),
+    ZoneSegment("Center FR Inner", POST_FR_SEGMENT, 66, 21, CIRCUIT_DIR_REVERSE),
+    ZoneSegment("Center FL Inner", POST_FL_SEGMENT, 66, 21, CIRCUIT_DIR_STRAIGHT),
+    ZoneSegment("Center FL Outer", POST_FL_SEGMENT, 87, 21, CIRCUIT_DIR_STRAIGHT),
 ]
 
 all_segments = headboard_segments + cage_segments + front_segments + center_segments
@@ -80,20 +84,7 @@ class ZonedPattern(Pattern):
     def initialize(self):
         # Create the sub-patterns
         # If a key is of the form "zone1+zone2", split it and apply the pattern to both zones
-        new_patter_defs = {}
-        for zone in self.params.pattern_defs.keys():
-            if "+" in zone:
-                zones = zone.split("+")
-                for z in zones:
-                    z = z.strip()
-                    if z not in ["headboard", "center", "front", "cage"]:
-                        raise ValueError(f"Invalid zone name: {z}")
-                    new_patter_defs[z] = self.params.pattern_defs[zone]
-            else:
-                if zone not in ["headboard", "center", "front", "cage"]:
-                    raise ValueError(f"Invalid zone name: {zone}")
-                new_patter_defs[zone] = self.params.pattern_defs[zone]
-        self.params.pattern_defs = new_patter_defs
+        self.params.pattern_defs = expandKeys(self.params.pattern_defs, ["headboard", "center", "front", "cage"])
         for zone, (cls, params) in self.params.pattern_defs.items():
             pattern = cls()
             for key in params:
@@ -213,6 +204,7 @@ class CircuitPattern(Pattern):
         self.params.amplitude_pct = 0.5
         self.params.color = (255, 255, 255)
         self.params.pulse_width = 15
+        self.params.zones = ["headboard", "center", "front", "cage"]
         self.time = 0
 
     def initialize(self):
@@ -222,16 +214,28 @@ class CircuitPattern(Pattern):
         self.time += delta
         period = self.params.period_s
         progress = (self.time % period) / period
+        segments = []
+        if "headboard" in self.params.zones:
+            segments += headboard_segments
+        if "center" in self.params.zones:
+            segments += center_segments
+        if "front" in self.params.zones:
+            segments += front_segments
+        if "cage" in self.params.zones:
+            segments += cage_segments
 
-        segments = center_segments
-
-
-        total_leds = sum(segment.num_leds for segment in segments)
+        total_leds = sum(segment.num_leds for segment in segments if segment.circuit_dir != CIRCUIT_DIR_NONE)
         pulse_position = progress * total_leds
         current_led = 0
         for segment in segments:
             ctrl_segment = self.segments[segment.segment_index]
-            for i in range(segment.offset, segment.offset + segment.num_leds):
+            if segment.circuit_dir == CIRCUIT_DIR_NONE:
+                continue
+            if segment.circuit_dir == CIRCUIT_DIR_STRAIGHT:
+                led_range = range(segment.offset, segment.offset + segment.num_leds)
+            elif segment.circuit_dir == CIRCUIT_DIR_REVERSE:
+                led_range = range(segment.offset + segment.num_leds - 1, segment.offset - 1, -1)
+            for i in led_range:
                 distance = abs(current_led - pulse_position)
                 if distance > total_leds / 2:
                     distance = total_leds - distance
