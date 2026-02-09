@@ -50,14 +50,14 @@ front_segments = [
 ]
 
 center_segments = [
-    ZoneSegment("Center RL Right", POST_RL_SEGMENT, 24, 21),
-    ZoneSegment("Center RL Left", POST_RL_SEGMENT, 45, 21),
-    ZoneSegment("Center RL Right", POST_RR_SEGMENT, 24, 21),
-    ZoneSegment("Center RL Left", POST_RR_SEGMENT, 45, 21),
-    ZoneSegment("Center FL Right", POST_FL_SEGMENT, 66, 21),
-    ZoneSegment("Center FL Left", POST_FL_SEGMENT, 87, 21),
-    ZoneSegment("Center FR Right", POST_FR_SEGMENT, 66, 21),
-    ZoneSegment("Center Fr Left", POST_FR_SEGMENT, 87, 21)
+    ZoneSegment("Center RL Outer", POST_RL_SEGMENT, 45, 21),
+    ZoneSegment("Center RL Inner", POST_RL_SEGMENT, 24, 21),
+    ZoneSegment("Center RR Inner", POST_RR_SEGMENT, 24, 21),
+    ZoneSegment("Center RR Outer", POST_RR_SEGMENT, 45, 21),
+    ZoneSegment("Center FR Outer", POST_FR_SEGMENT, 87, 21),
+    ZoneSegment("Center FR Inner", POST_FR_SEGMENT, 66, 21),
+    ZoneSegment("Center FL Inner", POST_FL_SEGMENT, 66, 21),
+    ZoneSegment("Center FL Outer", POST_FL_SEGMENT, 87, 21),
 ]
 
 all_segments = headboard_segments + cage_segments + front_segments + center_segments
@@ -137,8 +137,8 @@ class StaticColorPattern(Pattern):
 class BreathingColorPattern(StaticColorPattern):
     def __init__(self):
         super().__init__()
-        self.params.breath_period_s = 5.0
-        self.params.breath_amplitude_percent = 0.1
+        self.params.period_s = 5.0
+        self.params.amplitude_pct = 0.5
         self.params.vary_segments = True
         self.params.type = "sine"
         self.params.color = (255, 255, 255)
@@ -156,29 +156,29 @@ class BreathingColorPattern(StaticColorPattern):
 
         # For each segment, we create use a slightly different period and starting
         # phase to create a more dynamic effect.
-        period = float(self.params.breath_period_s)
+        period = float(self.params.period_s)
         phase = 0
         for s in all_segments:
             segment = self.segments[s.segment_index]
             rad = self.breath_time * math.pi * 2 / period + phase
             if self.params.type == "ramp_and_hold":
                 if rad % (2 * math.pi) < math.pi / 4:
-                    brightness = 1.0 + math.sin(rad * 2) * self.params.breath_amplitude_percent
+                    brightness = 1.0 + math.sin(rad * 2) * self.params.amplitude_pct
                 elif rad % (2 * math.pi) < math.pi:
-                    brightness = 1.0 + self.params.breath_amplitude_percent
+                    brightness = 1.0 + self.params.amplitude_pct
                 elif rad % (2 * math.pi) < 5 * math.pi / 4:
-                    brightness = 1.0 + math.sin((rad - math.pi) * 2 + math.pi / 2) * self.params.breath_amplitude_percent
+                    brightness = 1.0 + math.sin((rad - math.pi) * 2 + math.pi / 2) * self.params.amplitude_pct
                 else:
                     brightness = 1.0
             elif self.params.type == "sine":
-                brightness = 1.0 + math.sin(rad) * self.params.breath_amplitude_percent
+                brightness = 1.0 + math.sin(rad) * self.params.amplitude_pct
             else:
                 raise ValueError(f"Invalid breathing pattern type: {self.params.type}")
             for i in range(s.offset, s.offset + s.num_leds):
                 segment.colors[i] = np.clip(np.array(self.params.color) * brightness, 0, 255)
             if self.params.vary_segments:
                 phase += 3.0
-                period += self.params.breath_period_s / 20.0
+                period += self.params.period_s / 20.0
 
 class RipplePattern(PatternUV):
     def __init__(self, width=100, height=100):
@@ -205,6 +205,43 @@ class RipplePattern(PatternUV):
         self.spectrum = np.roll(self.spectrum, 1)  
         self.applyGrid(self.grid)
         self.cumulative_delta = 0
+
+class CircuitPattern(Pattern):
+    def __init__(self):
+        super().__init__()
+        self.params.period_s = 20.0
+        self.params.amplitude_pct = 0.5
+        self.params.color = (255, 255, 255)
+        self.params.pulse_width = 15
+        self.time = 0
+
+    def initialize(self):
+        pass
+
+    async def animate(self, delta):
+        self.time += delta
+        period = self.params.period_s
+        progress = (self.time % period) / period
+
+        segments = center_segments
+
+
+        total_leds = sum(segment.num_leds for segment in segments)
+        pulse_position = progress * total_leds
+        current_led = 0
+        for segment in segments:
+            ctrl_segment = self.segments[segment.segment_index]
+            for i in range(segment.offset, segment.offset + segment.num_leds):
+                distance = abs(current_led - pulse_position)
+                if distance > total_leds / 2:
+                    distance = total_leds - distance
+                if distance < self.params.pulse_width:
+                    pulse_intensity = (1.0 - distance / self.params.pulse_width) * self.params.amplitude_pct
+                    brightness = pulse_intensity
+                else:
+                    brightness = 0.0
+                ctrl_segment.colors[i] = np.clip(np.array(self.params.color) * brightness, 0, 255)
+                current_led += 1
 
 
 class MotionPattern(Pattern):
