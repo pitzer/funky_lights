@@ -12,6 +12,7 @@ from patterns.sparkle_pattern import SparklePattern
 from patterns.sweep_pattern import SweepPattern
 from patterns.theater_chase_pattern import TheaterChasePattern
 from patterns.rainbow_pattern import RainbowPattern
+from patterns.ripples_pattern import RipplesPattern
 from patterns.starburst_pattern import StarburstPattern
 from controller.patterns.bed_patterns import (
     ZonedPattern,
@@ -33,6 +34,8 @@ SegmentMask = namedtuple(
 DEFAULT_CONFIG = PatternConfig(
     # This is the default pattern rotation. These patterns are rotated unless manually changed.
     rotation = {
+        'ripples': (RipplesPattern, dict(rotation_deg=0)),
+        'matrix': (VideoPattern, dict(file='media/matrix.mp4', crop=Rect(0, 100, 100, 1080), horizontal_blur=30, color=(255, 0, 0))),
         'circuit': (CircuitPattern, dict(color=(255, 0, 0), period_s=3.0, amplitude_pct=1.0, zones=["headboard"])),
         'test': (ColorQuadrants, dict()),
         'fire': (FirePatternUV, dict(palette=palettes.FIRE, width=10, height=100)),
@@ -61,7 +64,6 @@ DEFAULT_CONFIG = PatternConfig(
         'abstract_gradient': (VideoPattern, dict(file='media/abstract_gradient_full.mp4')),
         'space_warp': (VideoPattern, dict(file='media/space_warp.mp4')),
         'color_roll': (ColorRollPattern, dict()),
-        'matrix': (VideoPattern, dict(file='media/matrix.mp4', crop=Rect(0, 100, 100, 1080), horizontal_blur=30)),
     },
 
     # Manual patterns are not part of the pattern rotation. They will only play when selected 

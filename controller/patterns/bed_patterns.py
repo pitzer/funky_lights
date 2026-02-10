@@ -1,6 +1,6 @@
 from patterns.pattern import Pattern
 from patterns.pattern import PatternUV, UVGrid
-from .utils import expandKeys, rippleBrightnesses
+from .utils import expandKeys
 from collections import namedtuple
 import math
 import numpy as np
@@ -246,6 +246,8 @@ class CircuitPattern(Pattern):
                     brightness = 0.0
                 ctrl_segment.colors[i] = np.clip(np.array(self.params.color) * brightness, 0, 255)
                 current_led += 1
+
+
 
 
 class MotionPattern(Pattern):

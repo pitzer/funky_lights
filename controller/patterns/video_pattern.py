@@ -17,6 +17,7 @@ class VideoPattern(PatternUV):
         self.params.file = ''
         self.params.crop = None
         self.params.fps = None
+        self.params.color = None
         self.params.horizontal_blur = None
 
     def initialize(self):
@@ -70,6 +71,14 @@ class VideoPattern(PatternUV):
             frame = cv2.dilate(frame, horizontal_kernel)
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        # If we were given a color, replace all the pixels with that color but keep the brightness from the video
+        if self.params.color:
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            normalized = gray / 255.0
+            frame = np.zeros_like(frame)
+            for i in range(3):
+                frame[:, :, i] = np.clip(normalized * self.params.color[i], 0, 255)
+
 
         for segment in self.getSegments():
             for i, color in enumerate(segment.colors):

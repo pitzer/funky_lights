@@ -79,6 +79,7 @@ class PatternUV(Pattern):
    
     def __init__(self):
         super().__init__()
+        self.params.rotation_deg = 45
     
     def applyGrid(self, grid):
         for segment in self.getSegments():
@@ -115,7 +116,7 @@ class PatternUV(Pattern):
                           (width - 1) / (max_z - min_z)])
         for segment in self.getSegments():
             uv = []
-            rotated = rotateLedPositions(segment.led_positions, angle = 45)
+            rotated = rotateLedPositions(segment.led_positions, angle = self.params.rotation_deg)
             for p in rotated:
                 pm = np.multiply(p[1:] + offset, scale).astype(int)
                 u = int(height) - 1 - pm[0] + offset_u
