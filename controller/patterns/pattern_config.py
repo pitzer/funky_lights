@@ -34,18 +34,31 @@ SegmentMask = namedtuple(
 DEFAULT_CONFIG = PatternConfig(
     # This is the default pattern rotation. These patterns are rotated unless manually changed.
     rotation = {
+        'moonlight': (ZonedPattern, dict(pattern_defs={
+            "headboard": (BreathingColorPattern, dict(
+                color=(190, 190, 190)  , period_s=22, amplitude_pct=-0.5, type="sine")),
+            "center": (CircuitPattern, dict(
+                color=(145, 145, 145) , period_s=20, amplitude_pct=-1.0, zones = ['center'],)),
+            "front": (BreathingColorPattern, dict(
+                color=(160, 160, 160), period_s=15 , amplitude_pct=-0.5, type="ramp_and_hold")),
+            "cage": (BreathingColorPattern, dict(
+                color=(90, 90, 90)   , period_s=10 , amplitude_pct= 1.0, type="single_pulse")),
+        })),
+        'twilight': (ZonedPattern, dict(pattern_defs={
+            "headboard": (BreathingColorPattern, dict(
+                color=(96, 88, 192)  , period_s=18, amplitude_pct=-0.5, type="ramp_and_hold")),
+            "center": (CircuitPattern, dict(
+                color=(144, 72, 188) , period_s=20, amplitude_pct=-1.0, zones = ['center'],)),
+            "front": (RipplesPattern, dict(
+                color=(196, 112, 255), period_s=2 , amplitude_pct=-0.5, speed=0.4)),
+            "cage": (BreathingColorPattern, dict(
+                color=(84, 36, 116)  , period_s=6 , amplitude_pct= 1.0, type="double_pulse")),
+        })),
         'ripples': (RipplesPattern, dict(rotation_deg=0)),
         'matrix': (VideoPattern, dict(file='media/matrix.mp4', crop=Rect(0, 100, 100, 1080), horizontal_blur=30, color=(255, 0, 0))),
         'circuit': (CircuitPattern, dict(color=(255, 0, 0), period_s=3.0, amplitude_pct=1.0, zones=["headboard"])),
         'test': (ColorQuadrants, dict()),
         'fire': (FirePatternUV, dict(palette=palettes.FIRE, width=10, height=100)),
-        'twilight_breath': (ZonedPattern, dict(pattern_defs={
-            "headboard": (BreathingColorPattern, dict(
-                color=(48, 44, 96), period_s=18, amplitude_pct=0.5, type="sine")),
-            "center": (CircuitPattern, dict(
-                color=(72, 36, 94), period_s=22, amplitude_pct=0.5)),
-            "front": (StaticColorPattern, dict(color=(0, 0, 255))),
-        })),
         #'twilight_breath': (BreathingColorPattern, dict(
         #    color = (48, 44, 96),
         #    headboard_color = (48, 44, 96), 

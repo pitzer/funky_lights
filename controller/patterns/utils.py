@@ -36,3 +36,10 @@ def rotateLedPositions(led_positions, angle):
         rotated_positions.append((new_x, new_y, new_z))
 
     return rotated_positions
+
+def scaleColors(color, intensities, amplitude_pct):
+    """ Scale the colors by the given intensities and amplitude percentage, and clip to [0, 255]. """
+    if amplitude_pct > 0:
+        return np.clip(color * intensities[:, np.newaxis] * amplitude_pct, 0, 255).astype(np.uint8)
+    else:
+        return np.clip(color * (1.0 + intensities[:, np.newaxis] * amplitude_pct), 0, 255).astype(np.uint8)

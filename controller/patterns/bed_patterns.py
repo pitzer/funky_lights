@@ -1,6 +1,6 @@
 from patterns.pattern import Pattern
 from patterns.pattern import PatternUV, UVGrid
-from .utils import expandKeys
+from .utils import expandKeys, scaleColors
 from collections import namedtuple
 import math
 import numpy as np
@@ -118,8 +118,7 @@ class StaticColorPattern(Pattern):
     def initialize(self):
         for s in all_segments:
             segment = self.segments[s.segment_index]
-            for i in range(s.offset, s.offset + s.num_leds):
-                segment.colors[i] = self.params.color
+            segment.colors[s.offset:s.offset + s.num_leds] = self.params.color
 
     async def animate(self, delta):
         return
@@ -129,8 +128,8 @@ class BreathingColorPattern(StaticColorPattern):
     def __init__(self):
         super().__init__()
         self.params.period_s = 5.0
-        self.params.amplitude_pct = 0.5
-        self.params.vary_segments = True
+        self.params.amplitude_pct = 1.0
+        self.params.vary_segments = False
         self.params.type = "sine"
         self.params.color = (255, 255, 255)
         self.breath_time = 0
@@ -148,60 +147,42 @@ class BreathingColorPattern(StaticColorPattern):
         # For each segment, we create use a slightly different period and starting
         # phase to create a more dynamic effect.
         period = float(self.params.period_s)
-        phase = 0
-        for s in all_segments:
-            segment = self.segments[s.segment_index]
-            rad = self.breath_time * math.pi * 2 / period + phase
+        phase_offset = 0
+        for segment in self.segments:
+            phase = (self.breath_time * math.pi * 2 / period + phase_offset) % (2 * math.pi)
             if self.params.type == "ramp_and_hold":
-                if rad % (2 * math.pi) < math.pi / 4:
-                    brightness = 1.0 + math.sin(rad * 2) * self.params.amplitude_pct
-                elif rad % (2 * math.pi) < math.pi:
-                    brightness = 1.0 + self.params.amplitude_pct
-                elif rad % (2 * math.pi) < 5 * math.pi / 4:
-                    brightness = 1.0 + math.sin((rad - math.pi) * 2 + math.pi / 2) * self.params.amplitude_pct
-                else:
+                if phase < math.pi / 2:
+                    brightness = (1.0 + math.sin(phase * 2 - np.pi / 2)) / 2.0
+                elif phase < math.pi:
                     brightness = 1.0
+                elif phase < 3 * math.pi / 2:
+                    brightness = (1.0 + math.sin((phase - math.pi) * 2 + math.pi / 2)) / 2.0
+                else:
+                    brightness = 0.0
             elif self.params.type == "sine":
-                brightness = 1.0 + math.sin(rad) * self.params.amplitude_pct
+                brightness = (1.0 + math.sin(phase)) / 2.0
+            elif self.params.type == "single_pulse":
+                if phase < 2.0 * math.pi / 4:
+                    brightness = math.sin(phase * 2) ** 2 
+                else:
+                    brightness = 0.0
+            elif self.params.type == "double_pulse":
+                if phase < 2.0 * math.pi / 3:
+                    brightness = math.sin(phase * 3) ** 2 
+                else:
+                    brightness = 0.0
             else:
                 raise ValueError(f"Invalid breathing pattern type: {self.params.type}")
-            for i in range(s.offset, s.offset + s.num_leds):
-                segment.colors[i] = np.clip(np.array(self.params.color) * brightness, 0, 255)
+            segment.colors = scaleColors(self.params.color, np.full((segment.num_leds,), brightness), self.params.amplitude_pct)
             if self.params.vary_segments:
-                phase += 3.0
+                phase_offset += 3.0
                 period += self.params.period_s / 20.0
-
-class RipplePattern(PatternUV):
-    def __init__(self, width=100, height=100):
-        super().__init__()
-        # Frequency of color change (in Hz)
-        self.fps = 40
-        self.offset = 0
-        self.width = width
-        self.height = height
-    
-    def initialize(self):
-        self.generateUVCoordinates(self.width, self.height)
-        self.grid = UVGrid(self.width, self.height)
-        self.cumulative_delta = 1000  # set to an arbitrary high value
-        self.current_color_index = 0
-        self.spectrum = np.arange(0, 1, 1/self.width)        
-        self.applyGrid(self.grid)  
-    
-    async def animate(self, delta):
-        self.cumulative_delta += delta
-        if self.cumulative_delta < 1 / self.fps:
-            return
-
-        self.spectrum = np.roll(self.spectrum, 1)  
-        self.applyGrid(self.grid)
-        self.cumulative_delta = 0
 
 class CircuitPattern(Pattern):
     def __init__(self):
         super().__init__()
         self.params.period_s = 20.0
-        self.params.amplitude_pct = 0.5
+        self.params.amplitude_pct = 1.0
         self.params.color = (255, 255, 255)
         self.params.pulse_width = 15
         self.params.zones = ["headboard", "center", "front", "cage"]
@@ -235,204 +216,13 @@ class CircuitPattern(Pattern):
                 led_range = range(segment.offset, segment.offset + segment.num_leds)
             elif segment.circuit_dir == CIRCUIT_DIR_REVERSE:
                 led_range = range(segment.offset + segment.num_leds - 1, segment.offset - 1, -1)
-            for i in led_range:
-                distance = abs(current_led - pulse_position)
-                if distance > total_leds / 2:
-                    distance = total_leds - distance
-                if distance < self.params.pulse_width:
-                    pulse_intensity = (1.0 - distance / self.params.pulse_width) * self.params.amplitude_pct
-                    brightness = pulse_intensity
-                else:
-                    brightness = 0.0
-                ctrl_segment.colors[i] = np.clip(np.array(self.params.color) * brightness, 0, 255)
-                current_led += 1
+
+            indexes = np.arange(segment.num_leds)
+            distances = np.abs(current_led + indexes - pulse_position)
+            current_led += segment.num_leds
+            distances[distances > total_leds / 2] = total_leds - distances[distances > total_leds / 2]
+            intensities = np.clip(1.0 - distances / self.params.pulse_width, 0, 1)
+            ctrl_segment.colors[led_range] = scaleColors(np.array(self.params.color), intensities, self.params.amplitude_pct)
 
 
-
-
-class MotionPattern(Pattern):
-    """
-    Motion pattern implementing:
-    - Headboard: Ultra-slow breath (16-20s cycle, ±4-6% brightness)
-    - Bed Posts: Orbital circuit (18-24s cycle, clockwise processional)
-    - Bench: Center-outward ripple (8-10s cycle, ±10%)
-    - Cage: Subtle heartbeat (double pulse with rest)
-    """
-    def __init__(self):
-        super().__init__()
-        # Headboard parameters
-        self.params.headboard_breath_period = 18.0  # 16-20 seconds
-        self.params.headboard_amplitude = 0.50  # ±50% brightness
-        self.params.headboard_color = np.array([48, 44, 96]) * 2.0  # Indigo / Blue-Violet
-        
-        # Bed posts orbital circuit parameters
-        self.params.orbital_period = 21.0  # 18-24 seconds per circuit
-        self.params.orbital_brightness_delta = 0.5  # ±50% brightness pulse
-        self.params.post_color = np.array([72, 36, 94]) * 2.0  # Deep Plum
-        
-        # Bench ripple parameters
-        self.params.bench_ripple_period = 9.0  # 8-10 seconds
-        self.params.bench_amplitude = 0.50  # ±10%
-        self.params.bench_color = np.array([98, 56, 130]) * 1.5 # Bruised Violet
-        
-        # Cage heartbeat parameters
-        self.params.cage_pulse_duration = 1.5  # 1.5 seconds per pulse
-        self.params.cage_pause_duration = 4.5  # 4-5 seconds pause
-        self.params.cage_amplitude = 0.50  # ±50% brightness
-        self.params.cage_color = np.array([42, 18, 58]) * 2.0  # Abyss Purple
-        
-        self.time = 0
-        
-    def initialize(self):
-        # Initialize all segments to their base colors
-        # Headboard
-        for s in headboard_segments:
-            segment = self.segments[s.segment_index]
-            for i in range(s.offset, s.offset + s.num_leds):
-                segment.colors[i] = self.params.headboard_color
-        
-        # Cage
-        for s in cage_segments:
-            segment = self.segments[s.segment_index]
-            for i in range(s.offset, s.offset + s.num_leds):
-                segment.colors[i] = self.params.cage_color
-        
-        # Center (bench)
-        for s in center_segments:
-            segment = self.segments[s.segment_index]
-            for i in range(s.offset, s.offset + s.num_leds):
-                segment.colors[i] = self.params.bench_color
-        
-        # Front (bench continuation)
-        for s in front_segments:
-            segment = self.segments[s.segment_index]
-            for i in range(s.offset, s.offset + s.num_leds):
-                segment.colors[i] = self.params.bench_color
-    
-    async def animate(self, delta):
-        self.time += delta
-        
-        # 1. Headboard - Ultra-slow breath (sine wave)
-        self._animate_headboard_breath()
-        
-        # 2. Bed Posts - Orbital circuit (clockwise processional)
-        self._animate_orbital_circuit()
-        
-        # 3. Bench - Center-outward ripple
-        self._animate_bench_ripple()
-        
-        # 4. Cage - Subtle heartbeat (double pulse)
-        self._animate_cage_heartbeat()
-    
-    def _animate_headboard_breath(self):
-        """Ultra-slow sine wave breath on headboard"""
-        period = self.params.headboard_breath_period
-        rad = (self.time * 2 * math.pi) / period
-        brightness = 1.0 + math.sin(rad) * self.params.headboard_amplitude
-        for s in headboard_segments:
-            segment = self.segments[s.segment_index]
-            for i in range(s.offset, s.offset + s.num_leds):
-                segment.colors[i] = np.clip(
-                    np.array(self.params.headboard_color) * brightness, 0, 255)
-    
-    def _animate_orbital_circuit(self):
-        """Clockwise processional circuit around bed posts"""
-        period = self.params.orbital_period
-        # Progress through the circuit (0 to 1)
-        progress = (self.time % period) / period
-
-        # Define the orbital path: RL (rear-left) -> RR -> FR -> FL -> back to RL
-        # Each post has 66 LEDs (0-23 cage, 24-65 center/front)
-        # We'll create a smooth pulse that travels around
-        post_order = [
-            (POST_RL_SEGMENT, 24, 66),  # Rear Left (start at LED 24, non-cage)
-            (POST_RR_SEGMENT, 24, 66),  # Rear Right
-            (POST_FR_SEGMENT, 66, 108),  # Front Right
-            (POST_FL_SEGMENT, 66, 108),  # Front Left
-        ]
-        
-        total_leds_in_circuit = sum(end - start for _, start, end in post_order)
-        pulse_position = progress * total_leds_in_circuit
-        pulse_width = 15  # Width of the brightness pulse in LEDs
-        current_led = 0
-        for seg_idx, start_offset, end_offset in post_order:
-            segment = self.segments[seg_idx]
-            num_leds = end_offset - start_offset
-            
-            for i in range(start_offset, end_offset):
-                # Calculate distance from pulse center
-                distance = abs(current_led - pulse_position)
-                # Handle wraparound
-                if distance > total_leds_in_circuit / 2:
-                    distance = total_leds_in_circuit - distance
-                
-                # Calculate brightness based on distance from pulse
-                if distance < pulse_width:
-                    pulse_intensity = (1.0 - distance / pulse_width) * self.params.orbital_brightness_delta
-                    brightness = pulse_intensity
-                else:
-                    brightness = 0.0
-                segment.colors[i] = np.clip(
-                    np.array(self.params.post_color) * brightness, 0, 255)
-                current_led += 1
-
-    def _animate_bench_ripple(self):
-        """Center-outward ripple on bench segments"""
-        ripple_time = self.time % 5.0
-
-        for s in front_segments:
-            segment = self.segments[s.segment_index]
-            for i in range(s.offset, s.offset + s.num_leds):
-
-
-
-
-
-
-
-
-
-                
-                brightnesses = rippleBrightnesses(
-                    num_leds=s.num_leds,
-                    center_index=s.num_leds / 2.0,
-                    time=ripple_time,
-                    period=self.params.bench_ripple_period / 10.0,
-                    speed=10.0,  # Speed of ripple expansion in LEDs/second
-                    decay_time=1.0,  # Time for ripple to decay by 50%
-                    decay_leds=10.0  # Number of LEDs over which ripple decays to 50%
-                )
-
-
-                segment.colors[i] = np.clip(
-                    np.array(self.params.bench_color) * (1.0 - brightnesses[i - s.offset]), 0, 255)
-
-    
-    def _animate_cage_heartbeat(self):
-        """Double pulse heartbeat pattern on cage"""
-        # Total cycle: pulse (1.5s) + pulse (1.5s) + pause (4.5s) = 7.5s
-        pulse_duration = self.params.cage_pulse_duration
-        pause_duration = self.params.cage_pause_duration
-        cycle_time = 2 * pulse_duration + pause_duration
-        
-        t = self.time % cycle_time
-        
-        # Determine which phase we're in
-        if t < pulse_duration:
-            # First pulse - rise and fall
-            pulse_progress = t / pulse_duration
-            brightness = 1.0 + math.sin(pulse_progress * math.pi) * self.params.cage_amplitude
-        elif t < 2 * pulse_duration:
-            # Second pulse - rise and fall
-            pulse_progress = (t - pulse_duration) / pulse_duration
-            brightness = 1.0 + math.sin(pulse_progress * math.pi) * self.params.cage_amplitude
-        else:
-            # Pause phase
-            brightness = 1.0
-        
-        for s in cage_segments:
-            segment = self.segments[s.segment_index]
-            for i in range(s.offset, s.offset + s.num_leds):
-                segment.colors[i] = np.clip(
-                    np.array(self.params.cage_color) * brightness, 0, 255)
 
