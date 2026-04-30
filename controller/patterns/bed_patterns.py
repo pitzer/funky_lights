@@ -110,81 +110,14 @@ class ZonedPattern(Pattern):
                     segment_dst.colors[start:end] = segment_src.colors[start:end]
         
 
-class StaticColorPattern(Pattern):
-    def __init__(self):
-        super().__init__()
-        self.params.color = (255, 255, 255)
-        
-    def initialize(self):
-        for s in all_segments:
-            segment = self.segments[s.segment_index]
-            segment.colors[s.offset:s.offset + s.num_leds] = self.params.color
-
-    async def animate(self, delta):
-        return
-    
-
-class BreathingColorPattern(StaticColorPattern):
-    def __init__(self):
-        super().__init__()
-        self.params.period_s = 5.0
-        self.params.amplitude_pct = 1.0
-        self.params.vary_segments = False
-        self.params.type = "sine"
-        self.params.color = (255, 255, 255)
-        self.breath_time = 0
-
-    def initialize(self):
-        super().initialize()
-
-    def clip(value, min_val, max_val):
-        """Clips a value within a specified range."""
-        return max(min_val, min(value, max_val))
-
-    async def animate(self, delta):
-        self.breath_time += delta
-
-        # For each segment, we create use a slightly different period and starting
-        # phase to create a more dynamic effect.
-        period = float(self.params.period_s)
-        phase_offset = 0
-        for segment in self.segments:
-            phase = (self.breath_time * math.pi * 2 / period + phase_offset) % (2 * math.pi)
-            if self.params.type == "ramp_and_hold":
-                if phase < math.pi / 2:
-                    brightness = (1.0 + math.sin(phase * 2 - np.pi / 2)) / 2.0
-                elif phase < math.pi:
-                    brightness = 1.0
-                elif phase < 3 * math.pi / 2:
-                    brightness = (1.0 + math.sin((phase - math.pi) * 2 + math.pi / 2)) / 2.0
-                else:
-                    brightness = 0.0
-            elif self.params.type == "sine":
-                brightness = (1.0 + math.sin(phase)) / 2.0
-            elif self.params.type == "single_pulse":
-                if phase < 2.0 * math.pi / 4:
-                    brightness = math.sin(phase * 2) ** 2 
-                else:
-                    brightness = 0.0
-            elif self.params.type == "double_pulse":
-                if phase < 2.0 * math.pi / 3:
-                    brightness = math.sin(phase * 3) ** 2 
-                else:
-                    brightness = 0.0
-            else:
-                raise ValueError(f"Invalid breathing pattern type: {self.params.type}")
-            segment.colors = scaleColors(self.params.color, np.full((segment.num_leds,), brightness), self.params.amplitude_pct)
-            if self.params.vary_segments:
-                phase_offset += 3.0
-                period += self.params.period_s / 20.0
-
 class CircuitPattern(Pattern):
     def __init__(self):
         super().__init__()
         self.params.period_s = 20.0
         self.params.amplitude_pct = 1.0
         self.params.color = (255, 255, 255)
-        self.params.pulse_width = 15
+        self.params.leading_pulse_width = 5
+        self.params.trailing_pulse_width = 15
         self.params.zones = ["headboard", "center", "front", "cage"]
         self.time = 0
 
@@ -218,10 +151,13 @@ class CircuitPattern(Pattern):
                 led_range = range(segment.offset + segment.num_leds - 1, segment.offset - 1, -1)
 
             indexes = np.arange(segment.num_leds)
-            distances = np.abs(current_led + indexes - pulse_position)
+            distances = current_led + indexes - pulse_position
             current_led += segment.num_leds
-            distances[distances > total_leds / 2] = total_leds - distances[distances > total_leds / 2]
-            intensities = np.clip(1.0 - distances / self.params.pulse_width, 0, 1)
+            distances[distances > total_leds / 2] = distances[distances > total_leds / 2] - total_leds
+            distances[distances < -total_leds / 2] = total_leds + distances[distances < -total_leds / 2]
+            intensities = np.zeros_like(distances)
+            intensities[distances > 0] = np.clip(1.0 - np.abs(distances[distances > 0]) / self.params.leading_pulse_width, 0, 1)
+            intensities[distances < 0] = np.clip(1.0 - np.abs(distances[distances < 0]) / self.params.trailing_pulse_width, 0, 1)
             ctrl_segment.colors[led_range] = scaleColors(np.array(self.params.color), intensities, self.params.amplitude_pct)
 
 

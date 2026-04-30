@@ -14,16 +14,16 @@ from patterns.theater_chase_pattern import TheaterChasePattern
 from patterns.rainbow_pattern import RainbowPattern
 from patterns.ripples_pattern import RipplesPattern
 from patterns.starburst_pattern import StarburstPattern
+from patterns.breathing_color_pattern import BreathingColorPattern
 from controller.patterns.bed_patterns import (
     ZonedPattern,
     CircuitPattern,
-    StaticColorPattern,
-    BreathingColorPattern,
 )
 from patterns.checkers_pattern import CheckersPattern
 from patterns.rainbow_waves_pattern import RainbowWavesPattern
 from patterns.bouncing_blocks_pattern import BouncingBlocksPattern
 from patterns.video_pattern import VideoPattern, Rect
+from patterns.persistence_pattern import PersistencePattern
 
 PatternConfig = namedtuple(
     'PatternConfig', ['rotation', 'manual', 'special_effects', 'eyes'])
@@ -34,6 +34,18 @@ SegmentMask = namedtuple(
 DEFAULT_CONFIG = PatternConfig(
     # This is the default pattern rotation. These patterns are rotated unless manually changed.
     rotation = {
+        'ripples': (RipplesPattern, dict(rotation_deg=0, color=(196, 112, 255), period_s=2.0, speed=0.4, amplitude_pct=-0.5)),
+        'embers': (ZonedPattern, dict(pattern_defs={
+            "headboard": (BreathingColorPattern, dict(
+                color=(190, 190, 190)  , period_s=22, amplitude_pct=-0.5, type="sine")),
+            "center": (PersistencePattern, dict(
+                color=(165, 70, 45), fade_factor = 0.99, color_fade_factor = 0.8, sub_pattern_def=(CircuitPattern, dict(
+                    color=(255, 200, 0) , period_s=5, amplitude_pct=1.0, leading_pulse_width=4, trailing_pulse_width = 4, zones = ['center'])))),
+            "front": (BreathingColorPattern, dict(
+                color=(160, 160, 160), period_s=15 , amplitude_pct=-0.5, type="ramp_and_hold")),
+            "cage": (BreathingColorPattern, dict(
+                color=(90, 90, 90)   , period_s=10 , amplitude_pct= 1.0, type="single_pulse")),
+        })),
         'moonlight': (ZonedPattern, dict(pattern_defs={
             "headboard": (BreathingColorPattern, dict(
                 color=(190, 190, 190)  , period_s=22, amplitude_pct=-0.5, type="sine")),
@@ -54,7 +66,6 @@ DEFAULT_CONFIG = PatternConfig(
             "cage": (BreathingColorPattern, dict(
                 color=(84, 36, 116)  , period_s=6 , amplitude_pct= 1.0, type="double_pulse")),
         })),
-        'ripples': (RipplesPattern, dict(rotation_deg=0)),
         'matrix': (VideoPattern, dict(file='media/matrix.mp4', crop=Rect(0, 100, 100, 1080), horizontal_blur=30, color=(255, 0, 0))),
         'circuit': (CircuitPattern, dict(color=(255, 0, 0), period_s=3.0, amplitude_pct=1.0, zones=["headboard"])),
         'test': (ColorQuadrants, dict()),
@@ -108,6 +119,41 @@ DEFAULT_CONFIG = PatternConfig(
 BED_CONFIG = PatternConfig(
     rotation={
         'fire': (FirePatternUV, dict(palette=palettes.FIRE, width=10, height=100)),
+        'ripples': (RipplesPattern, dict(rotation_deg=0, color=(196, 112, 255), period_s=2.0, speed=0.4, amplitude_pct=-0.5)),
+        'embers': (ZonedPattern, dict(pattern_defs={
+            "headboard": (BreathingColorPattern, dict(
+                color=(190, 190, 190)  , period_s=22, amplitude_pct=-0.5, type="sine")),
+            "center": (PersistencePattern, dict(
+                color=(165, 70, 45), fade_factor = 0.99, color_fade_factor = 0.8, sub_pattern_def=(CircuitPattern, dict(
+                    color=(255, 200, 0) , period_s=5, amplitude_pct=1.0, leading_pulse_width=4, trailing_pulse_width = 4, zones = ['center'])))),
+            "front": (BreathingColorPattern, dict(
+                color=(160, 160, 160), period_s=15 , amplitude_pct=-0.5, type="ramp_and_hold")),
+            "cage": (BreathingColorPattern, dict(
+                color=(90, 90, 90)   , period_s=10 , amplitude_pct= 1.0, type="single_pulse")),
+        })),
+        'moonlight': (ZonedPattern, dict(pattern_defs={
+            "headboard": (BreathingColorPattern, dict(
+                color=(190, 190, 190)  , period_s=22, amplitude_pct=-0.5, type="sine")),
+            "center": (CircuitPattern, dict(
+                color=(145, 145, 145) , period_s=20, amplitude_pct=-1.0, zones = ['center'],)),
+            "front": (BreathingColorPattern, dict(
+                color=(160, 160, 160), period_s=15 , amplitude_pct=-0.5, type="ramp_and_hold")),
+            "cage": (BreathingColorPattern, dict(
+                color=(90, 90, 90)   , period_s=10 , amplitude_pct= 1.0, type="single_pulse")),
+        })),
+        'twilight': (ZonedPattern, dict(pattern_defs={
+            "headboard": (BreathingColorPattern, dict(
+                color=(96, 88, 192)  , period_s=18, amplitude_pct=-0.5, type="ramp_and_hold")),
+            "center": (CircuitPattern, dict(
+                color=(144, 72, 188) , period_s=20, amplitude_pct=-1.0, zones = ['center'],)),
+            "front": (RipplesPattern, dict(
+                color=(196, 112, 255), period_s=2 , amplitude_pct=-0.5, speed=0.4)),
+            "cage": (BreathingColorPattern, dict(
+                color=(84, 36, 116)  , period_s=6 , amplitude_pct= 1.0, type="double_pulse")),
+        })),
+
+
+        
         'twilight_breath': (BreathingColorPattern, dict(
             headboard_color = (48, 44, 96), 
             center_color = (72, 36, 94),

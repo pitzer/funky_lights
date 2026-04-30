@@ -10,7 +10,7 @@ class RipplesPattern(PatternUV):
         super().__init__()
         self.params.color = np.array([255, 255, 255], dtype=np.uint8)
         self.params.period_s = 2.0
-        self.params.speed = 1.0
+        self.params.speed = 0.4
         self.params.amplitude_pct = 1.0
         self.time = 0
         self.ripple_seeds = [
