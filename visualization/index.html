@@ -147,6 +147,10 @@
         }
         // Merge all geometries into one buffer for fast rendering.
         const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(cubes, false);
+        // Append ?debug=index to paint each segment with a hue ramp over its LED index
+        // (LED 0 red -> last LED violet). Makes where a run starts, and which way it
+        // travels, readable without the controller running.
+        const debugIndex = new URLSearchParams(window.location.search).get('debug') === 'index';
         const size = textureWidth * textureHeight;
         const initialTextureData = new Uint8Array(4 * size);
         for (let i = 0; i < size; i++) {
@@ -155,6 +159,23 @@
             initialTextureData[stride + 1] = 0;
             initialTextureData[stride + 2] = 0;
             initialTextureData[stride + 3] = 255;
+        }
+        if (debugIndex) {
+            // The texture is laid out so that pixel n is global LED n, matching the UVs
+            // assigned above.
+            const rampColor = new THREE.Color();
+            let ledIndex = 0;
+            for (var segment of ledConfigData.led_segments) {
+                const numLeds = segment.led_positions.length;
+                for (let j = 0; j < numLeds; j++) {
+                    rampColor.setHSL(0.8 * (numLeds > 1 ? j / (numLeds - 1) : 0), 1.0, 0.5);
+                    const stride = ledIndex * 4;
+                    initialTextureData[stride] = Math.round(rampColor.r * 255);
+                    initialTextureData[stride + 1] = Math.round(rampColor.g * 255);
+                    initialTextureData[stride + 2] = Math.round(rampColor.b * 255);
+                    ledIndex++;
+                }
+            }
         }
         const texture = new THREE.DataTexture(initialTextureData, textureWidth, textureHeight);
         texture.needsUpdate = true;
@@ -192,8 +213,12 @@
                 ws.close();
             };
         }
-        startWebSocketForLedMessages();
-        
+        // In index-debug mode keep the ramp on screen instead of letting live frames
+        // overwrite it.
+        if (!debugIndex) {
+            startWebSocketForLedMessages();
+        }
+
         // Start listening and sending launchpad messages
         function startWebSocketForLaunchpadMessages() {
             var ws = new WebSocket("ws://" + window.location.hostname + ":5679/");
