@@ -43,7 +43,8 @@ class PatternSelector:
         self.enable_cache = args.enable_cache
         self.cached_patterns = []
         if args.enable_cache:
-            self.pattern_cache = PatternCache(pattern_config, led_config, args)
+            self.pattern_cache = PatternCache(
+                pattern_config, led_config, args.animation_rate)
         else:
             self.pattern_cache = None
 
@@ -59,7 +60,9 @@ class PatternSelector:
 
         # Pattern rotation and related
         self.current_pattern_id = self.pattern_rotation[0]
-        self.pattern_start_time = time.time()
+        # Monotonic, to match the animation clock in PatternGenerator.run(). This
+        # is only ever used for elapsed-time comparisons.
+        self.pattern_start_time = time.monotonic()
         self.pattern_rotation_index = 0
         self.current_pattern_eye_id = self.pattern_eyes[0]
         self.current_effect_pattern_ids = []

@@ -1,14 +1,14 @@
 import argparse
 import json
 import logging
+import logging.handlers
+import os
 import time
 import sys
 import asyncio
 import serial_asyncio
 import websockets
 import functools
-import time
-import traceback
 
 from funky_lights import connection, messages
 from core.pattern_selector import PatternSelector
@@ -16,11 +16,49 @@ from core.opc import connect_to_opc
 from core.websockets import TextureWebSocketsServer, PatternMixWebSocketsServer
 from patterns import pattern_config
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(levelname)s %(asctime)s,%(msecs)d %(filename)s(%(lineno)d) %(funcName)s: %(message)s",
-    datefmt="%H:%M:%S",
-)
+LOG_FORMAT = "%(levelname)s %(asctime)s,%(msecs)d %(filename)s(%(lineno)d) %(funcName)s: %(message)s"
+LOG_DATE_FORMAT = "%H:%M:%S"
+
+
+class NonBlockingStreamHandler(logging.StreamHandler):
+    """Console handler that drops records rather than blocking.
+
+    The controller is usually launched from an SSH terminal, so its stderr is a
+    pty on the far side of the same WiFi link the LEDs depend on. A stalled tty
+    makes an ordinary write() block, and because everything here shares one
+    event loop that freezes every LED until the terminal catches up. Losing a
+    console line is fine; the file handler keeps the full record.
+    """
+
+    def emit(self, record):
+        try:
+            super().emit(record)
+        except BlockingIOError:
+            pass
+
+
+def setup_logging(log_file):
+    """Log to a rotating file, and to the console on a best-effort basis."""
+    formatter = logging.Formatter(LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+
+    console = NonBlockingStreamHandler()
+    console.setFormatter(formatter)
+    root.addHandler(console)
+    try:
+        os.set_blocking(console.stream.fileno(), False)
+    except (AttributeError, OSError, ValueError):
+        # Not a real fd (pytest capture, a pipe we don't own). Nothing to do.
+        pass
+
+    if log_file:
+        log_file = os.path.expanduser(log_file)
+        os.makedirs(os.path.dirname(log_file) or '.', exist_ok=True)
+        rotating = logging.handlers.RotatingFileHandler(
+            log_file, maxBytes=20 * 1024 * 1024, backupCount=5)
+        rotating.setFormatter(formatter)
+        root.addHandler(rotating)
 
 
 class SerialWriter(asyncio.Protocol):
@@ -35,12 +73,11 @@ class SerialWriter(asyncio.Protocol):
         """Store the serial transport and schedule the task to send data.
         """
         self.transport = transport
-        print('Writer connection created')
         asyncio.ensure_future(self.serve())
-        print('Writer.send() scheduled')
+        logging.info('Serial writer connected and scheduled')
 
     def connection_lost(self, exc):
-        print('Writer closed')
+        logging.warning(f'Serial writer closed: {exc!r}')
 
 
     async def initialize_lights(self):
@@ -61,12 +98,12 @@ class SerialWriter(asyncio.Protocol):
         
 
     async def serve(self):
-        last_init_time = time.time() - 2.0
+        last_init_time = time.monotonic() - 2.0
         while True:
             # Initialize lights every second (should only affect lights that are in bootloader mode)
-            if (time.time() - last_init_time) > 1.0:
+            if (time.monotonic() - last_init_time) > 1.0:
                 await self.initialize_lights()
-                last_init_time = time.time()
+                last_init_time = time.monotonic()
 
             # Send color messages
             segments = await asyncio.shield(self.generator.result)
@@ -93,18 +130,32 @@ class PatternGenerator:
     async def run(self):
         await self.pattern_selector.initializePatterns()
         animation_time_delta = 1.0 / self.args.animation_rate
-        cur_animation_time = time.time()
+        # The schedule must run on the monotonic clock, because that is what
+        # asyncio.sleep() uses. Driving it from time.time() meant an NTP step
+        # (a Pi has no RTC, and resyncs after every network reconnect) turned
+        # the sleep below into a multi-second freeze on every LED.
+        cur_animation_time = time.monotonic()
         next_animation_time = cur_animation_time + animation_time_delta
         prev_log_time = cur_animation_time
         log_counter = 0
+        skipped_frames = 0
 
         while True:
             cur_animation_time = next_animation_time
             next_animation_time = cur_animation_time + animation_time_delta
 
-            # Skip a frame if falling too far behind
-            if time.time() > next_animation_time:
-                print("Falling behind. Skipping frame.")
+            # Skip a frame if falling too far behind. Resync to the clock rather
+            # than chasing a deadline that is already in the past, and always
+            # yield so the IO tasks keep running while we recover. The old bare
+            # `continue` skipped the only await in this loop, so recovery from a
+            # stall of T seconds spun 20*T synchronous iterations, each one
+            # printing to the terminal -- and a print to a stalled tty blocks.
+            now = time.monotonic()
+            if now > next_animation_time:
+                skipped_frames += int(
+                    (now - next_animation_time) / animation_time_delta) + 1
+                next_animation_time = now + animation_time_delta
+                await asyncio.sleep(0)
                 continue
 
             # Update pattern selection
@@ -122,17 +173,23 @@ class PatternGenerator:
             self.result.set_result(pattern.segments)
             self.result = asyncio.Future()
 
-            # Output update rate to console
+            # Output update rate to the log
             log_counter += 1
-            cur_log_time = time.time()
+            cur_log_time = time.monotonic()
             log_time_delta = cur_log_time - prev_log_time
             if log_time_delta > 1.0 / self._LOG_RATE:
-                print("Animation FPS: %.1f" % (log_counter / log_time_delta))
+                logging.info("Animation FPS: %.1f", log_counter / log_time_delta)
+                if skipped_frames:
+                    # Rate limited: a stall must not turn into a logging storm.
+                    logging.warning(
+                        "Fell behind: skipped %d frame(s) over the last %.1fs",
+                        skipped_frames, log_time_delta)
+                    skipped_frames = 0
                 log_counter = 0
                 prev_log_time = cur_log_time
 
             # Sleep for the remaining time
-            await asyncio.sleep(max(0, next_animation_time - time.time()))
+            await asyncio.sleep(max(0, next_animation_time - time.monotonic()))
 
 
 
@@ -165,10 +222,14 @@ async def main():
                         help="The WebSockets port for the pattern mix publisher")
     parser.add_argument("--enable_pattern_mix_subscriber", action='store_true', 
                         help="Enables a WebSockets client to subscribe to a pattern mix")
-    parser.add_argument("--pattern_mix_subscribe_uri", default='ws://funkypi.wlan:5680', 
+    parser.add_argument("--pattern_mix_subscribe_uri", default='ws://funkypi.wlan:5680',
                         help="The WebSockets URI for the pattern mix subscriber")
+    parser.add_argument("--log_file", default='~/funklet.log',
+                        help="Rotating log file. Pass an empty string to disable.")
 
     args = parser.parse_args()
+
+    setup_logging(args.log_file)
 
     led_config = json.load(args.led_config)
     bus_config = json.load(args.bus_config)
@@ -237,10 +298,13 @@ async def main():
             *futures,
             return_exceptions=False
         )
-        print(results)
-    except Exception as e:
-        print('An exception has occured.')
-        print(traceback.format_exc())
+        logging.info('All tasks finished: %s', results)
+    except Exception:
+        # Exit non-zero so a supervisor (see deploy/funklet-controller.service)
+        # restarts us instead of leaving the sculpture dark.
+        logging.exception('The controller stopped due to an unhandled exception.')
+        sys.exit(1)
 
 
-asyncio.run(main())
+if __name__ == '__main__':
+    asyncio.run(main())
