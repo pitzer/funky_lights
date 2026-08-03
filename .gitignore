@@ -14,3 +14,5 @@ attiny/build/libcore.a
 attiny/build/core
 attiny/build/userlibs
 controller/pattern_cache
+.venv
+venv

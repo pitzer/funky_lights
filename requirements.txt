@@ -1,15 +1,25 @@
 aiofile
-adsk
 crc8
 intelhex
 lpminimk3@git+https://github.com/obeezzy/lpminimk3.git
 matplotlib
-numpy
+# numpy must stay on 1.x: the opencv build pinned below is compiled against the
+# numpy 1.x C ABI and fails to import under numpy 2 with
+# "numpy.core.multiarray failed to import".
+numpy<2
 opencv_python==4.5.5.62
 pyserial
 pyserial_asyncio
 setuptools
-websockets
+# websockets must stay below 11. In 14+ `websockets.serve` became the new
+# asyncio implementation, whose handlers take only (websocket). The handlers in
+# controller/core/websockets.py and pattern_selector.py take (websocket, path),
+# which is the legacy signature.
+websockets<11
 libusb1
 pyusb
 scikit-learn
+# NOTE: `adsk` (the Fusion 360 API) is deliberately not listed here. It ships
+# inside Fusion 360's own bundled interpreter and is not installable from PyPI
+# -- the unrelated PyPI package of that name breaks the install. It is only
+# needed by tools/generate_csv_from_fusion_sketch.py, which runs inside Fusion.
