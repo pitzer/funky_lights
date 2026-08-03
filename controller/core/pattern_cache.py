@@ -2,6 +2,7 @@ from patterns.pattern import Pattern
 from aiofile import async_open
 import hashlib
 import json
+import logging
 import math
 import os
 import pickle
@@ -66,7 +67,7 @@ class PatternCache:
         self.led_config = led_config
         self.animation_rate = animation_rate
         self.led_config_hash = hash_led_config(led_config)
-        print("LED config hash: " + str(self.led_config_hash))
+        logging.info("LED config hash: %s", self.led_config_hash)
 
     def patterns_for_caching(self):
         for d in self.pattern_config:
@@ -78,7 +79,10 @@ class PatternCache:
         for pattern_id in self.patterns_for_caching():
             index_file = cache_index_path(self.led_config_hash, pattern_id)
             if not os.path.exists(index_file):
-                print("WARNING: no cache found for pattern %s" % pattern_id)
+                # Silent fallback to live rendering. Usually means the LED
+                # config changed, which changes the hash and orphans the cache.
+                logging.warning(
+                    "No cache found for pattern %s; rendering it live.", pattern_id)
                 continue
             with open(index_file, 'r') as f:
                 cache_index = json.load(f)
@@ -96,7 +100,8 @@ class PatternCache:
         num_animation_steps = int(max_pattern_duration * self.animation_rate)
         index_file = cache_index_path(self.led_config_hash, pattern_id)
         if (force_update or not os.path.exists(index_file)):
-            print("Caching pattern %s of type %s" % (pattern_id, type(pattern).__name__))
+            logging.info("Caching pattern %s of type %s",
+                         pattern_id, type(pattern).__name__)
             for animation_index in range(num_animation_steps):
                 await pattern.animate(delta)
                 segment_colors = []

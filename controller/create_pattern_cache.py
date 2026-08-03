@@ -1,9 +1,13 @@
 import argparse
 import json
 import asyncio
+import logging
 
 from core.pattern_cache import PatternCache
 from patterns import pattern_config
+
+logging.basicConfig(
+    level=logging.INFO, format="%(levelname)s %(message)s")
 
 
 async def main():
@@ -37,4 +41,5 @@ async def main():
 
     await cache.build_cache(patterns, args.max_cached_pattern_duration, args.force_update)
 
-asyncio.run(main())
+if __name__ == '__main__':
+    asyncio.run(main())
