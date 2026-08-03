@@ -1,0 +1,35 @@
+[Unit]
+# Supervision for the Funklet light controller.
+#
+# Install with:
+#   sudo cp deploy/funklet-controller.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now funklet-controller
+#
+# Then check on it with:
+#   systemctl status funklet-controller
+#   journalctl -u funklet-controller -f
+#
+# Edit User/WorkingDirectory/ExecStart below to match the Pi. Running under
+# systemd also means stdout goes to the journal rather than an SSH pty, which
+# removes a blocking-write path that could stall the event loop.
+Description=Funklet LED light controller
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/funky_lights/controller
+ExecStart=/usr/bin/python3 -u main.py
+Environment=PYTHONUNBUFFERED=1
+
+# main.py exits non-zero on an unhandled exception; bring it straight back.
+Restart=always
+RestartSec=2
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
