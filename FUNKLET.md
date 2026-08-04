@@ -123,22 +123,74 @@ ip -4 addr show eth0                  # should be on 192.168.1.0/24
    (`PasswordAuthentication no` in `/etc/ssh/sshd_config`), which matters more
    than usual if the Pi is broadcasting its own network at an event.
 
+4. **Check WiFi power save.** Worth doing once on any new Pi. Power save causes
+   multi-second stalls on `wlan0`. This does *not* affect the LEDs — they are on
+   `eth0` — but it makes SSH and the visualizer drop out, and a stalled SSH pty
+   can block the controller if you launched it by hand (see the note below):
+
+   ```sh
+   iw dev wlan0 get power_save
+   sudo iw dev wlan0 set power_save off                      # for this boot
+   sudo nmcli connection modify <name> wifi.powersave 2      # persist it
+   ```
+
+> **Run the controller under systemd, not in your SSH session.** If you launch it
+> by hand and your SSH connection stalls, writes to the terminal can block the
+> process. See [Running the controller](#running-the-controller).
+
 > WiFi clients do not compete with LED traffic — the boards are on `eth0`. The
 > visualizer is still ~1.3 MB/s over WiFi, so it can saturate a weak link and make
 > your own SSH session unresponsive, but it cannot disturb the sculpture.
 
-### Reaching the Pi over its own WiFi network
+### SSH to the Pi over its own WiFi
 
-`sshd` is enabled on this card. If you cannot reach the Pi after joining its
-network, sshd is not the problem — the network is.
+`sshd` is enabled on this card, so if you cannot get in after joining the Pi's
+network, sshd is not the problem — the addressing is.
 
-**If the Pi already broadcasts the network** (`iw dev wlan0 info` reports
-`type AP`), there is nothing to configure. Join the SSID and SSH to whatever
-`ip -4 addr show wlan0` reports — note that will *not* be a `192.168.1.x` address,
-since that subnet belongs to `eth0`.
+**Once you have joined the Pi's SSID, the Pi is your gateway.** That is the
+reliable way to find its address without knowing which subnet it chose:
 
-**If it does not, this is straightforward** — because the boards are on Ethernet,
-an access point on `wlan0` is completely independent of them. Nothing you do to
+```sh
+# macOS (use en1 etc. if your WiFi is not en0)
+ipconfig getoption en0 router
+route -n get default | grep gateway
+
+# Linux
+ip route | awk '/default/ {print $3}'
+```
+
+Then connect:
+
+```sh
+ssh pi@<that address>
+```
+
+With NetworkManager's default hotspot the address is `10.42.0.1`, so in practice:
+
+```sh
+ssh pi@10.42.0.1
+```
+
+> It will **not** be a `192.168.1.x` address. That subnet belongs to `eth0` and
+> the boards, and is not reachable from a WiFi client. If you try `192.168.1.x`
+> and it hangs, that is why — nothing is broken.
+
+Confirm you are actually on the Pi's own network rather than some other one:
+
+```sh
+ipconfig getsummary en0 | grep SSID    # macOS: which network am I on?
+```
+
+Once in, `ip -4 addr show wlan0` on the Pi shows the address it is serving, and
+`ip -4 addr show eth0` should show `192.168.1.x` for the boards.
+
+#### If the Pi is not broadcasting a network yet
+
+Check first — `iw dev wlan0 info` reports `type AP` if it already is, in which
+case there is nothing to configure.
+
+If it is not, this is straightforward: because the boards are on Ethernet, an
+access point on `wlan0` is completely independent of them, and nothing you do to
 the WiFi can strand the boards. The one-liner is fine:
 
 ```sh
@@ -147,8 +199,9 @@ sudo nmcli connection modify Hotspot connection.autoconnect yes \
      connection.autoconnect-priority 100
 ```
 
-That puts `wlan0` on `10.42.0.1/24` with NetworkManager running dnsmasq for DHCP.
-Join the SSID and `ssh pi@10.42.0.1`.
+That puts `wlan0` on `10.42.0.1/24` with NetworkManager running dnsmasq for DHCP,
+and `autoconnect` brings it back automatically on every boot. Join the SSID and
+`ssh pi@10.42.0.1`.
 
 > **The AP must not use `192.168.1.0/24`.** That subnet already belongs to `eth0`.
 > Putting `wlan0` on it too gives the Pi two interfaces on one subnet, and routing
@@ -180,21 +233,6 @@ To undo:
 ```sh
 sudo nmcli connection down Hotspot && sudo nmcli connection delete Hotspot
 ```
-
-4. **Check WiFi power save.** Worth doing once on any new Pi. Power save causes
-   multi-second stalls on `wlan0`. This does *not* affect the LEDs — they are on
-   `eth0` — but it makes SSH and the visualizer drop out, and a stalled SSH pty
-   can block the controller if you launched it by hand (see the note below):
-
-   ```sh
-   iw dev wlan0 get power_save
-   sudo iw dev wlan0 set power_save off                      # for this boot
-   sudo nmcli connection modify <name> wifi.powersave 2      # persist it
-   ```
-
-> **Run the controller under systemd, not in your SSH session.** If you launch it
-> by hand and your SSH connection stalls, writes to the terminal can block the
-> process. See [Running the controller](#running-the-controller).
 
 ---
 
