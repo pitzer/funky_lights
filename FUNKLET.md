@@ -77,12 +77,16 @@ ip -4 addr show wlan0                 # an AP is usually .1 on its own subnet
    ping -c 3 192.168.1.5     # board_2
    ```
 
-2. **SSH to the Pi.**
+2. **SSH to the Pi.** Substitute the account that was created when the card was
+   imaged. **Raspberry Pi OS has had no default `pi` user since April 2022** — on
+   a Bookworm image the username is whatever Raspberry Pi Imager was told to
+   create, so do not assume it. If you do not know it, read it from the serial
+   console login prompt, or run `whoami` once you are in.
 
    ```sh
-   ssh pi@funkypi.wlan       # the name the controller itself uses
-   ssh pi@funkypi.local      # if Avahi/mDNS is set up instead
-   ssh pi@192.168.1.<pi>     # by address
+   ssh <user>@funkypi.wlan       # the name the controller itself uses
+   ssh <user>@funkypi.local      # if Avahi/mDNS is set up instead
+   ssh <user>@192.168.1.<pi>     # by address
    ```
 
    Find the Pi's address from another machine on the network with:
@@ -94,6 +98,23 @@ ip -4 addr show wlan0                 # an AP is usually .1 on its own subnet
 
    If the Pi is the AP, its own address is the network's gateway — `ip route` on
    your laptop after joining will name it.
+
+3. **Credentials are deliberately not recorded here.** This repository has a
+   public GitHub remote, so anything committed to it is published — a password in
+   this file would be a password on the internet, and rewriting history does not
+   reliably unpublish it. Keep the account password out of the repo, out of the
+   boot partition, and out of commit messages.
+
+   Set up key-based login once and you will not need the password again:
+
+   ```sh
+   ssh-keygen -t ed25519                  # if you do not already have a key
+   ssh-copy-id <user>@funkypi.wlan        # asks for the password one last time
+   ```
+
+   Then consider disabling password authentication on the Pi entirely
+   (`PasswordAuthentication no` in `/etc/ssh/sshd_config`), which matters more
+   than usual if the Pi is broadcasting its own network at an event.
 
 > If the Pi *is* the access point, remember that every client you attach shares
 > the radio that is feeding the two boards ~100 KB/s. An SSH session is

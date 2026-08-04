@@ -10,9 +10,14 @@
 #   systemctl status funklet-controller
 #   journalctl -u funklet-controller -f
 #
-# Edit User/WorkingDirectory/ExecStart below to match the Pi. Running under
-# systemd also means stdout goes to the journal rather than an SSH pty, which
-# removes a blocking-write path that could stall the event loop.
+# Edit User/WorkingDirectory/ExecStart below to match the Pi. The "pi" values are
+# placeholders, NOT defaults -- Raspberry Pi OS has had no default "pi" user
+# since April 2022, so on a Bookworm image the account is whatever was created at
+# imaging time. Check with `whoami`. systemd will refuse to start the unit if the
+# user does not exist, so a wrong value fails loudly rather than silently.
+#
+# Running under systemd also means stdout goes to the journal rather than an SSH
+# pty, which removes a blocking-write path that could stall the event loop.
 Description=Funklet LED light controller
 After=network-online.target
 Wants=network-online.target
