@@ -49,9 +49,28 @@ matrices (256 LEDs each).
 
 ## Connecting and SSH
 
-1. **Join the Funklet network.** The Pi and both Teensy boards are on the
-   `192.168.1.0/24` network. Join the same WiFi the Pi is on, then confirm you
-   can see everything:
+> **Unverified.** Nothing in this repo records the network topology — no
+> `hostapd`, `dnsmasq`, or `wpa_supplicant` config is checked in. The only
+> evidence is that the boards live on `192.168.1.0/24` and that the controller
+> defaults to `ws://funkypi.wlan:5680`. Whether the Pi *broadcasts* that network
+> or *joins* one served by a separate router is not captured anywhere. Confirm it
+> against the hardware and correct this section.
+
+The `.wlan` suffix is a DHCP-supplied domain (a `dnsmasq`/router `domain=` setting),
+not mDNS — so something on the network is running a DNS server. That is either the
+Pi itself acting as an access point, or a separate router. To tell which:
+
+```sh
+# On the Pi: is it serving the network, or joining one?
+systemctl status hostapd dnsmasq      # active => the Pi is the AP
+iw dev wlan0 info | grep type         # "type AP" vs "type managed"
+ip route | grep default               # no default route via another host => likely the AP
+ip -4 addr show wlan0                 # an AP is usually .1 on its own subnet
+```
+
+1. **Join the Funklet network.** Either way, you need to be on the same
+   `192.168.1.0/24` network as the boards. If the Pi is the AP, join the SSID it
+   broadcasts; otherwise join the router's. Then confirm you can see everything:
 
    ```sh
    ping -c 3 192.168.1.4     # board_1
@@ -61,9 +80,9 @@ matrices (256 LEDs each).
 2. **SSH to the Pi.**
 
    ```sh
-   ssh pi@funkypi.local      # mDNS/Avahi
-   # or by address, if mDNS is not resolving:
-   ssh pi@192.168.1.<pi>
+   ssh pi@funkypi.wlan       # the name the controller itself uses
+   ssh pi@funkypi.local      # if Avahi/mDNS is set up instead
+   ssh pi@192.168.1.<pi>     # by address
    ```
 
    Find the Pi's address from another machine on the network with:
@@ -72,6 +91,14 @@ matrices (256 LEDs each).
    arp -a | grep -i b8:27:eb    # Raspberry Pi Foundation OUI
    arp -a | grep -i dc:a6:32    # newer Pi 4 OUI
    ```
+
+   If the Pi is the AP, its own address is the network's gateway — `ip route` on
+   your laptop after joining will name it.
+
+> If the Pi *is* the access point, remember that every client you attach shares
+> the radio that is feeding the two boards ~100 KB/s. An SSH session is
+> negligible; running the visualizer over that link is not. See
+> [Troubleshooting](#troubleshooting).
 
 3. **Check WiFi power save.** This is worth doing once on any new Pi. Power save
    causes multi-second network stalls, which show up as the whole sculpture
@@ -169,8 +196,14 @@ for the on-screen Launchpad. Both auto-reconnect, so you can restart the
 controller without reloading the page.
 
 To watch the Pi's output from your laptop, run the HTTP server *on the Pi* and
-browse to `http://funkypi.local:8000/visualization/index.html` — the page derives
+browse to `http://funkypi.wlan:8000/visualization/index.html` — the page derives
 the WebSocket host from the page URL, so ports 5678/5679 must be reachable too.
+
+Be aware this streams a 64 KB texture 20 times a second (~1.3 MB/s) over the
+network, on top of the ~100 KB/s already going to the boards. If the Pi is also
+the access point, that all shares one radio. Prefer running the controller and
+visualizer locally when you are working on patterns, and treat the remote view as
+a spot check rather than something to leave open.
 
 ### Checking LED order and direction
 
@@ -336,7 +369,14 @@ cleanly, `ConnectionResetError` means it reset, and a timeout means the link die
 **Half the sculpture freezes.**
 One board only — check that board's IP with `ping`, and look for its address in
 the OPC log lines. `board_1` is the trunk/front-legs/head side, `board_2` is the
-dome/tail/tusks/eyes side.
+dome/tail/tusks/eyes side. Independent per-board failures point at something
+board-specific (power, a reset) rather than the network, since a WiFi problem
+takes both buses down together.
+
+**It got worse after adding people or laptops to the network.**
+If the Pi is the access point, every client shares the radio that is feeding the
+boards. The visualizer in particular is ~1.3 MB/s — an order of magnitude more
+than the LED data itself. Close it when you are not watching it.
 
 **`Fell behind: skipped N frame(s)` in the log.**
 The render loop is not keeping up. Most likely video decoding — 14 of the 16
