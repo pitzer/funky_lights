@@ -17,6 +17,7 @@ and the full-size car, see [README.md](README.md).
 
 - [Hardware and addressing](#hardware-and-addressing)
 - [Connecting and SSH](#connecting-and-ssh)
+- [Updating the code on the Pi](#updating-the-code-on-the-pi)
 - [Running the controller](#running-the-controller)
 - [Running the visualizer](#running-the-visualizer)
 - [Pattern cache](#pattern-cache)
@@ -120,6 +121,70 @@ ip -4 addr show wlan0                 # an AP is usually .1 on its own subnet
 > negligible; running the visualizer over that link is not. See
 > [Troubleshooting](#troubleshooting).
 
+### Reaching the Pi over its own WiFi network
+
+`sshd` is enabled on this card. If you cannot reach the Pi after joining its
+network, sshd is not the problem — the network is.
+
+**If the Pi already broadcasts the network** (`iw dev wlan0 info` reports
+`type AP`), there is nothing to configure. Join the SSID and `ssh pi@192.168.1.1`,
+or whichever address `ip -4 addr show wlan0` reports.
+
+**If it does not, think before making it one.** Two things will silently kill the
+sculpture:
+
+1. **The Teensy boards have their WiFi credentials in firmware.** That firmware is
+   not in this repo. If the Pi starts broadcasting a *different* SSID or password
+   than the boards are programmed for, they can never associate and both buses go
+   dark. Whatever you configure must match what the boards already expect.
+2. **The subnet must stay `192.168.1.0/24`.** `nmcli device wifi hotspot` — the
+   one-liner every guide suggests — defaults to `10.42.0.1/24`. The boards are at
+   `192.168.1.4` and `.5`, so that would strand them even if they associated fine.
+
+So do not use the hotspot shortcut. Pin the address explicitly:
+
+```sh
+sudo nmcli connection add type wifi ifname wlan0 con-name funklet-ap \
+     autoconnect yes ssid "<SSID the boards are programmed for>"
+
+sudo nmcli connection modify funklet-ap \
+     802-11-wireless.mode ap \
+     802-11-wireless.band bg \
+     ipv4.method shared \
+     ipv4.addresses 192.168.1.1/24
+
+sudo nmcli connection modify funklet-ap \
+     wifi-sec.key-mgmt wpa-psk \
+     wifi-sec.psk "<password the boards are programmed for>"
+
+sudo nmcli connection up funklet-ap
+```
+
+`ipv4.method shared` makes NetworkManager run dnsmasq for DHCP and DNS on that
+subnet. If the boards use **static** `.4`/`.5` rather than DHCP, confirm those
+fall outside the pool dnsmasq hands out, or you will get address conflicts that
+look like intermittent board dropouts.
+
+> **Do this with the serial console connected, never over SSH.** Bringing up an AP
+> profile tears down whatever WiFi connection you are using, so a mistake locks
+> you out of the machine you are fixing. Serial is unaffected by any of it —
+> that is what makes it worth having set up.
+
+Afterwards, verify from the Pi before trusting it:
+
+```sh
+iw dev wlan0 info | grep type          # expect: type AP
+ip -4 addr show wlan0                  # expect: 192.168.1.1/24
+ping -c 3 192.168.1.4                  # boards must still be reachable
+ping -c 3 192.168.1.5
+```
+
+To undo:
+
+```sh
+sudo nmcli connection down funklet-ap && sudo nmcli connection delete funklet-ap
+```
+
 3. **Check WiFi power save.** This is worth doing once on any new Pi. Power save
    causes multi-second network stalls, which show up as the whole sculpture
    freezing:
@@ -133,6 +198,95 @@ ip -4 addr show wlan0                 # an AP is usually .1 on its own subnet
 > **Run the controller under systemd, not in your SSH session.** If you launch it
 > by hand and your SSH connection stalls, writes to the terminal can block the
 > process. See [Running the controller](#running-the-controller).
+
+---
+
+## Updating the code on the Pi
+
+The checkout lives at `~/funky_lights`. Two routes, depending on whether the Pi
+can reach the internet.
+
+### Always do this first
+
+```sh
+cd ~/funky_lights
+git branch --show-current       # expect: funklet
+git log --oneline -1            # where the Pi actually is
+git status                      # any local edits?
+```
+
+If `git status` is dirty, keep the changes rather than losing them:
+
+```sh
+git stash push -m "pre-update local changes"
+```
+
+### If the Pi has internet
+
+```sh
+git pull --ff-only origin funklet
+```
+
+`--ff-only` refuses rather than creating a merge commit if the Pi has diverged.
+If it refuses, stop and look at `git log --oneline origin/funklet..funklet` —
+something was committed on the Pi that is not upstream.
+
+### If the Pi has no internet (offline bundle)
+
+A git bundle can be staged on the SD card's boot partition, which the Pi reads at
+`/boot/firmware/`. This carries real commits, not a patch, so history stays intact.
+
+To build one, on a machine that has the commits:
+
+```sh
+git bundle create /Volumes/bootfs/funklet-update.bundle <pi-current-commit>..funklet
+git bundle verify /Volumes/bootfs/funklet-update.bundle
+```
+
+To apply it, on the Pi:
+
+```sh
+git fetch /boot/firmware/funklet-update.bundle funklet:funklet-update
+git log --oneline funklet..funklet-update      # review before merging
+git merge --ff-only funklet-update
+git branch -d funklet-update                   # tidy up afterwards
+```
+
+The bundle records its starting commit as a prerequisite, so if the Pi is not
+where you expected, the fetch fails cleanly with "Repository lacks these
+prerequisite commits" rather than applying something half-valid.
+
+### After updating, either way
+
+```sh
+git stash pop                   # only if you stashed
+pip install -e .                # pins changed: numpy<2, websockets<11
+```
+
+The `pip install` is not optional if the environment predates those pins — an
+environment with numpy 2.x cannot import `cv2` at all, and the controller will
+not start.
+
+Then restart the controller. Check for a stale instance first; two controllers
+running at once will fight over the boards:
+
+```sh
+ps aux | grep '[m]ain.py'
+sudo systemctl restart funklet-controller     # if running as a service
+```
+
+Verify it came back:
+
+```sh
+tail -f ~/funklet.log           # expect a steady "Animation FPS: 20.0"
+```
+
+### Rolling back
+
+```sh
+git reset --hard <previous-commit>
+pip install -e .                # only if requirements changed between the two
+```
 
 ---
 
