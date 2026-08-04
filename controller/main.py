@@ -24,10 +24,11 @@ class NonBlockingStreamHandler(logging.StreamHandler):
     """Console handler that drops records rather than blocking.
 
     The controller is usually launched from an SSH terminal, so its stderr is a
-    pty on the far side of the same WiFi link the LEDs depend on. A stalled tty
-    makes an ordinary write() block, and because everything here shares one
-    event loop that freezes every LED until the terminal catches up. Losing a
-    console line is fine; the file handler keeps the full record.
+    pty at the far end of a network link. A stalled tty makes an ordinary
+    write() block, and because everything here shares one event loop that
+    freezes every LED until the terminal catches up -- even though the LEDs
+    themselves are on a different interface. Losing a console line is fine; the
+    file handler keeps the full record.
     """
 
     def emit(self, record):

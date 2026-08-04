@@ -10,10 +10,10 @@ import numpy as np
 
 # Reconnect policy.
 #
-# This used to be a flat 5 second sleep before any retry, which turned a brief
-# WiFi blip into a 5-10 second freeze on every LED: both busses ride the same
-# radio, so they drop together, and the boards hold their last frame for the
-# whole interval. Start fast and back off only if the link is genuinely down.
+# This used to be a flat 5 second sleep before any retry, which turned any brief
+# interruption into a 5-10 second freeze: a board holds its last frame for the
+# whole interval, so the outage is fully visible on the sculpture.
+# Start fast and back off only if the link is genuinely down.
 INITIAL_RECONNECT_DELAY = 0.25  # In seconds
 MAX_RECONNECT_DELAY = 5.0  # In seconds
 # Without a timeout, a SYN to a board that fell off the network sits in kernel

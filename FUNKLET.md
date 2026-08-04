@@ -37,7 +37,9 @@ and the full-size car, see [README.md](README.md).
 | `board_2` | `192.168.1.5:7890` — uids 21, 214, 272, 28, 26, 220, 221, 25 | [config/bus_config.json](config/bus_config.json) |
 | Controller host | a Raspberry Pi, conventionally `funkypi` | default in [main.py](controller/main.py) is `ws://funkypi.wlan:5680` |
 
-Both boards sit on the same WiFi network as the Pi. Note that the *defaults* in
+**Both boards are wired to the Pi over Ethernet**, not WiFi — `192.168.1.0/24`
+lives on `eth0`. The Pi's `wlan0` is separate and is only how *you* reach the Pi;
+LED traffic never touches it. Note that the *defaults* in
 `main.py` (`../config/led_config.json`, `../config/bus_config.json`) are already
 the Funklet ones on this branch — you do not need to pass `-l` or `-b` in the field.
 
@@ -50,28 +52,33 @@ matrices (256 LEDs each).
 
 ## Connecting and SSH
 
-> **Unverified.** Nothing in this repo records the network topology — no
-> `hostapd`, `dnsmasq`, or `wpa_supplicant` config is checked in. The only
-> evidence is that the boards live on `192.168.1.0/24` and that the controller
-> defaults to `ws://funkypi.wlan:5680`. Whether the Pi *broadcasts* that network
-> or *joins* one served by a separate router is not captured anywhere. Confirm it
-> against the hardware and correct this section.
+The Pi has two networks and they do different jobs:
 
-The `.wlan` suffix is a DHCP-supplied domain (a `dnsmasq`/router `domain=` setting),
-not mDNS — so something on the network is running a DNS server. That is either the
-Pi itself acting as an access point, or a separate router. To tell which:
+| Interface | Network | Carries |
+|---|---|---|
+| `eth0` | `192.168.1.0/24` | LED data to both boards |
+| `wlan0` | whatever the Pi joins or broadcasts | how you reach the Pi |
+
+You do **not** need to be on `192.168.1.0/24` to work on the sculpture. That
+segment sits behind the Pi; from your laptop you will usually have no route to
+`192.168.1.4`/`.5` at all, and that is fine and expected. Reach the Pi over
+`wlan0`, and check the boards *from the Pi*.
+
+> **Unverified:** whether `wlan0` broadcasts its own network or joins one from a
+> separate router is not recorded anywhere in this repo. The `.wlan` suffix in
+> `main.py` is a DHCP-supplied domain, not mDNS, so something is running a DNS
+> server — either the Pi or a router. Determine which and correct this section:
 
 ```sh
-# On the Pi: is it serving the network, or joining one?
-systemctl status hostapd dnsmasq      # active => the Pi is the AP
+# On the Pi
 iw dev wlan0 info | grep type         # "type AP" vs "type managed"
-ip route | grep default               # no default route via another host => likely the AP
-ip -4 addr show wlan0                 # an AP is usually .1 on its own subnet
+ip -4 addr show wlan0                 # the address you will SSH to
+ip -4 addr show eth0                  # should be on 192.168.1.0/24
 ```
 
-1. **Join the Funklet network.** Either way, you need to be on the same
-   `192.168.1.0/24` network as the boards. If the Pi is the AP, join the SSID it
-   broadcasts; otherwise join the router's. Then confirm you can see everything:
+1. **Get on the Pi's WiFi.** If the Pi is the AP, join the SSID it broadcasts;
+   otherwise join the router's. Then, *once on the Pi*, confirm it can see both
+   boards over Ethernet:
 
    ```sh
    ping -c 3 192.168.1.4     # board_1
@@ -116,10 +123,9 @@ ip -4 addr show wlan0                 # an AP is usually .1 on its own subnet
    (`PasswordAuthentication no` in `/etc/ssh/sshd_config`), which matters more
    than usual if the Pi is broadcasting its own network at an event.
 
-> If the Pi *is* the access point, remember that every client you attach shares
-> the radio that is feeding the two boards ~100 KB/s. An SSH session is
-> negligible; running the visualizer over that link is not. See
-> [Troubleshooting](#troubleshooting).
+> WiFi clients do not compete with LED traffic — the boards are on `eth0`. The
+> visualizer is still ~1.3 MB/s over WiFi, so it can saturate a weak link and make
+> your own SSH session unresponsive, but it cannot disturb the sculpture.
 
 ### Reaching the Pi over its own WiFi network
 
@@ -127,43 +133,32 @@ ip -4 addr show wlan0                 # an AP is usually .1 on its own subnet
 network, sshd is not the problem — the network is.
 
 **If the Pi already broadcasts the network** (`iw dev wlan0 info` reports
-`type AP`), there is nothing to configure. Join the SSID and `ssh pi@192.168.1.1`,
-or whichever address `ip -4 addr show wlan0` reports.
+`type AP`), there is nothing to configure. Join the SSID and SSH to whatever
+`ip -4 addr show wlan0` reports — note that will *not* be a `192.168.1.x` address,
+since that subnet belongs to `eth0`.
 
-**If it does not, think before making it one.** Two things will silently kill the
-sculpture:
-
-1. **The Teensy boards have their WiFi credentials in firmware.** That firmware is
-   not in this repo. If the Pi starts broadcasting a *different* SSID or password
-   than the boards are programmed for, they can never associate and both buses go
-   dark. Whatever you configure must match what the boards already expect.
-2. **The subnet must stay `192.168.1.0/24`.** `nmcli device wifi hotspot` — the
-   one-liner every guide suggests — defaults to `10.42.0.1/24`. The boards are at
-   `192.168.1.4` and `.5`, so that would strand them even if they associated fine.
-
-So do not use the hotspot shortcut. Pin the address explicitly:
+**If it does not, this is straightforward** — because the boards are on Ethernet,
+an access point on `wlan0` is completely independent of them. Nothing you do to
+the WiFi can strand the boards. The one-liner is fine:
 
 ```sh
-sudo nmcli connection add type wifi ifname wlan0 con-name funklet-ap \
-     autoconnect yes ssid "<SSID the boards are programmed for>"
-
-sudo nmcli connection modify funklet-ap \
-     802-11-wireless.mode ap \
-     802-11-wireless.band bg \
-     ipv4.method shared \
-     ipv4.addresses 192.168.1.1/24
-
-sudo nmcli connection modify funklet-ap \
-     wifi-sec.key-mgmt wpa-psk \
-     wifi-sec.psk "<password the boards are programmed for>"
-
-sudo nmcli connection up funklet-ap
+sudo nmcli device wifi hotspot ifname wlan0 ssid Funklet password "<choose one>"
+sudo nmcli connection modify Hotspot connection.autoconnect yes \
+     connection.autoconnect-priority 100
 ```
 
-`ipv4.method shared` makes NetworkManager run dnsmasq for DHCP and DNS on that
-subnet. If the boards use **static** `.4`/`.5` rather than DHCP, confirm those
-fall outside the pool dnsmasq hands out, or you will get address conflicts that
-look like intermittent board dropouts.
+That puts `wlan0` on `10.42.0.1/24` with NetworkManager running dnsmasq for DHCP.
+Join the SSID and `ssh pi@10.42.0.1`.
+
+> **The AP must not use `192.168.1.0/24`.** That subnet already belongs to `eth0`.
+> Putting `wlan0` on it too gives the Pi two interfaces on one subnet, and routing
+> to the boards becomes ambiguous — which is a good way to make the sculpture
+> intermittently unreachable for reasons that are hard to see. The `10.42.0.0/24`
+> default avoids this; if you change it, pick anything except `192.168.1.0/24`.
+
+You do not need routing or forwarding between the two interfaces. You SSH to the
+Pi over `wlan0`; the controller talks to the boards over `eth0`. The Pi is on both
+networks at once and that is all it needs to be.
 
 > **Do this with the serial console connected, never over SSH.** Bringing up an AP
 > profile tears down whatever WiFi connection you are using, so a mistake locks
@@ -174,7 +169,8 @@ Afterwards, verify from the Pi before trusting it:
 
 ```sh
 iw dev wlan0 info | grep type          # expect: type AP
-ip -4 addr show wlan0                  # expect: 192.168.1.1/24
+ip -4 addr show wlan0                  # expect: 10.42.0.1/24
+ip -4 addr show eth0                   # must still be on 192.168.1.0/24
 ping -c 3 192.168.1.4                  # boards must still be reachable
 ping -c 3 192.168.1.5
 ```
@@ -182,12 +178,13 @@ ping -c 3 192.168.1.5
 To undo:
 
 ```sh
-sudo nmcli connection down funklet-ap && sudo nmcli connection delete funklet-ap
+sudo nmcli connection down Hotspot && sudo nmcli connection delete Hotspot
 ```
 
-3. **Check WiFi power save.** This is worth doing once on any new Pi. Power save
-   causes multi-second network stalls, which show up as the whole sculpture
-   freezing:
+4. **Check WiFi power save.** Worth doing once on any new Pi. Power save causes
+   multi-second stalls on `wlan0`. This does *not* affect the LEDs — they are on
+   `eth0` — but it makes SSH and the visualizer drop out, and a stalled SSH pty
+   can block the controller if you launched it by hand (see the note below):
 
    ```sh
    iw dev wlan0 get power_save
@@ -373,11 +370,11 @@ To watch the Pi's output from your laptop, run the HTTP server *on the Pi* and
 browse to `http://funkypi.wlan:8000/visualization/index.html` — the page derives
 the WebSocket host from the page URL, so ports 5678/5679 must be reachable too.
 
-Be aware this streams a 64 KB texture 20 times a second (~1.3 MB/s) over the
-network, on top of the ~100 KB/s already going to the boards. If the Pi is also
-the access point, that all shares one radio. Prefer running the controller and
-visualizer locally when you are working on patterns, and treat the remote view as
-a spot check rather than something to leave open.
+Be aware this streams a 64 KB texture 20 times a second (~1.3 MB/s) over WiFi.
+That is well clear of the LED data, which goes out over `eth0`, but it is a lot
+for a WiFi link at an event and will make your SSH session sluggish. Prefer
+running the controller and visualizer locally when you are working on patterns,
+and treat the remote view as a spot check rather than something to leave open.
 
 ### Checking LED order and direction
 
@@ -533,10 +530,12 @@ After regenerating, remember to:
 ## Troubleshooting
 
 **The whole sculpture freezes for a few seconds, then resumes.**
-Both buses ride the same WiFi radio, so a network blip drops them together and
-the boards hold their last frame until the controller reconnects. Check
-`grep "OPC connection" ~/funklet.log` for the timestamps and the disconnect
-reason. Then check WiFi power save (see [Connecting and SSH](#connecting-and-ssh)).
+Both boards hold their last frame whenever the controller stops sending. Check
+`grep "OPC connection" ~/funklet.log` for timestamps and the disconnect reason.
+Since the boards are wired, a simultaneous outage is *not* a WiFi problem — look
+at what they share: the Ethernet switch, its power, the Pi's `eth0`, or the Pi
+itself stalling. A stalled event loop (blocking terminal writes, a clock step)
+freezes every bus at once and is worth ruling out first via the log.
 The disconnect reason is diagnostic: `None` means the board closed the connection
 cleanly, `ConnectionResetError` means it reset, and a timeout means the link died.
 
@@ -544,13 +543,13 @@ cleanly, `ConnectionResetError` means it reset, and a timeout means the link die
 One board only — check that board's IP with `ping`, and look for its address in
 the OPC log lines. `board_1` is the trunk/front-legs/head side, `board_2` is the
 dome/tail/tusks/eyes side. Independent per-board failures point at something
-board-specific (power, a reset) rather than the network, since a WiFi problem
-takes both buses down together.
+board-specific — power, or a board reset — rather than the network, since a
+switch or cabling fault would usually take both down together.
 
 **It got worse after adding people or laptops to the network.**
-If the Pi is the access point, every client shares the radio that is feeding the
-boards. The visualizer in particular is ~1.3 MB/s — an order of magnitude more
-than the LED data itself. Close it when you are not watching it.
+This will not affect the LEDs — the boards are wired — but the visualizer is
+~1.3 MB/s over WiFi and will make your own SSH session crawl. Close it when you
+are not watching it.
 
 **`Fell behind: skipped N frame(s)` in the log.**
 The render loop is not keeping up. Most likely video decoding — 14 of the 16
