@@ -77,16 +77,15 @@ ip -4 addr show wlan0                 # an AP is usually .1 on its own subnet
    ping -c 3 192.168.1.5     # board_2
    ```
 
-2. **SSH to the Pi.** Substitute the account that was created when the card was
-   imaged. **Raspberry Pi OS has had no default `pi` user since April 2022** — on
-   a Bookworm image the username is whatever Raspberry Pi Imager was told to
-   create, so do not assume it. If you do not know it, read it from the serial
-   console login prompt, or run `whoami` once you are in.
+2. **SSH to the Pi.** The account on this installation is `pi` (confirmed against
+   the hardware — note this is *not* an OS default: Raspberry Pi OS has had no
+   default `pi` user since April 2022, so on a rebuilt card it will be whatever
+   Imager was told to create. Check with `whoami`.)
 
    ```sh
-   ssh <user>@funkypi.wlan       # the name the controller itself uses
-   ssh <user>@funkypi.local      # if Avahi/mDNS is set up instead
-   ssh <user>@192.168.1.<pi>     # by address
+   ssh pi@funkypi.wlan       # the name the controller itself uses
+   ssh pi@funkypi.local      # if Avahi/mDNS is set up instead
+   ssh pi@192.168.1.<addr>   # by address
    ```
 
    Find the Pi's address from another machine on the network with:

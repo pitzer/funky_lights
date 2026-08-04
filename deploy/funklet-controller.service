@@ -10,11 +10,12 @@
 #   systemctl status funklet-controller
 #   journalctl -u funklet-controller -f
 #
-# Edit User/WorkingDirectory/ExecStart below to match the Pi. The "pi" values are
-# placeholders, NOT defaults -- Raspberry Pi OS has had no default "pi" user
-# since April 2022, so on a Bookworm image the account is whatever was created at
-# imaging time. Check with `whoami`. systemd will refuse to start the unit if the
-# user does not exist, so a wrong value fails loudly rather than silently.
+# User=pi is correct for the current Funklet card, confirmed against the
+# hardware. It is not an OS default -- Raspberry Pi OS has had no default "pi"
+# user since April 2022 -- so if the card is ever rebuilt, check `whoami` and
+# update User and WorkingDirectory here. systemd refuses to start the unit if the
+# user does not exist, so a stale value fails loudly rather than silently.
+# Confirm WorkingDirectory and ExecStart match this Pi's checkout and venv.
 #
 # Running under systemd also means stdout goes to the journal rather than an SSH
 # pty, which removes a blocking-write path that could stall the event loop.
