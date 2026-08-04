@@ -270,14 +270,6 @@ class OpenPixelControlProtocol(asyncio.Protocol):
             messages = []
             for segment in segments:
                 if segment.uid in self.uids:
-                    # Swap red and green channels for tusks
-                    if segment.uid == 28:
-                        original_colors = segment.colors.copy()
-                        segment.colors[0][1] = original_colors[0][2]
-                        segment.colors[0][2] = original_colors[0][1]
-                        segment.colors[1][1] = original_colors[1][2]
-                        segment.colors[1][2] = original_colors[1][1]
-
                     channel = self.uids.index(segment.uid) + 1
                     messages.append(self.build_message(segment.colors, channel))
 
