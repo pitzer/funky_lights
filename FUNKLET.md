@@ -44,7 +44,7 @@ lives on `eth0`. The Pi runs its own access point on `wlan0`, which is only how
 | Interface | Role | Network |
 |---|---|---|
 | `eth0` | to the two boards | `192.168.1.0/24` |
-| `wlan0` | access point, SSID `funkypi` | `192.168.4.0/24`, Pi at `.1` |
+| `wlan0` | access point, SSID `funkletpi` | `192.168.4.0/24`, Pi at `.1` |
 
 `iptables` MASQUERADE forwards `wlan0` → `eth0`, so a laptop on the AP also gets
 onward connectivity. Note that the *defaults* in
@@ -72,10 +72,38 @@ segment sits behind the Pi; from your laptop you will usually have no route to
 `192.168.1.4`/`.5` at all, and that is fine and expected. Reach the Pi over
 `wlan0`, and check the boards *from the Pi*.
 
-**The Pi is the access point.** It broadcasts SSID `funkypi`, set up per the
+**The Pi is the access point.** It broadcasts SSID `funkletpi`, set up per the
 Raspberry Pi "routed wireless access point" guide (`hostapd` + `dnsmasq`), which
 is also where the `.wlan` domain in `main.py` comes from. The passphrase is not
 recorded here — see [Credentials](#connecting-and-ssh) below.
+
+> **⚠ Not yet verified on the hardware.** The setup notes this came from cover
+> both art cars and specify `ssid=funkypi`, which is the *other* car. Funklet
+> should be `funkletpi` so the two do not collide — if both broadcast the same
+> SSID at the same event, a laptop associates with whichever is stronger and
+> `funkypi.wlan` resolves to whichever one it landed on. That is a genuinely
+> confusing failure. Confirm and, if needed, rename it:
+>
+> ```sh
+> grep -i ssid /etc/hostapd/hostapd.conf        # what it actually broadcasts
+> sudo sed -i 's/^ssid=.*/ssid=funkletpi/' /etc/hostapd/hostapd.conf
+> sudo systemctl restart hostapd
+> ```
+>
+> On a NetworkManager-based setup instead:
+>
+> ```sh
+> nmcli -f NAME,TYPE connection show
+> sudo nmcli connection modify <ap-connection> 802-11-wireless.ssid funkletpi
+> sudo nmcli connection up <ap-connection>
+> ```
+>
+> Do this over serial, not SSH — restarting the AP drops the link you are on.
+>
+> The **hostname is a separate thing** and is deliberately unchanged: the Pi is
+> still `funkypi`, so `funkypi.wlan` keeps working and `main.py`'s
+> `--pattern_mix_subscribe_uri` default stays valid. Renaming the host as well
+> would mean updating that default and every URL in this document.
 
 > The setup notes this came from are Bullseye-era (they reference `libjasper-dev`
 > and `libhdf5-103`, which do not exist in Bookworm) while the current card is
@@ -83,7 +111,7 @@ recorded here — see [Credentials](#connecting-and-ssh) below.
 > the address may differ. Confirm on the Pi with `iw dev wlan0 info` and
 > `ip -4 addr show wlan0`.
 
-1. **Join the `funkypi` network.** Then, *once on the Pi*, confirm it can see both
+1. **Join the `funkletpi` network.** Then, *once on the Pi*, confirm it can see both
    boards over Ethernet:
 
    ```sh
