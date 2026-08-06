@@ -1,7 +1,7 @@
 # Rebuilding the Funklet Pi from a blank card
 
 Follow this top to bottom on a fresh SD card. It targets **Raspberry Pi OS
-Bookworm (64-bit) Lite** on a **Raspberry Pi 4 Model B**.
+Bookworm (64-bit) Lite** — the *Legacy* option in Imager — on a **Raspberry Pi 4 Model B**.
 
 > **Why not the old setup notes.** The previous notes were written for Bullseye
 > and will not run as-is: `libjasper-dev` and `libhdf5-103` no longer exist,
@@ -16,8 +16,32 @@ the hardware and correct this file.
 
 ## 1. Flash the card
 
-Use **Raspberry Pi Imager**. Choose *Raspberry Pi OS Lite (64-bit)*, then open the
-advanced options (gear icon, or ⌘⇧X) before writing:
+Use **Raspberry Pi Imager**.
+
+> ### Choose the Legacy (Bookworm) image, not the default
+>
+> Imager now offers *Raspberry Pi OS (64-bit)* built on Debian **Trixie**, with
+> Bookworm demoted to *(Legacy)*. **Take the Legacy one.** Trixie ships Python
+> 3.13, and this project's pins cannot be satisfied there:
+>
+> | Pin | Wheels published for | Trixie / Py 3.13 |
+> |---|---|---|
+> | `numpy<2` → 1.26.4 | cp39–cp312 | no wheel, and 1.x will not build on 3.13 |
+> | `websockets<11` → 10.4 | cp37–cp311 | no wheel |
+> | `opencv_python==4.5.5.62` | cp36, cp37, abi3 | installs, but is built against the numpy 1.x ABI |
+>
+> Bookworm's Python 3.11 is inside the support window for all three.
+>
+> Moving to Trixie later is a real but bounded piece of work, and it is a code
+> change rather than a config one: allow `numpy>=2`, move to an OpenCV built
+> against numpy 2 (4.10+), take `websockets>=14`, and then fix the WebSocket
+> handler signatures — `serve(self, websocket, path)` in
+> `controller/core/websockets.py` and `launchpadWSListener` in
+> `controller/core/pattern_selector.py` both use the pre-11 two-argument form,
+> which 14+ removed. Do that deliberately, not the night before an event.
+
+Choose *Raspberry Pi OS Lite (64-bit) (Legacy)*, then open the advanced options
+(gear icon, or ⌘⇧X) before writing:
 
 | Setting | Value |
 |---|---|
