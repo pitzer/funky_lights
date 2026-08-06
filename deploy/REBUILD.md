@@ -22,7 +22,7 @@ advanced options (gear icon, or ⌘⇧X) before writing:
 | Setting | Value |
 |---|---|
 | Hostname | `funkypi` |
-| Username | `pi` |
+| Username | `funklet` |
 | Enable SSH | yes — **public-key only**, paste your laptop's `~/.ssh/id_ed25519.pub` |
 | Configure WiFi | your phone hotspot or home network |
 | Locale / keyboard | as appropriate |
@@ -31,7 +31,9 @@ Two deliberate choices:
 
 - **Keep the hostname `funkypi`.** The SSID becomes `funkletpi` later, but the
   hostname is separate and `main.py`'s `--pattern_mix_subscribe_uri` default
-  (`ws://funkypi.wlan:5680`) depends on it.
+  (`ws://funkypi.wlan:5680`) depends on it. The *username* is `funklet`, which is
+  a third independent name — it sets `/home/funklet`, and the supervisor config
+  paths depend on it.
 - **Set bootstrap WiFi even though the Pi ends up as an access point.** The old
   notes said not to, which is how the Pi became unreachable. Configure an
   ordinary network now, do the work over SSH, and switch it to an AP at step 7.
@@ -58,7 +60,7 @@ you need a USB-C adapter for this.
 ## 3. First boot and get in
 
 ```sh
-ssh pi@funkypi.local          # or the address from your router
+ssh funklet@funkypi.local          # or the address from your router
 sudo apt update && sudo apt full-upgrade -y
 sudo reboot
 ```
@@ -242,7 +244,7 @@ sudo nano /etc/supervisor/supervisord.conf
 ```ini
 [unix_http_server]
 chmod=0770
-chown=root:pi
+chown=root:funklet
 
 [inet_http_server]
 port=*:9001

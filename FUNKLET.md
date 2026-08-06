@@ -121,15 +121,19 @@ recorded here — see [Credentials](#connecting-and-ssh) below.
    ping -c 3 192.168.1.5     # board_2
    ```
 
-2. **SSH to the Pi.** The account on this installation is `pi` (confirmed against
-   the hardware — note this is *not* an OS default: Raspberry Pi OS has had no
-   default `pi` user since April 2022, so on a rebuilt card it will be whatever
-   Imager was told to create. Check with `whoami`.)
+2. **SSH to the Pi.** The account is `funklet` — matching `/home/funklet` in the
+   supervisor config. Note it is not an OS default: Raspberry Pi OS has had no
+   default `pi` user since April 2022, so on a rebuilt card it is whatever Imager
+   was told to create. Check with `whoami`.
+
+   Three independent names, easily confused: the **user** is `funklet`, the
+   **host** is `funkypi` (hence `funkypi.wlan`), and the **WiFi SSID** is
+   `funkletpi`.
 
    ```sh
-   ssh pi@funkypi.wlan       # the name the controller itself uses
-   ssh pi@funkypi.local      # if Avahi/mDNS is set up instead
-   ssh pi@192.168.1.<addr>   # by address
+   ssh funklet@funkypi.wlan     # the name the controller itself uses
+   ssh funklet@funkypi.local    # if Avahi/mDNS is set up instead
+   ssh funklet@192.168.4.1      # by address, over the Pi's own AP
    ```
 
    Find the Pi's address from another machine on the network with:
@@ -198,14 +202,14 @@ ip route | awk '/default/ {print $3}'
 Then connect:
 
 ```sh
-ssh pi@<that address>
+ssh funklet@<that address>
 ```
 
 On this installation that is `192.168.4.1`, so in practice:
 
 ```sh
-ssh pi@192.168.4.1
-ssh pi@funkypi.wlan      # equivalent, via the AP's own dnsmasq
+ssh funklet@192.168.4.1
+ssh funklet@funkypi.wlan  # equivalent, via the AP's own dnsmasq
 ```
 
 > It will **not** be a `192.168.1.x` address. That subnet belongs to `eth0` and
