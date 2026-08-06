@@ -47,7 +47,8 @@ Choose *Raspberry Pi OS Lite (64-bit) (Legacy)*, then open the advanced options
 |---|---|
 | Hostname | `funkletpi` |
 | Username | `funklet` |
-| Enable SSH | yes — **public-key only**, paste your laptop's `~/.ssh/id_ed25519.pub` |
+| Password | a new one — **do not reuse the old `funky`**, it is in a plaintext document |
+| Enable SSH | yes — password authentication |
 | Configure WiFi | **an existing network with internet** — your home WiFi or phone hotspot. **Not `funkletpi`.** |
 | Wireless LAN country | your country (e.g. `US`) — required, see below |
 | Locale / keyboard | as appropriate |
@@ -372,7 +373,17 @@ From a laptop joined to `funkletpi`:
 - **Rotate the old key.** The ed25519 key in the previous setup notes was stored
   in plaintext and should be deleted from the GitHub account entirely, not just
   replaced on the Pi.
-- **Keep the passphrase out of this repo.** The remote is public.
+- **Keep the account password and the AP passphrase out of this repo.** The
+  remote is public. Keep them in a password manager.
+- **Consider switching SSH to keys** once things are running. It needs no
+  re-image — one command from your laptop, and the password stops being the thing
+  standing between an event WiFi network and a shell:
+  ```sh
+  ssh-copy-id funklet@funkletpi.wlan
+  # then, optionally, on the Pi:
+  #   sudo sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
+  #   sudo systemctl restart ssh
+  ```
 - **Take an image of the finished card** so the next rebuild is a restore:
   ```sh
   # on a laptop, with the card inserted; check the disk number first
