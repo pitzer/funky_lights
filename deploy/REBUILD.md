@@ -59,10 +59,21 @@ Two deliberate choices:
 - `main.py`'s `--pattern_mix_subscribe_uri` default still points at
   `ws://funkletpi.wlan:5680`, which is the *other* car. That is intentional and
   left alone; see the note at the end of this file.
-- **Set bootstrap WiFi even though the Pi ends up as an access point.** The old
-  notes said not to, which is how the Pi became unreachable. Configure an
-  ordinary network now, do the work over SSH, and switch it to an AP at step 7.
-  Ethernet to a router works equally well.
+- **Set bootstrap WiFi even though the Pi ends up as an access point**, and set
+  the **wireless LAN country** while you are in there. Two separate reasons:
+  - Steps 3-6 need internet — `apt full-upgrade`, `apt install`, `pip install`,
+    `git clone`. Serial console alone will not get you through the build.
+  - Filling in the WiFi fields is what sets the regulatory country. Leave it
+    unset and `wlan0` stays soft-blocked (`Wi-Fi is currently blocked by
+    rfkill`), and the access point at step 7 will refuse to start. This catches
+    people out precisely because it looks like an AP problem, not a country one.
+
+  The old notes said not to configure WiFi, since the Pi ends up as an AP. That
+  is what left it unreachable. The bootstrap connection is temporary — the AP
+  supersedes it at step 7, and step 7 turns its autoconnect off.
+
+  Ethernet to a router works equally well for connectivity, but **still fill in
+  the WiFi country** or the AP will not come up.
 
 ## 2. Enable the serial console before first boot
 
@@ -237,6 +248,24 @@ sudo nmcli connection down funklet-ap && sudo nmcli connection up funklet-ap
 **⚠ verify** from a laptop on the AP: `ping funkletpi.wlan`. If it does not resolve,
 use `192.168.4.1` directly and drop the `.wlan` references, or install `avahi-daemon`
 and use `funkletpi.local`.
+
+### Retire the bootstrap connection
+
+`wlan0` cannot be a client and an access point at the same time, so once the AP
+is confirmed working, stop the bootstrap profile competing for the radio at boot.
+Raspberry Pi Imager names its connection `preconfigured`:
+
+```sh
+nmcli -f NAME,TYPE,AUTOCONNECT connection show
+sudo nmcli connection modify preconfigured connection.autoconnect no
+```
+
+Leave the profile in place rather than deleting it — it is a way back in if the
+AP configuration ever breaks:
+
+```sh
+sudo nmcli connection up preconfigured     # temporarily rejoin your own network
+```
 
 ### Turn off WiFi power save
 
