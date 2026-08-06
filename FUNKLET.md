@@ -6,7 +6,8 @@ transport: **1443 LEDs across 14 segments**, driven entirely over the network by
 two Teensy 4.1 boards speaking [Open Pixel Control](http://openpixelcontrol.org/).
 
 This is the Funklet-specific guide. For the attiny85 boards, bootloader, fuses,
-and the full-size car, see [README.md](README.md).
+and the full-size car, see [README.md](README.md). To rebuild the Pi from a blank
+SD card, see [deploy/REBUILD.md](deploy/REBUILD.md).
 
 > Funklet does **not** use the attiny85 / USB-serial buses that most of the main
 > README describes. Its two buses are both OPC over TCP.
@@ -24,6 +25,7 @@ and the full-size car, see [README.md](README.md).
 - [Local development without hardware](#local-development-without-hardware)
 - [Regenerating the LED config](#regenerating-the-led-config)
 - [Troubleshooting](#troubleshooting)
+- [Rebuilding from a blank card](deploy/REBUILD.md)
 
 ---
 

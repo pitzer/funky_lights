@@ -1,0 +1,318 @@
+# Rebuilding the Funklet Pi from a blank card
+
+Follow this top to bottom on a fresh SD card. It targets **Raspberry Pi OS
+Bookworm (64-bit) Lite** on a **Raspberry Pi 4 Model B**.
+
+> **Why not the old setup notes.** The previous notes were written for Bullseye
+> and will not run as-is: `libjasper-dev` and `libhdf5-103` no longer exist,
+> Bookworm manages WiFi with NetworkManager rather than the `hostapd` guide those
+> notes follow, and Bookworm's Python is "externally managed" so a bare
+> `pip install` now fails. Each of those is handled below.
+
+Everything marked **⚠ verify** could not be tested from a laptop — check it on
+the hardware and correct this file.
+
+---
+
+## 1. Flash the card
+
+Use **Raspberry Pi Imager**. Choose *Raspberry Pi OS Lite (64-bit)*, then open the
+advanced options (gear icon, or ⌘⇧X) before writing:
+
+| Setting | Value |
+|---|---|
+| Hostname | `funkypi` |
+| Username | `pi` |
+| Enable SSH | yes — **public-key only**, paste your laptop's `~/.ssh/id_ed25519.pub` |
+| Configure WiFi | your phone hotspot or home network |
+| Locale / keyboard | as appropriate |
+
+Two deliberate choices:
+
+- **Keep the hostname `funkypi`.** The SSID becomes `funkletpi` later, but the
+  hostname is separate and `main.py`'s `--pattern_mix_subscribe_uri` default
+  (`ws://funkypi.wlan:5680`) depends on it.
+- **Set bootstrap WiFi even though the Pi ends up as an access point.** The old
+  notes said not to, which is how the Pi became unreachable. Configure an
+  ordinary network now, do the work over SSH, and switch it to an AP at step 7.
+  Ethernet to a router works equally well.
+
+## 2. Enable the serial console before first boot
+
+Do this while the card is still in your laptop. It is the rescue path when the
+network is broken, and it costs nothing.
+
+On the `bootfs` partition, append to `config.txt`:
+
+```
+enable_uart=1
+```
+
+`cmdline.txt` already contains `console=serial0,115200`. **⚠ verify** — confirm it
+does; if not, add it, keeping the file to a single line.
+
+To reach it later: USB-TTL adapter, GND→pin 6, adapter RX→pin 8, adapter TX→pin 10,
+then `screen /dev/cu.usbserial-XXXX 115200`. Note a MacBook has no USB-A port, so
+you need a USB-C adapter for this.
+
+## 3. First boot and get in
+
+```sh
+ssh pi@funkypi.local          # or the address from your router
+sudo apt update && sudo apt full-upgrade -y
+sudo reboot
+```
+
+## 4. Dependencies
+
+The old list was for building OpenCV from source. We install it as a wheel, so
+most of it is unnecessary. What is actually needed:
+
+```sh
+sudo apt install -y \
+    git python3-pip python3-venv python3-dev build-essential pkg-config \
+    libgl1 libglib2.0-0 \
+    supervisor vim
+```
+
+`libgl1` and `libglib2.0-0` are the runtime libraries `cv2` needs on a headless
+image — without them `import cv2` fails with `libGL.so.1: cannot open shared
+object file`, which is the most common failure here.
+
+**⚠ verify** — if `opencv_python` decides to build from source rather than using a
+piwheels wheel (it will take hours, so you will notice), stop and add the build
+dependencies:
+
+```sh
+sudo apt install -y cmake gfortran libatlas-base-dev libhdf5-dev \
+    libavcodec-dev libavformat-dev libswscale-dev libtiff-dev libjpeg-dev libpng-dev
+```
+
+Note `libtiff-dev`, not `libtiff5-dev`; and no `libjasper-dev`, which was dropped
+from Debian years ago.
+
+## 5. Repository access with a deploy key
+
+Do **not** copy a personal SSH key onto the Pi. Generate a key here and register
+it as a **read-only deploy key**, scoped to this one repository — the Pi only
+ever pulls.
+
+```sh
+ssh-keygen -t ed25519 -C "funklet-pi" -f ~/.ssh/id_ed25519 -N ""
+cat ~/.ssh/id_ed25519.pub
+```
+
+Add that public key at **github.com/pitzer/funky_lights → Settings → Deploy keys
+→ Add deploy key**, leaving "Allow write access" unchecked.
+
+GitHub over port 443 avoids networks that block 22:
+
+```sh
+printf 'Host github.com\n  Hostname ssh.github.com\n  Port 443\n  User git\n' >> ~/.ssh/config
+chmod 600 ~/.ssh/config ~/.ssh/id_ed25519
+ssh -T git@github.com          # expect: "successfully authenticated"
+
+git clone git@github.com:pitzer/funky_lights.git
+cd funky_lights && git checkout funklet
+```
+
+## 6. Python environment
+
+Bookworm marks the system Python as externally managed (PEP 668), so
+`pip install -e .` fails outright with `error: externally-managed-environment`.
+Use a virtualenv — and note that supervisor must then call that interpreter
+explicitly, not bare `python`.
+
+```sh
+python3 -m venv ~/venv
+~/venv/bin/pip install --upgrade pip
+~/venv/bin/pip install -e ~/funky_lights
+~/venv/bin/python -c "import cv2, numpy, websockets; print(cv2.__version__, numpy.__version__, websockets.__version__)"
+```
+
+Expect `4.5.5 1.26.x 10.4`. The pins in `requirements.txt` matter: OpenCV is built
+against the numpy 1.x ABI, and the WebSocket handlers use the pre-11 signature.
+
+## 7. Networking
+
+Two interfaces doing different jobs:
+
+| Interface | Role | Network |
+|---|---|---|
+| `eth0` | to the two Teensy boards | `192.168.1.0/24` |
+| `wlan0` | access point for laptops | `192.168.4.0/24`, Pi at `.1` |
+
+### Ethernet to the boards
+
+The boards sit at `192.168.1.4` and `.5`. **⚠ verify** whether they use static
+addresses or DHCP — if static, the Pi needs a static address on that subnet too:
+
+```sh
+sudo nmcli connection add type ethernet ifname eth0 con-name funklet-boards \
+     ipv4.method manual ipv4.addresses 192.168.1.1/24 autoconnect yes
+sudo nmcli connection up funklet-boards
+ping -c 3 192.168.1.4 && ping -c 3 192.168.1.5
+```
+
+No gateway is needed — this is a flat segment, not a route to anywhere.
+
+### Access point on wlan0
+
+Bookworm uses NetworkManager, so this is simpler than the old `hostapd` +
+`dnsmasq` + `iptables` recipe. `ipv4.method shared` gives DHCP, DNS and NAT in
+one setting, which replaces all three of the old `iptables` rules and
+`iptables-persistent` entirely.
+
+```sh
+sudo nmcli connection add type wifi ifname wlan0 con-name funklet-ap \
+     autoconnect yes ssid funkletpi
+
+sudo nmcli connection modify funklet-ap \
+     802-11-wireless.mode ap \
+     802-11-wireless.band bg \
+     ipv4.method shared \
+     ipv4.addresses 192.168.4.1/24 \
+     connection.autoconnect-priority 100
+
+sudo nmcli connection modify funklet-ap \
+     wifi-sec.key-mgmt wpa-psk wifi-sec.psk '<choose a passphrase>'
+
+sudo nmcli connection up funklet-ap
+```
+
+> **The SSID is `funkletpi`, not `funkypi`.** The other art car uses `funkypi`.
+> If both broadcast the same SSID at an event, a laptop associates with whichever
+> is stronger and you can end up on the wrong elephant without noticing.
+
+> **`wlan0` must never use `192.168.1.0/24`** — that belongs to `eth0`. Two
+> interfaces on one subnet makes routing to the boards ambiguous, which produces
+> intermittent faults that are very hard to trace.
+
+> Run this **over serial or Ethernet**, not over the WiFi you are about to
+> reconfigure. Bringing up the AP tears down your bootstrap connection.
+
+### Restore the `.wlan` domain
+
+The old `dnsmasq` supplied a `wlan` search domain, which is where `funkypi.wlan`
+comes from — including `main.py`'s default subscribe URI. NetworkManager's shared
+mode does not do this by default. To keep those names working:
+
+```sh
+sudo mkdir -p /etc/NetworkManager/dnsmasq-shared.d
+sudo tee /etc/NetworkManager/dnsmasq-shared.d/funklet.conf >/dev/null <<'EOF'
+domain=wlan
+local=/wlan/
+address=/funkypi.wlan/192.168.4.1
+EOF
+sudo nmcli connection down funklet-ap && sudo nmcli connection up funklet-ap
+```
+
+**⚠ verify** from a laptop on the AP: `ping funkypi.wlan`. If it does not resolve,
+use `192.168.4.1` directly and drop the `.wlan` references, or install `avahi-daemon`
+and use `funkypi.local`.
+
+### Turn off WiFi power save
+
+Causes multi-second stalls on `wlan0`. It does not affect the LEDs — those are on
+`eth0` — but it makes SSH and the visualizer drop out.
+
+```sh
+sudo nmcli connection modify funklet-ap 802-11-wireless.powersave 2
+iw dev wlan0 get power_save
+```
+
+## 8. Supervisor
+
+```sh
+sudo cp ~/funky_lights/deploy/funklet-supervisor.conf \
+        /etc/supervisor/conf.d/funky_lights.conf
+sudo nano /etc/supervisor/conf.d/funky_lights.conf   # check user and paths
+```
+
+Note the old notes used `sudo echo "..." >> /etc/...`, which **does not work** —
+the redirect runs as your unprivileged shell, not as root. Use `sudo tee` or an
+editor.
+
+Allow your user to drive supervisorctl, and expose the dashboard:
+
+```sh
+sudo nano /etc/supervisor/supervisord.conf
+```
+
+```ini
+[unix_http_server]
+chmod=0770
+chown=root:pi
+
+[inet_http_server]
+port=*:9001
+```
+
+> The dashboard has **no authentication**. That is acceptable on an AP you
+> control; do not expose it on a network you do not.
+
+```sh
+sudo systemctl restart supervisor
+sudo supervisorctl status
+```
+
+> ### ⚠ Exactly one controller at a time
+> `funky_lights_controller_cached_mode` autostarts. Starting `live_mode` as well —
+> or running `main.py` by hand while either is up — means two processes driving
+> the same boards and interleaving frames from independent pattern rotations. It
+> presents as stuttering, or different patterns on different segments.
+> Check with `ps aux | grep '[m]ain.py'`.
+
+## 9. Pattern cache
+
+Cached mode is the autostart default, so build the cache before relying on it:
+
+```sh
+cd ~/funky_lights/controller
+~/venv/bin/python create_pattern_cache.py
+```
+
+Roughly 31,000 files and ~150 MB, and it takes a while. It is keyed on a hash of
+`config/led_config.json` — **any change to that file orphans it**, after which
+every pattern logs `No cache found for pattern ...` and silently falls back to
+live rendering. Rebuild it whenever the LED config changes.
+
+## 10. Verify
+
+```sh
+# processes
+sudo supervisorctl status                  # webserver + cached_mode running
+ps aux | grep '[m]ain.py'                  # exactly one
+
+# controller
+tail -f ~/funklet.log                      # steady "Animation FPS: 20.0"
+grep -i "OPC connection" ~/funklet.log     # both boards connected, no reconnect loop
+grep -i "No cache found" ~/funklet.log     # should be empty after step 9
+
+# network
+iw dev wlan0 info | grep type              # type AP
+ip -4 addr show wlan0                      # 192.168.4.1/24
+ip -4 addr show eth0                       # 192.168.1.0/24
+ping -c 3 192.168.1.4 && ping -c 3 192.168.1.5
+```
+
+From a laptop joined to `funkletpi`:
+
+- <http://funkypi.wlan:9001/> — supervisor dashboard
+- <http://funkypi.wlan:8000/visualization/index.html> — visualizer
+- <http://funkypi.wlan:8000/visualization/index.html?debug=index> — LED order check
+
+## 11. Afterwards
+
+- **Rotate the old key.** The ed25519 key in the previous setup notes was stored
+  in plaintext and should be deleted from the GitHub account entirely, not just
+  replaced on the Pi.
+- **Keep the passphrase out of this repo.** The remote is public.
+- **Take an image of the finished card** so the next rebuild is a restore:
+  ```sh
+  # on a laptop, with the card inserted; check the disk number first
+  sudo dd if=/dev/rdisk4 bs=4m | gzip > funklet-$(date +%Y%m%d).img.gz
+  ```
+- Consider a card with better endurance. The previous one failed after a period
+  of suspected brownouts, and power loss during writes is a common way SD cards
+  die.
