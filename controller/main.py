@@ -301,8 +301,8 @@ async def main():
         )
         logging.info('All tasks finished: %s', results)
     except Exception:
-        # Exit non-zero so a supervisor (see deploy/funklet-controller.service)
-        # restarts us instead of leaving the sculpture dark.
+        # Exit non-zero so supervisor restarts us (autorestart=true) instead of
+        # leaving the sculpture dark. See deploy/funklet-supervisor.conf.
         logging.exception('The controller stopped due to an unhandled exception.')
         sys.exit(1)
 

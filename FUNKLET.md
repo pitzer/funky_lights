@@ -38,8 +38,16 @@ and the full-size car, see [README.md](README.md).
 | Controller host | a Raspberry Pi, conventionally `funkypi` | default in [main.py](controller/main.py) is `ws://funkypi.wlan:5680` |
 
 **Both boards are wired to the Pi over Ethernet**, not WiFi — `192.168.1.0/24`
-lives on `eth0`. The Pi's `wlan0` is separate and is only how *you* reach the Pi;
-LED traffic never touches it. Note that the *defaults* in
+lives on `eth0`. The Pi runs its own access point on `wlan0`, which is only how
+*you* reach the Pi; LED traffic never touches it.
+
+| Interface | Role | Network |
+|---|---|---|
+| `eth0` | to the two boards | `192.168.1.0/24` |
+| `wlan0` | access point, SSID `funkypi` | `192.168.4.0/24`, Pi at `.1` |
+
+`iptables` MASQUERADE forwards `wlan0` → `eth0`, so a laptop on the AP also gets
+onward connectivity. Note that the *defaults* in
 `main.py` (`../config/led_config.json`, `../config/bus_config.json`) are already
 the Funklet ones on this branch — you do not need to pass `-l` or `-b` in the field.
 
@@ -64,20 +72,18 @@ segment sits behind the Pi; from your laptop you will usually have no route to
 `192.168.1.4`/`.5` at all, and that is fine and expected. Reach the Pi over
 `wlan0`, and check the boards *from the Pi*.
 
-> **Unverified:** whether `wlan0` broadcasts its own network or joins one from a
-> separate router is not recorded anywhere in this repo. The `.wlan` suffix in
-> `main.py` is a DHCP-supplied domain, not mDNS, so something is running a DNS
-> server — either the Pi or a router. Determine which and correct this section:
+**The Pi is the access point.** It broadcasts SSID `funkypi`, set up per the
+Raspberry Pi "routed wireless access point" guide (`hostapd` + `dnsmasq`), which
+is also where the `.wlan` domain in `main.py` comes from. The passphrase is not
+recorded here — see [Credentials](#connecting-and-ssh) below.
 
-```sh
-# On the Pi
-iw dev wlan0 info | grep type         # "type AP" vs "type managed"
-ip -4 addr show wlan0                 # the address you will SSH to
-ip -4 addr show eth0                  # should be on 192.168.1.0/24
-```
+> The setup notes this came from are Bullseye-era (they reference `libjasper-dev`
+> and `libhdf5-103`, which do not exist in Bookworm) while the current card is
+> Bookworm. If the AP was rebuilt under NetworkManager rather than carried over,
+> the address may differ. Confirm on the Pi with `iw dev wlan0 info` and
+> `ip -4 addr show wlan0`.
 
-1. **Get on the Pi's WiFi.** If the Pi is the AP, join the SSID it broadcasts;
-   otherwise join the router's. Then, *once on the Pi*, confirm it can see both
+1. **Join the `funkypi` network.** Then, *once on the Pi*, confirm it can see both
    boards over Ethernet:
 
    ```sh
@@ -165,10 +171,11 @@ Then connect:
 ssh pi@<that address>
 ```
 
-With NetworkManager's default hotspot the address is `10.42.0.1`, so in practice:
+On this installation that is `192.168.4.1`, so in practice:
 
 ```sh
-ssh pi@10.42.0.1
+ssh pi@192.168.4.1
+ssh pi@funkypi.wlan      # equivalent, via the AP's own dnsmasq
 ```
 
 > It will **not** be a `192.168.1.x` address. That subnet belongs to `eth0` and
@@ -184,55 +191,38 @@ ipconfig getsummary en0 | grep SSID    # macOS: which network am I on?
 Once in, `ip -4 addr show wlan0` on the Pi shows the address it is serving, and
 `ip -4 addr show eth0` should show `192.168.1.x` for the boards.
 
-#### If the Pi is not broadcasting a network yet
+#### How the access point is set up
 
-Check first — `iw dev wlan0 info` reports `type AP` if it already is, in which
-case there is nothing to configure.
-
-If it is not, this is straightforward: because the boards are on Ethernet, an
-access point on `wlan0` is completely independent of them, and nothing you do to
-the WiFi can strand the boards. The one-liner is fine:
+Built with `hostapd` + `dnsmasq` following the Raspberry Pi
+[routed wireless access point](https://www.raspberrypi.com/documentation/computers/configuration.html#setting-up-a-routed-wireless-access-point)
+guide, which is where `192.168.4.1` and the `.wlan` domain come from. Forwarding
+to the boards' network is done with `iptables`, made persistent via
+`iptables-persistent`:
 
 ```sh
-sudo nmcli device wifi hotspot ifname wlan0 ssid Funklet password "<choose one>"
-sudo nmcli connection modify Hotspot connection.autoconnect yes \
-     connection.autoconnect-priority 100
+sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+sudo iptables -A FORWARD -i eth0 -o wlan0 -m state --state RELATED,ESTABLISHED -j ACCEPT
+sudo iptables -A FORWARD -i wlan0 -o eth0 -j ACCEPT
+sudo netfilter-persistent save
 ```
 
-That puts `wlan0` on `10.42.0.1/24` with NetworkManager running dnsmasq for DHCP,
-and `autoconnect` brings it back automatically on every boot. Join the SSID and
-`ssh pi@10.42.0.1`.
-
-> **The AP must not use `192.168.1.0/24`.** That subnet already belongs to `eth0`.
-> Putting `wlan0` on it too gives the Pi two interfaces on one subnet, and routing
-> to the boards becomes ambiguous — which is a good way to make the sculpture
-> intermittently unreachable for reasons that are hard to see. The `10.42.0.0/24`
-> default avoids this; if you change it, pick anything except `192.168.1.0/24`.
-
-You do not need routing or forwarding between the two interfaces. You SSH to the
-Pi over `wlan0`; the controller talks to the boards over `eth0`. The Pi is on both
-networks at once and that is all it needs to be.
-
-> **Do this with the serial console connected, never over SSH.** Bringing up an AP
-> profile tears down whatever WiFi connection you are using, so a mistake locks
-> you out of the machine you are fixing. Serial is unaffected by any of it —
-> that is what makes it worth having set up.
-
-Afterwards, verify from the Pi before trusting it:
+Verify the whole picture from the Pi:
 
 ```sh
 iw dev wlan0 info | grep type          # expect: type AP
-ip -4 addr show wlan0                  # expect: 10.42.0.1/24
-ip -4 addr show eth0                   # must still be on 192.168.1.0/24
-ping -c 3 192.168.1.4                  # boards must still be reachable
+ip -4 addr show wlan0                  # expect: 192.168.4.1/24
+ip -4 addr show eth0                   # must be on 192.168.1.0/24
+ping -c 3 192.168.1.4                  # boards reachable over Ethernet
 ping -c 3 192.168.1.5
+sudo systemctl status hostapd dnsmasq
 ```
 
-To undo:
+> **The AP must never share `192.168.1.0/24` with `eth0`.** Two interfaces on one
+> subnet makes routing to the boards ambiguous, which produces intermittent
+> unreachability that is very hard to diagnose. `192.168.4.0/24` keeps them apart.
 
-```sh
-sudo nmcli connection down Hotspot && sudo nmcli connection delete Hotspot
-```
+> **Change AP settings over serial, never over SSH.** Restarting `hostapd` tears
+> down the network you would be working over. That is what the GPIO console is for.
 
 ---
 
@@ -307,7 +297,7 @@ running at once will fight over the boards:
 
 ```sh
 ps aux | grep '[m]ain.py'
-sudo systemctl restart funklet-controller     # if running as a service
+sudo supervisorctl restart funky_lights_controller_cached_mode
 ```
 
 Verify it came back:
@@ -327,26 +317,57 @@ pip install -e .                # only if requirements changed between the two
 
 ## Running the controller
 
-### As a service (how it should run in the field)
+### Under supervisor (how it runs in the field)
+
+The Pi runs the controller under [supervisor](http://supervisord.org/), not
+systemd. Three programs are defined — see
+[deploy/funklet-supervisor.conf](deploy/funklet-supervisor.conf):
+
+| Program | Autostart | What it does |
+|---|---|---|
+| `funky_lights_webserver` | yes | serves the repo on `:8000` for the visualizer |
+| `funky_lights_controller_cached_mode` | yes | `main.py -c` — plays the pre-rendered cache |
+| `funky_lights_controller_live_mode` | no | `main.py` — renders every frame live |
 
 ```sh
-sudo cp deploy/funklet-controller.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now funklet-controller
+sudo supervisorctl status
+sudo supervisorctl restart funky_lights_controller_cached_mode
+sudo supervisorctl tail -f funky_lights_controller_cached_mode
 ```
 
-Edit `User`, `WorkingDirectory`, and `ExecStart` in the unit file to match the
-Pi before installing it. Then:
+There is also a web dashboard at <http://funkypi.wlan:9001/>.
 
-```sh
-systemctl status funklet-controller
-journalctl -u funklet-controller -f      # live output
-sudo systemctl restart funklet-controller
-```
+> ### ⚠ Only one controller may run at a time
+>
+> The two controller programs drive the same two OPC buses. If both are running —
+> or if either is running while someone has also started `python main.py` by hand
+> over SSH — both processes connect to `board_1` and `board_2` and interleave
+> frames from independent pattern rotations. On the sculpture that looks like
+> stuttering, or like different patterns running on different segments.
+>
+> Before starting anything by hand, always:
+>
+> ```sh
+> ps aux | grep '[m]ain.py'          # expect exactly one, or none
+> sudo supervisorctl status
+> ```
+>
+> To switch modes, stop the other one first:
+>
+> ```sh
+> sudo supervisorctl stop funky_lights_controller_cached_mode
+> sudo supervisorctl start funky_lights_controller_live_mode
+> ```
 
-The service restarts automatically if the controller exits.
+> **Cached mode is the autostart default**, so in normal operation the sculpture
+> is playing from `~/pattern_cache`. That cache is invalidated by any change to
+> `config/led_config.json` — including the recent LED start-point fix. When it is
+> stale the controller logs `No cache found for pattern ...` for every pattern and
+> falls back to live rendering. See [Pattern cache](#pattern-cache).
 
 ### By hand (for debugging)
+
+Stop the supervisor controller first (see the warning above), then:
 
 ```sh
 cd controller
