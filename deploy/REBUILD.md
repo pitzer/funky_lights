@@ -48,7 +48,8 @@ Choose *Raspberry Pi OS Lite (64-bit) (Legacy)*, then open the advanced options
 | Hostname | `funkletpi` |
 | Username | `funklet` |
 | Enable SSH | yes — **public-key only**, paste your laptop's `~/.ssh/id_ed25519.pub` |
-| Configure WiFi | your phone hotspot or home network |
+| Configure WiFi | **an existing network with internet** — your home WiFi or phone hotspot. **Not `funkletpi`.** |
+| Wireless LAN country | your country (e.g. `US`) — required, see below |
 | Locale / keyboard | as appropriate |
 
 Two deliberate choices:
@@ -59,6 +60,11 @@ Two deliberate choices:
 - `main.py`'s `--pattern_mix_subscribe_uri` default still points at
   `ws://funkletpi.wlan:5680`, which is the *other* car. That is intentional and
   left alone; see the note at the end of this file.
+- **Imager configures the Pi as a WiFi _client_, not an access point.** It has no
+  option for AP mode; the `funkletpi` access point is created separately at step 7
+  with `nmcli`. So the SSID you type here is a network you already have — put
+  `funkletpi` in this box and the Pi will spend forever hunting for a network that
+  does not exist yet.
 - **Set bootstrap WiFi even though the Pi ends up as an access point**, and set
   the **wireless LAN country** while you are in there. Two separate reasons:
   - Steps 3-6 need internet — `apt full-upgrade`, `apt install`, `pip install`,
