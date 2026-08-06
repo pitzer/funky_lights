@@ -45,7 +45,7 @@ Choose *Raspberry Pi OS Lite (64-bit) (Legacy)*, then open the advanced options
 
 | Setting | Value |
 |---|---|
-| Hostname | `funkypi` |
+| Hostname | `funkletpi` |
 | Username | `funklet` |
 | Enable SSH | yes — **public-key only**, paste your laptop's `~/.ssh/id_ed25519.pub` |
 | Configure WiFi | your phone hotspot or home network |
@@ -53,11 +53,12 @@ Choose *Raspberry Pi OS Lite (64-bit) (Legacy)*, then open the advanced options
 
 Two deliberate choices:
 
-- **Keep the hostname `funkypi`.** The SSID becomes `funkletpi` later, but the
-  hostname is separate and `main.py`'s `--pattern_mix_subscribe_uri` default
-  (`ws://funkypi.wlan:5680`) depends on it. The *username* is `funklet`, which is
-  a third independent name — it sets `/home/funklet`, and the supervisor config
-  paths depend on it.
+- **Hostname and SSID are both `funkletpi`**, so the Pi is reachable as
+  `funkletpi.wlan` over its own AP. The *username* is different — `funklet` — and
+  sets `/home/funklet`, which the supervisor config paths depend on.
+- `main.py`'s `--pattern_mix_subscribe_uri` default still points at
+  `ws://funkletpi.wlan:5680`, which is the *other* car. That is intentional and
+  left alone; see the note at the end of this file.
 - **Set bootstrap WiFi even though the Pi ends up as an access point.** The old
   notes said not to, which is how the Pi became unreachable. Configure an
   ordinary network now, do the work over SSH, and switch it to an AP at step 7.
@@ -84,7 +85,7 @@ you need a USB-C adapter for this.
 ## 3. First boot and get in
 
 ```sh
-ssh funklet@funkypi.local          # or the address from your router
+ssh funklet@funkletpi.local          # or the address from your router
 sudo apt update && sudo apt full-upgrade -y
 sudo reboot
 ```
@@ -219,7 +220,7 @@ sudo nmcli connection up funklet-ap
 
 ### Restore the `.wlan` domain
 
-The old `dnsmasq` supplied a `wlan` search domain, which is where `funkypi.wlan`
+The old `dnsmasq` supplied a `wlan` search domain, which is where `funkletpi.wlan`
 comes from — including `main.py`'s default subscribe URI. NetworkManager's shared
 mode does not do this by default. To keep those names working:
 
@@ -228,14 +229,14 @@ sudo mkdir -p /etc/NetworkManager/dnsmasq-shared.d
 sudo tee /etc/NetworkManager/dnsmasq-shared.d/funklet.conf >/dev/null <<'EOF'
 domain=wlan
 local=/wlan/
-address=/funkypi.wlan/192.168.4.1
+address=/funkletpi.wlan/192.168.4.1
 EOF
 sudo nmcli connection down funklet-ap && sudo nmcli connection up funklet-ap
 ```
 
-**⚠ verify** from a laptop on the AP: `ping funkypi.wlan`. If it does not resolve,
+**⚠ verify** from a laptop on the AP: `ping funkletpi.wlan`. If it does not resolve,
 use `192.168.4.1` directly and drop the `.wlan` references, or install `avahi-daemon`
-and use `funkypi.local`.
+and use `funkletpi.local`.
 
 ### Turn off WiFi power save
 
@@ -324,12 +325,15 @@ ping -c 3 192.168.1.4 && ping -c 3 192.168.1.5
 
 From a laptop joined to `funkletpi`:
 
-- <http://funkypi.wlan:9001/> — supervisor dashboard
-- <http://funkypi.wlan:8000/visualization/index.html> — visualizer
-- <http://funkypi.wlan:8000/visualization/index.html?debug=index> — LED order check
+- <http://funkletpi.wlan:9001/> — supervisor dashboard
+- <http://funkletpi.wlan:8000/visualization/index.html> — visualizer
+- <http://funkletpi.wlan:8000/visualization/index.html?debug=index> — LED order check
 
 ## 11. Afterwards
 
+- **Decide what `--pattern_mix_subscribe_uri` should point at.** Its default is
+  `ws://funkypi.wlan:5680` — the *other* car, not this Pi. Left as-is on purpose;
+  see "Following the other car" in [FUNKLET.md](../FUNKLET.md).
 - **Rotate the old key.** The ed25519 key in the previous setup notes was stored
   in plaintext and should be deleted from the GitHub account entirely, not just
   replaced on the Pi.

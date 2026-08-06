@@ -37,7 +37,7 @@ SD card, see [deploy/REBUILD.md](deploy/REBUILD.md).
 | Bus config | 2 OPC buses, no serial | [config/bus_config.json](config/bus_config.json) |
 | `board_1` | `192.168.1.4:7890` — uids 12, 114, 17, 18, 16, 271 | [config/bus_config.json](config/bus_config.json) |
 | `board_2` | `192.168.1.5:7890` — uids 21, 214, 272, 28, 26, 220, 221, 25 | [config/bus_config.json](config/bus_config.json) |
-| Controller host | a Raspberry Pi, conventionally `funkypi` | default in [main.py](controller/main.py) is `ws://funkypi.wlan:5680` |
+| Controller host | a Raspberry Pi named `funkletpi` | reachable as `funkletpi.wlan` over the AP |
 
 **Both boards are wired to the Pi over Ethernet**, not WiFi — `192.168.1.0/24`
 lives on `eth0`. The Pi runs its own access point on `wlan0`, which is only how
@@ -83,7 +83,7 @@ recorded here — see [Credentials](#connecting-and-ssh) below.
 > both art cars and specify `ssid=funkypi`, which is the *other* car. Funklet
 > should be `funkletpi` so the two do not collide — if both broadcast the same
 > SSID at the same event, a laptop associates with whichever is stronger and
-> `funkypi.wlan` resolves to whichever one it landed on. That is a genuinely
+> `funkletpi.wlan` resolves to whichever one it landed on. That is a genuinely
 > confusing failure. Confirm and, if needed, rename it:
 >
 > ```sh
@@ -102,10 +102,10 @@ recorded here — see [Credentials](#connecting-and-ssh) below.
 >
 > Do this over serial, not SSH — restarting the AP drops the link you are on.
 >
-> The **hostname is a separate thing** and is deliberately unchanged: the Pi is
-> still `funkypi`, so `funkypi.wlan` keeps working and `main.py`'s
-> `--pattern_mix_subscribe_uri` default stays valid. Renaming the host as well
-> would mean updating that default and every URL in this document.
+> The host is also named `funkletpi`, so it is reachable as `funkletpi.wlan`.
+> Note that `main.py`'s `--pattern_mix_subscribe_uri` default still points at
+> `ws://funkletpi.wlan:5680` — that is deliberate, see
+> [Following the other car](#following-the-other-car).
 
 > The setup notes this came from are Bullseye-era (they reference `libjasper-dev`
 > and `libhdf5-103`, which do not exist in Bookworm) while the current card is
@@ -126,13 +126,12 @@ recorded here — see [Credentials](#connecting-and-ssh) below.
    default `pi` user since April 2022, so on a rebuilt card it is whatever Imager
    was told to create. Check with `whoami`.
 
-   Three independent names, easily confused: the **user** is `funklet`, the
-   **host** is `funkypi` (hence `funkypi.wlan`), and the **WiFi SSID** is
-   `funkletpi`.
+   The **user** is `funklet`; the **host** and the **WiFi SSID** are both
+   `funkletpi` (hence `funkletpi.wlan`).
 
    ```sh
-   ssh funklet@funkypi.wlan     # the name the controller itself uses
-   ssh funklet@funkypi.local    # if Avahi/mDNS is set up instead
+   ssh funklet@funkletpi.wlan     # the name the controller itself uses
+   ssh funklet@funkletpi.local    # if Avahi/mDNS is set up instead
    ssh funklet@192.168.4.1      # by address, over the Pi's own AP
    ```
 
@@ -156,7 +155,7 @@ recorded here — see [Credentials](#connecting-and-ssh) below.
 
    ```sh
    ssh-keygen -t ed25519                  # if you do not already have a key
-   ssh-copy-id <user>@funkypi.wlan        # asks for the password one last time
+   ssh-copy-id <user>@funkletpi.wlan        # asks for the password one last time
    ```
 
    Then consider disabling password authentication on the Pi entirely
@@ -209,7 +208,7 @@ On this installation that is `192.168.4.1`, so in practice:
 
 ```sh
 ssh funklet@192.168.4.1
-ssh funklet@funkypi.wlan  # equivalent, via the AP's own dnsmasq
+ssh funklet@funkletpi.wlan  # equivalent, via the AP's own dnsmasq
 ```
 
 > It will **not** be a `192.168.1.x` address. That subnet belongs to `eth0` and
@@ -257,6 +256,30 @@ sudo systemctl status hostapd dnsmasq
 
 > **Change AP settings over serial, never over SSH.** Restarting `hostapd` tears
 > down the network you would be working over. That is what the GPIO console is for.
+
+---
+
+### Following the other car
+
+`main.py` has a pair of flags for making one controller mirror another:
+
+| Flag | Effect |
+|---|---|
+| `--enable_pattern_mix_publisher` | publish this controller's pattern selection on `:5680` |
+| `--enable_pattern_mix_subscriber` | follow another controller's selection |
+| `--pattern_mix_subscribe_uri` | where to follow it from — defaults to `ws://funkypi.wlan:5680` |
+
+That default names **`funkypi`, the other art car** — not this Pi. So the intent
+appears to be that Funklet can follow Funkadelephant's pattern rotation and the
+two elephants stay in sync. It was left pointing there when this Pi was renamed
+to `funkletpi`, precisely because renaming it would have silently pointed Funklet
+at itself.
+
+**⚠ Unconfirmed.** Neither supervisor program passes
+`--enable_pattern_mix_subscriber`, so nothing uses this today and the default is
+inert. If the two cars should sync, this is the mechanism, and the publisher has
+to be enabled on the other car. If not, the default is just a leftover. Worth
+settling before someone turns it on and gets a surprise.
 
 ---
 
@@ -369,7 +392,7 @@ sudo supervisorctl restart funky_lights_controller_cached_mode
 sudo supervisorctl tail -f funky_lights_controller_cached_mode
 ```
 
-There is also a web dashboard at <http://funkypi.wlan:9001/>.
+There is also a web dashboard at <http://funkletpi.wlan:9001/>.
 
 > ### ⚠ Only one controller may run at a time
 >
@@ -460,7 +483,7 @@ for the on-screen Launchpad. Both auto-reconnect, so you can restart the
 controller without reloading the page.
 
 To watch the Pi's output from your laptop, run the HTTP server *on the Pi* and
-browse to `http://funkypi.wlan:8000/visualization/index.html` — the page derives
+browse to `http://funkletpi.wlan:8000/visualization/index.html` — the page derives
 the WebSocket host from the page URL, so ports 5678/5679 must be reachable too.
 
 Be aware this streams a 64 KB texture 20 times a second (~1.3 MB/s) over WiFi.
