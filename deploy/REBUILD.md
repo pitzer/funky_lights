@@ -144,30 +144,30 @@ sudo apt install -y cmake gfortran libatlas-base-dev libhdf5-dev \
 Note `libtiff-dev`, not `libtiff5-dev`; and no `libjasper-dev`, which was dropped
 from Debian years ago.
 
-## 5. Repository access with a deploy key
+## 5. Clone the repository
 
-Do **not** copy a personal SSH key onto the Pi. Generate a key here and register
-it as a **read-only deploy key**, scoped to this one repository — the Pi only
-ever pulls.
-
-```sh
-ssh-keygen -t ed25519 -C "funklet-pi" -f ~/.ssh/id_ed25519 -N ""
-cat ~/.ssh/id_ed25519.pub
-```
-
-Add that public key at **github.com/pitzer/funky_lights → Settings → Deploy keys
-→ Add deploy key**, leaving "Allow write access" unchecked.
-
-GitHub over port 443 avoids networks that block 22:
+`pitzer/funky_lights` is **public**, and the Pi only ever pulls, so no credential
+is needed. Clone over HTTPS:
 
 ```sh
-printf 'Host github.com\n  Hostname ssh.github.com\n  Port 443\n  User git\n' >> ~/.ssh/config
-chmod 600 ~/.ssh/config ~/.ssh/id_ed25519
-ssh -T git@github.com          # expect: "successfully authenticated"
-
-git clone git@github.com:pitzer/funky_lights.git
-cd funky_lights && git checkout funklet
+cd ~
+git clone -b funklet https://github.com/pitzer/funky_lights.git
+cd funky_lights && git log --oneline -1
 ```
+
+It is a ~520 MB clone because of the video history, so run it inside `tmux` if
+you are on a slow or metered link.
+
+> **Do not put an SSH key on this Pi.** It lives in an art car and sits on an
+> open-ish network at events. A deploy key or an account key would be standing
+> credentials on a device you cannot physically secure, in exchange for access
+> the repo already grants anonymously. If you ever need to push from the Pi, use
+> a fine-grained token scoped to this one repo, at that moment, and remove it
+> afterwards.
+
+> The ed25519 key in the old setup notes was a *personal account* key stored in
+> plaintext. It should be deleted from the GitHub account outright — replacing it
+> on the Pi is not enough, since the copies in that document remain valid.
 
 ## 6. Python environment
 
@@ -379,8 +379,8 @@ From a laptop joined to `funkletpi`:
   `ws://funkypi.wlan:5680` — the *other* car, not this Pi. Left as-is on purpose;
   see "Following the other car" in [FUNKLET.md](../FUNKLET.md).
 - **Rotate the old key.** The ed25519 key in the previous setup notes was stored
-  in plaintext and should be deleted from the GitHub account entirely, not just
-  replaced on the Pi.
+  in plaintext and should be deleted from the GitHub account entirely. Nothing on
+  this Pi needs it — the clone is anonymous HTTPS.
 - **Keep the account password and the AP passphrase out of this repo.** The
   remote is public. Keep them in a password manager.
 - **Consider switching SSH to keys** once things are running. It needs no
