@@ -284,30 +284,30 @@ sudo nmcli connection down funklet-ap && sudo nmcli connection up funklet-ap
 use `192.168.4.1` directly and drop the `.wlan` references, or install `avahi-daemon`
 and use `funkletpi.local`.
 
-> ### ⚠ KNOWN ISSUE: SSH is refused over the AP
+> ### ⚠ Pick an AP subnet that will not collide
 >
-> Observed on this build: with `funklet-ap` active, `ssh` to `192.168.4.1` returns
-> **Connection refused** while ICMP and dnsmasq (tcp/53) answer normally, and
-> `ss -tlnp` shows sshd listening on `0.0.0.0:22`. So the Pi is reachable and
-> sshd is up — port 22 specifically is being rejected.
+> `192.168.4.0/24` is a very common default on consumer and travel routers, and
+> `192.168.4.1` an equally common gateway. If the AP shares a subnet with a
+> network you also use, you will at some point run diagnostics against the wrong
+> device entirely — pinging fine, DNS answering, SSH refused — and conclude the Pi
+> is broken when you were never talking to it. That happened during this build and
+> cost a while.
 >
-> **This must be fixed before the Pi goes to an event.** In the field the AP is
-> the only network; if SSH does not work over it there is no way in. Ports 8000
-> (visualizer) and 9001 (supervisor dashboard) are very likely affected the same
-> way.
->
-> To diagnose:
+> Prefer something unlikely to clash:
 >
 > ```sh
-> sudo nft list ruleset          # NM's shared mode installs rules here
-> sudo ss -tlnp | grep -w 22
-> ssh -o BatchMode=yes funklet@127.0.0.1 true     # is it local or on the path?
+> sudo nmcli connection modify funklet-ap ipv4.addresses 192.168.42.1/24
+> sudo nmcli connection up funklet-ap
 > ```
 >
-> Most likely `ipv4.method shared` permits DHCP, DNS and forwarding while
-> rejecting other inbound traffic to the Pi itself. The fix is an accept rule for
-> tcp/22, 8000 and 9001 on `wlan0`, made persistent. Serial console remains the
-> fallback until this is resolved.
+> And before trusting any test against the AP, confirm what you are attached to:
+>
+> ```sh
+> # on the laptop
+> ipconfig getsummary en0 | grep ' SSID'      # must say funkletpi
+> arp -n <gateway> | awk '{print $4}'         # MAC should be a Pi OUI:
+> #   b8:27:eb  dc:a6:32  e4:5f:01  d8:3a:dd  2c:cf:67
+> ```
 
 ### Retire the bootstrap connection
 
