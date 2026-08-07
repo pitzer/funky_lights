@@ -284,6 +284,31 @@ sudo nmcli connection down funklet-ap && sudo nmcli connection up funklet-ap
 use `192.168.4.1` directly and drop the `.wlan` references, or install `avahi-daemon`
 and use `funkletpi.local`.
 
+> ### ⚠ KNOWN ISSUE: SSH is refused over the AP
+>
+> Observed on this build: with `funklet-ap` active, `ssh` to `192.168.4.1` returns
+> **Connection refused** while ICMP and dnsmasq (tcp/53) answer normally, and
+> `ss -tlnp` shows sshd listening on `0.0.0.0:22`. So the Pi is reachable and
+> sshd is up — port 22 specifically is being rejected.
+>
+> **This must be fixed before the Pi goes to an event.** In the field the AP is
+> the only network; if SSH does not work over it there is no way in. Ports 8000
+> (visualizer) and 9001 (supervisor dashboard) are very likely affected the same
+> way.
+>
+> To diagnose:
+>
+> ```sh
+> sudo nft list ruleset          # NM's shared mode installs rules here
+> sudo ss -tlnp | grep -w 22
+> ssh -o BatchMode=yes funklet@127.0.0.1 true     # is it local or on the path?
+> ```
+>
+> Most likely `ipv4.method shared` permits DHCP, DNS and forwarding while
+> rejecting other inbound traffic to the Pi itself. The fix is an accept rule for
+> tcp/22, 8000 and 9001 on `wlan0`, made persistent. Serial console remains the
+> fallback until this is resolved.
+
 ### Retire the bootstrap connection
 
 `wlan0` cannot be a client and an access point at the same time, so once the AP
