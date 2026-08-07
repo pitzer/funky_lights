@@ -329,13 +329,19 @@ sudo nmcli connection up preconfigured     # temporarily rejoin your own network
 
 ### Turn off WiFi power save
 
-Causes multi-second stalls on `wlan0`. It does not affect the LEDs — those are on
-`eth0` — but it makes SSH and the visualizer drop out.
+Minor, but worth doing. Two things it is *not*: it does not affect the LEDs, which
+are on `eth0` and never touch the radio; and it barely applies while `wlan0` is an
+access point, since an AP has to stay awake to beacon. Where it matters is the
+**bootstrap client connection** — power save there causes multi-second stalls that
+drop SSH sessions mid-command.
 
 ```sh
-sudo nmcli connection modify funklet-ap 802-11-wireless.powersave 2
+sudo nmcli connection modify preconfigured 802-11-wireless.powersave 2
+sudo nmcli connection modify funklet-ap    802-11-wireless.powersave 2
 iw dev wlan0 get power_save
 ```
+
+NetworkManager's encoding: `2` disables, `1` enables, `0` uses the driver default.
 
 ## 8. Supervisor
 
