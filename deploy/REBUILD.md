@@ -212,7 +212,7 @@ Two interfaces doing different jobs:
 
 | Interface | Role | Network |
 |---|---|---|
-| `eth0` | to the two Teensy boards | `192.168.1.0/24` |
+| `eth0` | to the two Teensy boards | `192.168.1.0/24`, Pi at `.1` |
 | `wlan0` | access point for laptops | `192.168.4.0/24`, Pi at `.1` |
 
 ### Ethernet to the boards
@@ -436,7 +436,7 @@ grep -i "No cache found" ~/funklet.log     # should be empty after step 9
 # network
 iw dev wlan0 info | grep type              # type AP
 ip -4 addr show wlan0                      # 192.168.4.1/24
-ip -4 addr show eth0                       # 192.168.1.0/24
+ip -4 addr show eth0                       # expect: inet 192.168.1.1/24
 ping -c 3 192.168.1.4 && ping -c 3 192.168.1.5
 ```
 

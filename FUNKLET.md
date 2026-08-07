@@ -45,7 +45,7 @@ lives on `eth0`. The Pi runs its own access point on `wlan0`, which is only how
 
 | Interface | Role | Network |
 |---|---|---|
-| `eth0` | to the two boards | `192.168.1.0/24` |
+| `eth0` | to the two boards | `192.168.1.0/24`, Pi at `.1` |
 | `wlan0` | access point, SSID `funkletpi` | `192.168.4.0/24`, Pi at `.1` |
 
 `iptables` MASQUERADE forwards `wlan0` → `eth0`, so a laptop on the AP also gets
@@ -66,7 +66,7 @@ The Pi has two networks and they do different jobs:
 
 | Interface | Network | Carries |
 |---|---|---|
-| `eth0` | `192.168.1.0/24` | LED data to both boards |
+| `eth0` | `192.168.1.0/24`, Pi at `.1` | LED data to both boards |
 | `wlan0` | whatever the Pi joins or broadcasts | how you reach the Pi |
 
 You do **not** need to be on `192.168.1.0/24` to work on the sculpture. That
@@ -244,7 +244,7 @@ Verify the whole picture from the Pi:
 ```sh
 iw dev wlan0 info | grep type          # expect: type AP
 ip -4 addr show wlan0                  # expect: 192.168.4.1/24
-ip -4 addr show eth0                   # must be on 192.168.1.0/24
+ip -4 addr show eth0                   # expect: inet 192.168.1.1/24
 ping -c 3 192.168.1.4                  # boards reachable over Ethernet
 ping -c 3 192.168.1.5
 sudo systemctl status hostapd dnsmasq
