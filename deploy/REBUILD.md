@@ -104,9 +104,17 @@ you need a USB-C adapter for this.
 
 ```sh
 ssh funklet@funkletpi.local          # or the address from your router
-sudo apt update && sudo apt full-upgrade -y
+sudo apt update                      # required before step 4
+sudo apt full-upgrade                # NOTE: no -y, see below
 sudo reboot
 ```
+
+> `apt update` is mandatory — step 4 installs stale or missing packages without
+> it. `full-upgrade` is optional hygiene, and deliberately has no `-y`: if you are
+> tethered to a phone hotspot it will pull several hundred MB of cellular data
+> without asking. Without `-y` it prints the download size and waits. It may also
+> pull a new kernel, so re-check the gadget console afterwards — that is the
+> rescue path.
 
 ## 4. Dependencies
 
