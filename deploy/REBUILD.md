@@ -399,6 +399,24 @@ Roughly 31,000 files and ~150 MB, and it takes a while. It is keyed on a hash of
 every pattern logs `No cache found for pattern ...` and silently falls back to
 live rendering. Rebuild it whenever the LED config changes.
 
+Then **restart the controller** — patterns are loaded once at startup, so a cache
+built while it is running has no effect until it reloads:
+
+```sh
+sudo supervisorctl restart funky_lights_controller_cached_mode
+```
+
+> **If it still reports `No cache found` with a matching hash, check `HOME`.**
+> supervisord runs as root and children inherit its environment, so `user=funklet`
+> drops privileges without changing `HOME=/root`. Python's `expanduser('~')`
+> prefers `$HOME`, so the controller would look in `/root/pattern_cache` and log to
+> `/root/funklet.log`. The supplied config sets `HOME` explicitly to avoid this;
+> verify with:
+>
+> ```sh
+> sudo tr '\0' '\n' < /proc/$(pgrep -f '[m]ain.py')/environ | grep -E '^HOME|^USER'
+> ```
+
 ## 10. Verify
 
 ```sh
