@@ -152,8 +152,28 @@ is needed. Clone over HTTPS:
 ```sh
 cd ~
 git clone -b funklet https://github.com/pitzer/funky_lights.git
-cd funky_lights && git log --oneline -1
+cd funky_lights
+git branch --show-current      # MUST print: funklet
+git log --oneline -1
 ```
+
+> **`-b funklet` is not optional.** The repository's default branch is `main`,
+> which is the full-size car:
+>
+> | | `main` | `funklet` |
+> |---|---|---|
+> | `config/led_config.json` | 5549 LEDs, 52 segments | 1443 LEDs, 14 segments |
+> | `config/bus_config.json` | `{"led_busses": []}` | 2 OPC buses, `192.168.1.4/.5` |
+>
+> A bare `git clone` therefore gives you the wrong LED map *and* an empty bus
+> list — the controller starts, renders 52 segments happily, logs a healthy
+> 20 FPS, and sends the frames precisely nowhere. It fails silently rather than
+> loudly, which is the worst kind. If `git branch --show-current` prints anything
+> but `funklet`:
+>
+> ```sh
+> git checkout funklet
+> ```
 
 It is a ~520 MB clone because of the video history, so run it inside `tmux` if
 you are on a slow or metered link.
@@ -351,6 +371,10 @@ live rendering. Rebuild it whenever the LED config changes.
 ## 10. Verify
 
 ```sh
+# code
+git -C ~/funky_lights branch --show-current   # funklet, not main
+git -C ~/funky_lights log --oneline -1
+
 # processes
 sudo supervisorctl status                  # webserver + cached_mode running
 ps aux | grep '[m]ain.py'                  # exactly one
