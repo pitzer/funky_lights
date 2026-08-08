@@ -467,9 +467,23 @@ From a laptop joined to `funkletpi`:
   ```
 - **Take an image of the finished card** so the next rebuild is a restore:
   ```sh
-  # on a laptop, with the card inserted; check the disk number first
+  cd ~/Desktop                       # NOT inside the repo
+  sudo -v                            # cache credentials; sudo prompting inside
+                                     # the pipeline silently yields an empty file
+  diskutil list                      # CONFIRM the disk number -- dd to the wrong
+                                     # device is unrecoverable
+  diskutil info disk4 | grep 'Disk Size'
+
   sudo dd if=/dev/rdisk4 bs=4m | gzip > funklet-$(date +%Y%m%d).img.gz
+  #   ctrl-T during the run prints progress (BSD dd reports on SIGINFO)
   ```
+  Then **verify by byte count** — this is the only check that means anything:
+  ```sh
+  gzip -dc funklet-*.img.gz | wc -c   # must equal the Disk Size above
+  ```
+  > `gzip -t` is not a completeness check. A zero-byte capture produces a
+  > perfectly valid 20-byte gzip stream that passes `-t` cleanly. Only the
+  > decompressed length tells you whether the image is whole.
 - Consider a card with better endurance. The previous one failed after a period
   of suspected brownouts, and power loss during writes is a common way SD cards
   die.
