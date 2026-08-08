@@ -102,8 +102,60 @@ you need a USB-C adapter for this.
 
 ## 3. First boot and get in
 
+Power the Pi and give it **2-3 minutes**. First boot runs `firstrun.sh` to apply
+the hostname, user, SSH and WiFi, then reboots itself — so expect two boots. Do
+not read the first reboot as a fault.
+
+### 3a. Confirm both machines are on the same network
+
+Do this before trying to SSH. Most "the Pi is unreachable" time is spent here, and
+the failure modes look like faults on the Pi when they are not.
+
+**Are you on the network the card was flashed with?** It must match the SSID you
+set in step 1 — not merely *a* working network:
+
 ```sh
-ssh funklet@funkletpi.local          # or the address from your router
+# macOS (use en1 etc. if your WiFi is not en0)
+ipconfig getsummary en0 | grep ' SSID'
+```
+
+If it does not match, join that network, or the Pi is sitting somewhere you
+cannot see it. Note the Pi is a *client* at this stage — `funkletpi` the access
+point does not exist until step 7.
+
+**Then find the Pi:**
+
+```sh
+ping -c3 funkletpi.local
+```
+
+If mDNS does not resolve — common on guest and hotspot networks — locate it by
+MAC instead. Sweep your subnet, then filter for Raspberry Pi OUIs:
+
+```sh
+ipconfig getifaddr en0                      # learn your subnet, e.g. 192.168.1.x
+for i in $(seq 1 254); do (ping -c1 -W 500 192.168.1.$i >/dev/null 2>&1 &); done
+sleep 3
+arp -an | grep -iE "b8:27:eb|dc:a6:32|e4:5f:01|d8:3a:dd|2c:cf:67"
+```
+
+> **Check the MAC, not just the address.** Private ranges collide constantly —
+> `192.168.1.x` and `192.168.4.x` are defaults on countless routers. If you test
+> against an address that belongs to someone else's gateway you will get replies
+> to ping, an open port 53, and a refused port 22, which reads convincingly as a
+> broken Pi. Those OUIs above are Raspberry Pi's; anything else is not your board.
+
+**If nothing appears**, the Pi did not join. Use the serial console from step 2,
+or HDMI plus a USB keyboard — Lite still gives a text login on HDMI0 (the
+micro-HDMI nearest the USB-C socket), with the monitor connected before power-on.
+
+### 3b. Connect and update
+
+```sh
+ssh funklet@funkletpi.local          # or the address you found above
+cat /etc/os-release                  # confirm: bookworm
+uname -m                             # confirm: aarch64
+
 sudo apt update                      # required before step 4
 sudo apt full-upgrade                # NOTE: no -y, see below
 sudo reboot
