@@ -123,14 +123,20 @@ If it does not match, join that network, or the Pi is sitting somewhere you
 cannot see it. Note the Pi is a *client* at this stage — `funkletpi` the access
 point does not exist until step 7.
 
-**Then find the Pi:**
+**Then find the Pi.** Try mDNS, but do not count on it:
 
 ```sh
 ping -c3 funkletpi.local
 ```
 
-If mDNS does not resolve — common on guest and hotspot networks — locate it by
-MAC instead. Sweep your subnet, then filter for Raspberry Pi OUIs:
+> **`.local` frequently does not resolve**, and it has not on this build. Guest
+> networks and phone hotspots commonly block multicast, and `avahi-daemon` may not
+> be running. Treat the **IP address as the reliable route** and mDNS as a
+> convenience. Once you are on the Pi you can check the daemon side with
+> `systemctl status avahi-daemon`, and `sudo apt install -y avahi-daemon` if it is
+> absent — but a network that drops multicast will block it regardless.
+
+Locate it by MAC instead. Sweep your subnet, then filter for Raspberry Pi OUIs:
 
 ```sh
 ipconfig getifaddr en0                      # learn your subnet, e.g. 192.168.1.x
@@ -195,7 +201,7 @@ you get in.
 ### 3c. Connect and update
 
 ```sh
-ssh funklet@funkletpi.local          # or the address you found above
+ssh funklet@<the address you found>  # funkletpi.local only if mDNS resolves
 cat /etc/os-release                  # confirm: bookworm
 uname -m                             # confirm: aarch64
 

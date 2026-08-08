@@ -130,10 +130,14 @@ recorded here — see [Credentials](#connecting-and-ssh) below.
    `funkletpi` (hence `funkletpi.wlan`).
 
    ```sh
-   ssh funklet@funkletpi.wlan     # the name the controller itself uses
-   ssh funklet@funkletpi.local    # if Avahi/mDNS is set up instead
-   ssh funklet@192.168.4.1      # by address, over the Pi's own AP
+   ssh funklet@192.168.4.1        # by address — the reliable one
+   ssh funklet@funkletpi.wlan     # if the dnsmasq domain is configured
+   ssh funklet@funkletpi.local    # if mDNS resolves; often it does not
    ```
+
+   Name resolution is the flaky part here, not SSH. `.local` needs
+   `avahi-daemon` running *and* a network that passes multicast; `.wlan` needs the
+   `dnsmasq-shared.d` config. When either is missing the address still works.
 
    Find the Pi's address from another machine on the network with:
 
