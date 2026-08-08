@@ -16,3 +16,6 @@ attiny/build/userlibs
 controller/pattern_cache
 .venv
 venv
+*.img
+*.img.gz
+*.img.xz
