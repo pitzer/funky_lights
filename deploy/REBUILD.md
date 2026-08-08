@@ -349,7 +349,7 @@ sudo nmcli connection modify funklet-ap \
      connection.autoconnect-priority 100
 
 sudo nmcli connection modify funklet-ap \
-     wifi-sec.key-mgmt wpa-psk wifi-sec.psk '<choose a passphrase>'
+     wifi-sec.key-mgmt wpa-psk wifi-sec.psk 'funkadelephant95'
 
 sudo nmcli connection up funklet-ap
 ```
@@ -376,14 +376,37 @@ sudo mkdir -p /etc/NetworkManager/dnsmasq-shared.d
 sudo tee /etc/NetworkManager/dnsmasq-shared.d/funklet.conf >/dev/null <<'EOF'
 domain=wlan
 local=/wlan/
-address=/funkletpi.wlan/192.168.4.1
+address=/funkletpi.wlan/192.168.42.1
 EOF
-sudo nmcli connection down funklet-ap && sudo nmcli connection up funklet-ap
 ```
 
-**⚠ verify** from a laptop on the AP: `ping funkletpi.wlan`. If it does not resolve,
-use `192.168.4.1` directly and drop the `.wlan` references, or install `avahi-daemon`
-and use `funkletpi.local`.
+> **The address must match the AP's own address.** If you changed
+> `ipv4.addresses` on `funklet-ap`, change it here too — they are set in two
+> separate places and nothing checks that they agree. A stale entry is worse than
+> no entry: `funkletpi.wlan` would resolve, confidently, to whatever else happens
+> to own that address.
+
+Then reload it. **Do this detached** — cycling the connection drops the SSH
+session you are on, and a bare `down && up` can die between the two commands and
+leave the AP down entirely:
+
+```sh
+sudo nohup sh -c 'nmcli connection down funklet-ap; sleep 2; nmcli connection up funklet-ap' >/dev/null 2>&1 &
+```
+
+Wait ~15s, rejoin `funkletpi`, and reconnect. From the console (serial or HDMI) a
+plain `down && up` is fine.
+
+**⚠ verify** from a laptop on the AP:
+
+```sh
+ping -c2 funkletpi.wlan
+dig +short @192.168.42.1 funkletpi.wlan      # expect 192.168.42.1
+ipconfig getoption en0 domain_name_server    # must be the Pi, not 1.1.1.1
+```
+
+That last one is the common failure: if your laptop's DNS is not the Pi, no
+dnsmasq config will help — the query never reaches it.
 
 > ### ⚠ Pick an AP subnet that will not collide
 >
