@@ -145,11 +145,54 @@ arp -an | grep -iE "b8:27:eb|dc:a6:32|e4:5f:01|d8:3a:dd|2c:cf:67"
 > to ping, an open port 53, and a refused port 22, which reads convincingly as a
 > broken Pi. Those OUIs above are Raspberry Pi's; anything else is not your board.
 
-**If nothing appears**, the Pi did not join. Use the serial console from step 2,
-or HDMI plus a USB keyboard — Lite still gives a text login on HDMI0 (the
+**If nothing appears**, the Pi did not join. Get to a console — serial from
+step 2, or HDMI plus a USB keyboard. Lite still gives a text login on HDMI0 (the
 micro-HDMI nearest the USB-C socket), with the monitor connected before power-on.
 
-### 3b. Connect and update
+### 3b. Joining a network from the Pi's console
+
+Also how you move the Pi to a different network later, when the one it was
+flashed with is not the one you are near.
+
+```sh
+sudo nmcli device wifi list                     # what is in range
+sudo nmcli --ask device wifi connect "Jake's Jukebox (2)"
+```
+
+`--ask` prompts for the password rather than leaving it in shell history. One
+line, if you prefer:
+
+```sh
+sudo nmcli device wifi connect "SSID" password "PASSWORD"
+```
+
+**Keep the double quotes.** An SSID with spaces, apostrophes or parentheses will
+otherwise break in ways that look exactly like a wrong password.
+
+Variants:
+
+```sh
+sudo nmcli device wifi rescan                                    # not listed yet
+sudo nmcli device wifi connect "SSID" password "PW" hidden yes   # hidden SSID
+```
+
+Confirm:
+
+```sh
+nmcli device status                  # wlan0 -> connected
+hostname -I                          # the address to SSH to
+ping -c3 deb.debian.org              # real internet, not just an association
+```
+
+Note `hostname -I` — if `funkletpi.local` will not resolve, that address is how
+you get in.
+
+> Once the access point exists (step 7) `wlan0` cannot be a client and an AP at
+> the same time. To borrow the radio back for internet:
+> `sudo nmcli connection up preconfigured`, and `sudo nmcli connection up funklet-ap`
+> to return. Doing either over SSH drops the session — use the console.
+
+### 3c. Connect and update
 
 ```sh
 ssh funklet@funkletpi.local          # or the address you found above
