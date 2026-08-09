@@ -11,9 +11,7 @@ the `.ino` for what is derived and what is assumed.
 
 ## Build
 
-Either toolchain works from this same directory.
-
-**PlatformIO**
+Standard PlatformIO layout — source in `src/`, one env per board.
 
 ```sh
 pio run -e board2 -t upload      # the 192.168.1.5 board
@@ -21,9 +19,15 @@ pio run -e board1 -t upload      # the 192.168.1.4 board
 pio device monitor               # 115200
 ```
 
-**Arduino IDE** — Teensyduino, board *Teensy 4.1*. Install **OctoWS2811** and
-**QNEthernet** from Library Manager. Note the IDE does not set `BOARD`, so the
-default at the top of the `.ino` applies; edit it to build for board 1.
+The env sets `-D BOARD=1` or `2`, which selects the static IP, channel count
+and per-strip lengths. Nothing else differs between the two boards, and you do
+not edit source to switch targets.
+
+> If you copy this into an existing PlatformIO project, make sure you do not
+> end up with **two** files defining `setup()`/`loop()` — a leftover
+> `src/main.cpp` stub alongside this one gives
+> `multiple definition of 'setup'` at link time. Check with:
+> `grep -rn "void setup" --include=*.cpp --include=*.ino .`
 
 ## Wiring
 

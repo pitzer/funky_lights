@@ -16,10 +16,7 @@
 // parse the stream continuously and latch to the LEDs once the socket drains,
 // which batches a frame into one show().
 //
-// Build, either toolchain:
-//   PlatformIO    pio run -e board2 -t upload      (see platformio.ini)
-//   Arduino IDE   Teensyduino, board "Teensy 4.1", libraries OctoWS2811 and
-//                 QNEthernet from Library Manager
+// Build: PlatformIO. `pio run -e board2 -t upload` -- see platformio.ini.
 
 #include <Arduino.h>
 #include <OctoWS2811.h>
@@ -35,9 +32,8 @@ using namespace qindesign::network;
 // The controller maps OPC channel = (index of uid in bus_config.json) + 1,
 // which matches the "Board position" column of the wiring table.
 //
-// PlatformIO selects this with -D BOARD=1 / -D BOARD=2 (see platformio.ini, and
-// pick the env with -e board1 / -e board2). Under the Arduino IDE nothing sets
-// it, so the default below applies -- edit it there.
+// Set by the build env: `pio run -e board1` or `-e board2` passes -D BOARD.
+// The default below applies only if something builds this without that flag.
 
 #ifndef BOARD
   #define BOARD 2
