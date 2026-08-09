@@ -349,10 +349,38 @@ sudo nmcli connection modify funklet-ap \
      connection.autoconnect-priority 100
 
 sudo nmcli connection modify funklet-ap \
-     wifi-sec.key-mgmt wpa-psk wifi-sec.psk 'funkadelephant95'
+     wifi-sec.key-mgmt wpa-psk \
+     wifi-sec.psk '<choose a passphrase — do not commit it>' \
+     802-11-wireless-security.pmf 1
 
 sudo nmcli connection up funklet-ap
 ```
+
+> ### `pmf 1` is not optional — clients cannot join without it
+>
+> Left at the default, NetworkManager delegates PMF to `wpa_supplicant`, whose
+> AP-mode default enables Protected Management Frames. Clients then **associate
+> and immediately fail the 4-way handshake** — surfacing as a plain "connection
+> failed" on macOS and "unable to join" on Android, with the correct passphrase,
+> identically across devices.
+>
+> This cost hours here, because everything else looked healthy: SSID visible at
+> −49 dBm, `nmcli` reporting `activated`, dnsmasq running and bound to
+> `192.168.42.1:53`. Nothing pointed at PMF.
+>
+> The tool that finds it is `iw event` — **not** the NetworkManager journal,
+> which does not carry the 802.11 layer:
+>
+> ```sh
+> sudo iw event -t          # then try to join from a phone
+> ```
+>
+> | Output | Meaning |
+> |---|---|
+> | `new station` → `mgmt TX status` → `del station` | 4-way handshake failing — PMF, or wrong passphrase |
+> | nothing at all | frames never reach the AP — radio, channel or regulatory |
+>
+> NM's encoding: `0` default, `1` disable, `2` optional, `3` required.
 
 > **The SSID is `funkletpi`, not `funkypi`.** The other art car uses `funkypi`.
 > If both broadcast the same SSID at an event, a laptop associates with whichever
