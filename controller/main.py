@@ -301,9 +301,10 @@ async def main():
             opc = bus["opc"]
             futures.append(connect_to_opc(
                 generator=pattern_generator,
-                uids=bus['uids'], 
-                server_ip=opc['server_ip'], 
-                server_port=opc['server_port']))
+                uids=bus['uids'],
+                server_ip=opc['server_ip'],
+                server_port=opc['server_port'],
+                swap_red_green=bus.get('swap_red_green', False)))
     
     # Wait forever
     try:

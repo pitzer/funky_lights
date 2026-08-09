@@ -75,7 +75,8 @@ async def _sleep_with_jitter(delay):
     await asyncio.sleep(delay + random.uniform(0, 0.1 * delay))
 
 
-async def connect_to_opc(generator, uids, server_ip, server_port):
+async def connect_to_opc(generator, uids, server_ip, server_port,
+                         swap_red_green=False):
     loop = asyncio.get_event_loop()
     reconnect_delay = INITIAL_RECONNECT_DELAY
     while True:
@@ -87,7 +88,8 @@ async def connect_to_opc(generator, uids, server_ip, server_port):
             OpenPixelControlProtocol,
             generator=generator,
             uids=uids,
-            on_con_lost=on_con_lost)
+            on_con_lost=on_con_lost,
+            swap_red_green=swap_red_green)
         try:
             transport, protocol = await asyncio.wait_for(
                 loop.create_connection(opc_factory, server_ip, server_port),
@@ -124,8 +126,9 @@ async def connect_to_opc(generator, uids, server_ip, server_port):
 
 
 class OpenPixelControlProtocol(asyncio.Protocol):
-    def __init__(self, generator, uids, on_con_lost):
+    def __init__(self, generator, uids, on_con_lost, swap_red_green=False):
         super().__init__()
+        self.swap_red_green = swap_red_green
         self.transport = None
         self.opc = None
         self.generator = generator
@@ -271,7 +274,14 @@ class OpenPixelControlProtocol(asyncio.Protocol):
             for segment in segments:
                 if segment.uid in self.uids:
                     channel = self.uids.index(segment.uid) + 1
-                    messages.append(self.build_message(segment.colors, channel))
+                    colors = segment.colors
+                    if self.swap_red_green:
+                        # Board-local correction for firmware built with the
+                        # wrong colour order. Fancy indexing returns a copy, so
+                        # the segment itself is untouched -- other buses and the
+                        # visualiser must still see the original.
+                        colors = colors[:, [1, 0, 2]]
+                    messages.append(self.build_message(colors, channel))
 
             if messages:
                 self.transport.write(b''.join(messages))

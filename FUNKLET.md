@@ -287,6 +287,39 @@ settling before someone turns it on and gets a surprise.
 
 ---
 
+### Per-board colour correction
+
+`config/bus_config.json` accepts an optional `swap_red_green` on each bus:
+
+```json
+{
+    "name": "board_2",
+    "uids": [ ... ],
+    "opc": { "server_ip": "192.168.1.5", "server_port": 7890 },
+    "swap_red_green": true
+}
+```
+
+It exchanges R and G for every segment on that bus on the way out, leaving the
+segment itself untouched — so the other bus and the visualiser still see the
+original colours.
+
+It exists because the two boards can run firmware built with different colour
+orders, and reflashing in the field is slower than editing a config. **It is a
+correction for a specific firmware build, not a property of the sculpture.**
+
+> ### ⚠ This and the firmware must not both correct
+>
+> `teensy_opc_server` is now built with `WS2811_RGB`. A board running that
+> firmware needs **`swap_red_green` off**. A board still running a `WS2811_GRB`
+> build needs it **on**. Set both and they cancel out, putting you back where
+> you started — with two places to look instead of one.
+>
+> Current state: `board_2` has it **on**, for firmware flashed before the colour
+> order was corrected. **Turn it off when that board is reflashed.**
+
+---
+
 ## Updating the code on the Pi
 
 The checkout lives at `~/funky_lights`. Two routes, depending on whether the Pi
