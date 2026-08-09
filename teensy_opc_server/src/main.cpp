@@ -250,11 +250,16 @@ void loop() {
   }
 
   if (client && client.connected()) {
-    int available = client.available();
-    while (available-- > 0) {
-      const int b = client.read();
-      if (b < 0) break;
-      consume((uint8_t)b);
+    // Read in bulk. One byte at a time crosses into the network stack once per
+    // byte -- ~2.5k calls per frame, 49k/sec -- and the board could not keep up:
+    // the controller's write buffer backed up to its high water mark about once
+    // a second and dropped frames. A single call per MSS-sized chunk instead.
+    uint8_t buf[1460];
+    for (int guard = 0; guard < 8; guard++) {
+      const int n = client.read(buf, sizeof(buf));
+      if (n <= 0) break;
+      for (int i = 0; i < n; i++) consume(buf[i]);
+      if (n < (int)sizeof(buf)) break;   // drained
     }
 
     // Latch once the socket has drained. The controller writes a whole frame
