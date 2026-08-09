@@ -1,4 +1,5 @@
 from patterns.pattern import PatternUV
+from core.async_utils import run_in_executor
 import cv2
 import numpy as np
 
@@ -44,14 +45,24 @@ class VideoPattern(PatternUV):
 
         self.generateUVCoordinates(width, height, offset_u, offset_v)
 
-    async def animate(self, delta):
+    @run_in_executor
+    def _decode_frame(self, delta):
+        """Decode one frame. Runs on a worker thread, not the event loop.
+
+        Every OpenCV call in here blocks -- seeking in particular, which has to
+        decode forward from a keyframe. Left on the event loop it stalls frame
+        generation and every OPC write with it. cv2 releases the GIL, so this is
+        real parallelism rather than just deferral.
+
+        Returns an RGB frame, or None if there is nothing new to show.
+        """
         # Slow down or speed up frame processing if fps is set
         if self.params.fps:
             delta = delta + self.prev_delta
             frame_delta = int(self.params.fps * delta)
             self.prev_delta = delta - frame_delta / (self.params.fps)
             if frame_delta <= 0:
-                return
+                return None
             self.current_frame = self.current_frame + frame_delta
             self.video.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame)
         else:
@@ -59,13 +70,24 @@ class VideoPattern(PatternUV):
 
         ret, frame = self.video.read()
         if ret == False:
+            # End of file: rewind and skip a frame rather than showing stale
+            # pixels. The next tick starts from the beginning.
             self.video.set(cv2.CAP_PROP_POS_FRAMES, 0)
             self.current_frame = 0
+            return None
+
+        return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+    async def animate(self, delta):
+        frame = await self._decode_frame(delta)
+        if frame is None:
             return
 
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        # Gather every LED's pixel in one vectorised lookup. This was a Python
+        # loop with an np.copyto per LED -- 1443 iterations per frame on
+        # Funklet, which cost more than the decode did.
         for segment in self.getSegments():
-            i = 0
-            for color in segment.colors:
-                np.copyto(color, frame[segment.uv[i][0], segment.uv[i][1]])
-                i = i + 1
+            uv = segment.uv
+            # colors[:] rather than colors = ... so the array identity survives;
+            # PatternMix and the OPC writers hold references to it.
+            segment.colors[:] = frame[uv[:, 0], uv[:, 1]]
