@@ -16,9 +16,12 @@
 // parse the stream continuously and latch to the LEDs once the socket drains,
 // which batches a frame into one show().
 //
-// Build: Arduino IDE + Teensyduino, board "Teensy 4.1".
-// Libraries: OctoWS2811, and QNEthernet (Library Manager: "QNEthernet").
+// Build, either toolchain:
+//   PlatformIO    pio run -e board2 -t upload      (see platformio.ini)
+//   Arduino IDE   Teensyduino, board "Teensy 4.1", libraries OctoWS2811 and
+//                 QNEthernet from Library Manager
 
+#include <Arduino.h>
 #include <OctoWS2811.h>
 #include <QNEthernet.h>
 
@@ -31,8 +34,14 @@ using namespace qindesign::network;
 //
 // The controller maps OPC channel = (index of uid in bus_config.json) + 1,
 // which matches the "Board position" column of the wiring table.
+//
+// PlatformIO selects this with -D BOARD=1 / -D BOARD=2 (see platformio.ini, and
+// pick the env with -e board1 / -e board2). Under the Arduino IDE nothing sets
+// it, so the default below applies -- edit it there.
 
-#define BOARD 2
+#ifndef BOARD
+  #define BOARD 2
+#endif
 
 #if BOARD == 1
   static const uint8_t  kLastOctet   = 4;      // 192.168.1.4
