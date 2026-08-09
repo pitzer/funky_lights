@@ -104,7 +104,7 @@ recorded here — see [Credentials](#connecting-and-ssh) below.
 >
 > The host is also named `funkletpi`, so it is reachable as `funkletpi.wlan`.
 > Note that `main.py`'s `--pattern_mix_subscribe_uri` default still points at
-> `ws://funkletpi.wlan:5680` — that is deliberate, see
+> `ws://funkypi.wlan:5680` — that is deliberate, see
 > [Following the other car](#following-the-other-car).
 
 > The setup notes this came from are Bullseye-era (they reference `libjasper-dev`

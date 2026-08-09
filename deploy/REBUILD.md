@@ -59,7 +59,7 @@ Two deliberate choices:
   `funkletpi.wlan` over its own AP. The *username* is different — `funklet` — and
   sets `/home/funklet`, which the supervisor config paths depend on.
 - `main.py`'s `--pattern_mix_subscribe_uri` default still points at
-  `ws://funkletpi.wlan:5680`, which is the *other* car. That is intentional and
+  `ws://funkypi.wlan:5680`, which is the *other* car. That is intentional and
   left alone; see the note at the end of this file.
 - **Imager configures the Pi as a WiFi _client_, not an access point.** It has no
   option for AP mode; the `funkletpi` access point is created separately at step 7
