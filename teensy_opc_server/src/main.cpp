@@ -108,6 +108,14 @@ static const uint32_t kIdleFrameMs   = 25;     // ~40 Hz, plenty for a ramp
 static uint32_t lastDataMs  = 0;
 static uint32_t lastIdleMs  = 0;
 
+// Periodic status. USB serial output produced before a host attaches is lost,
+// so a one-shot startup banner is invisible unless you happen to be watching
+// at the right moment. This makes `pio device monitor` useful whenever you
+// connect.
+static const uint32_t kStatusIntervalMs = 5000;
+static uint32_t lastStatusMs   = 0;
+static uint32_t framesReceived = 0;
+
 // -------------------------------------------------------------- LED helpers --
 
 static void clearAll() {
@@ -200,6 +208,7 @@ static void consume(uint8_t b) {
         if (msgChannel == 0) applyBroadcast(payload, usable);
         else                 applyChannel(msgChannel, payload, usable);
         lastDataMs = millis();
+        framesReceived++;
         resetParser();
       }
       break;
@@ -280,6 +289,18 @@ void loop() {
   // away -- in every case a dark sculpture is less useful than a visible sign
   // that the boards are alive.
   const uint32_t now = millis();
+
+  if (now - lastStatusMs >= kStatusIntervalMs) {
+    lastStatusMs = now;
+    Serial.printf("board %d  ip ", BOARD);
+    Serial.print(Ethernet.localIP());
+    Serial.printf("  link %s  client %s  msgs %lu  idle %s\r\n",
+                  Ethernet.linkState() ? "up" : "DOWN",
+                  (client && client.connected()) ? "yes" : "no",
+                  (unsigned long)framesReceived,
+                  (now - lastDataMs > kIdleTimeoutMs) ? "yes" : "no");
+  }
+
   if (now - lastDataMs > kIdleTimeoutMs) {
     if (now - lastIdleMs >= kIdleFrameMs && !leds.busy()) {
       lastIdleMs = now;
