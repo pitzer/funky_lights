@@ -30,8 +30,7 @@
             "opc": {
                 "server_ip": "192.168.1.5",
                 "server_port": 7890
-            },
-            "swap_red_green": true
+            }
         }
     ]
 }

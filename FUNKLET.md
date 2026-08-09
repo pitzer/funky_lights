@@ -315,8 +315,10 @@ correction for a specific firmware build, not a property of the sculpture.**
 > build needs it **on**. Set both and they cancel out, putting you back where
 > you started — with two places to look instead of one.
 >
-> Current state: `board_2` has it **on**, for firmware flashed before the colour
-> order was corrected. **Turn it off when that board is reflashed.**
+> Current state: **off on both buses**. Both boards carry their own correction
+> in firmware — `WS2811_RGB`, which is what these strips actually expect. The
+> flag remains available for the case where a board is running a build you
+> cannot immediately reflash.
 
 ---
 

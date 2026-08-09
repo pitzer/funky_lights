@@ -76,8 +76,10 @@ chasing it once patterns are running.
 
 - **Colour order** is `WS2811_RGB`, confirmed on the hardware. These strips do
   not use the GRB order that is more common for WS2812.
-  > A board flashed **before** that correction needs `"swap_red_green": true` on
-  > its bus in `config/bus_config.json`. **Remove it when you reflash**, or the
-  > two corrections cancel and the colours are wrong again.
+  > Note `WS2811_GRB` declares *what the strip expects*, not what is sent — so
+  > declaring GRB against an RGB strip is what swaps red and green. If a board is
+  > running an older build and cannot be reflashed yet, `"swap_red_green": true`
+  > on its bus in `config/bus_config.json` corrects it from the controller
+  > instead. Only ever use one of the two.
 - **Cut the VUSB pad** before a board that has been programmed over USB goes
   into a system with external 5 V.
