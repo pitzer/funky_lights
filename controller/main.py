@@ -12,6 +12,7 @@ import functools
 
 from funky_lights import connection, messages
 from core.pattern_selector import PatternSelector
+from core.diagnostics import LoopStallDetector
 from core.opc import connect_to_opc
 from core.websockets import TextureWebSocketsServer, PatternMixWebSocketsServer
 from patterns import pattern_config
@@ -227,6 +228,9 @@ async def main():
                         help="The WebSockets URI for the pattern mix subscriber")
     parser.add_argument("--log_file", default='~/funklet.log',
                         help="Rotating log file. Pass an empty string to disable.")
+    parser.add_argument("--stall_threshold", type=float, default=1.0,
+                        help="Log a stack dump if the event loop blocks for "
+                             "longer than this, in seconds. 0 disables.")
 
     args = parser.parse_args()
 
@@ -237,6 +241,14 @@ async def main():
     dmx_config = json.load(args.dmx_config)
 
     futures = []
+
+    # Watchdog. Cheap -- a 0.1s heartbeat and a sleeping thread -- and it is
+    # the only thing that can report a blocked event loop, since anything on
+    # the loop is blocked too.
+    if args.stall_threshold > 0:
+        detector = LoopStallDetector(threshold=args.stall_threshold)
+        detector.start()
+        futures.append(detector.heartbeat())
 
     # Pattern selector
     pattern_selector = PatternSelector(pattern_config.DEFAULT_CONFIG, led_config, dmx_config, args)
