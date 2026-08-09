@@ -62,11 +62,19 @@ You want the connection to establish and stay up — no reconnect loop, no
 `stalled for over 2.0s` messages. That exercises the network and protocol with
 no LED risk. Only then connect strips.
 
+## Idle pattern
+
+With no controller data for 5 seconds — at power-on, or if the Pi goes away —
+every segment ramps black to full red over a 5 second cycle. Real frames take
+over the instant they arrive.
+
+It doubles as a wiring check: during the ramp **every** segment should light. One
+that stays dark is not receiving data, and that is far easier to spot than
+chasing it once patterns are running.
+
 ## Known unknowns
 
-- **Colour order** is assumed `WS2811_GRB`. If red and green are swapped
-  everywhere, change `kLedConfig`. If only the tusks are wrong, that is a
-  per-strip difference — the controller used to carry a green/blue swap for that
-  segment, which has since been removed.
+- **Colour order** is `WS2811_RGB`, confirmed on the hardware. These strips do
+  not use the GRB order that is more common for WS2812.
 - **Cut the VUSB pad** before a board that has been programmed over USB goes
   into a system with external 5 V.

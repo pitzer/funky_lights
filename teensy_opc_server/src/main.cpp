@@ -66,14 +66,10 @@ static const uint16_t kOpcPort = 7890;
 static const uint16_t kLedsPerStrip = 256;
 static const uint8_t  kNumStrips    = 8;
 
-// VERIFY: colour order. The strips are WS2811. The controller sends R,G,B in
-// that order and no longer applies any per-segment correction, so if colours
-// come out wrong here this is the constant to change (WS2811_RGB, WS2811_GRB,
-// WS2811_BRG, ...). Note the tusks previously had a green/blue swap applied on
-// the controller side, which suggests that strip may not match the others -- if
-// only the tusks are wrong, the fix belongs in the wiring or in a per-channel
-// swap rather than here.
-static const int kLedConfig = WS2811_GRB | WS2811_800kHz;
+// Colour order. Confirmed on the hardware: these strips want RGB, not the GRB
+// that is more common for WS2812. If colours ever come out swapped again this
+// is the constant to change.
+static const int kLedConfig = WS2811_RGB | WS2811_800kHz;
 
 // Two limits. A per-channel message can never exceed one strip; a channel-0
 // broadcast legitimately carries every strip end to end, so the buffer has to
@@ -101,6 +97,16 @@ static uint16_t   payloadPos = 0;
 static uint8_t    payload[kMaxPayload];
 static uint8_t    msgChannel = 0;
 static bool       dirty      = false;   // pixels changed since the last show()
+
+// Idle animation. Until the controller sends anything -- and again if it goes
+// quiet -- ramp every LED from black to full red over kRampPeriodMs. It doubles
+// as a wiring check: if a segment stays dark during the ramp, that strip is not
+// receiving data.
+static const uint32_t kRampPeriodMs  = 5000;   // one full 0..100% sweep
+static const uint32_t kIdleTimeoutMs = 5000;   // silence before we take over
+static const uint32_t kIdleFrameMs   = 25;     // ~40 Hz, plenty for a ramp
+static uint32_t lastDataMs  = 0;
+static uint32_t lastIdleMs  = 0;
 
 // -------------------------------------------------------------- LED helpers --
 
@@ -135,6 +141,21 @@ static void applyBroadcast(const uint8_t *data, uint16_t len) {
     applyChannel(ch, data + offset, have);
     offset += want;
   }
+}
+
+// Ramp all segments together, black to full red and back to black. Only the
+// real per-segment lengths are lit; the padding OctoWS2811 requires stays dark.
+static void showIdleFrame() {
+  const uint32_t phase = millis() % kRampPeriodMs;
+  const uint8_t  level = (uint8_t)((uint32_t)255 * phase / kRampPeriodMs);
+
+  for (uint8_t ch = 0; ch < kNumChannels; ch++) {
+    const uint32_t base = (uint32_t)ch * kLedsPerStrip;
+    for (uint16_t i = 0; i < kChannelLen[ch]; i++) {
+      leds.setPixel(base + i, level, 0, 0);
+    }
+  }
+  leds.show();
 }
 
 // ----------------------------------------------------------------- parsing --
@@ -178,6 +199,7 @@ static void consume(uint8_t b) {
         const uint16_t usable = min(payloadPos, kMaxPayload);
         if (msgChannel == 0) applyBroadcast(payload, usable);
         else                 applyChannel(msgChannel, payload, usable);
+        lastDataMs = millis();
         resetParser();
       }
       break;
@@ -202,6 +224,10 @@ void setup() {
 
   Ethernet.begin(ip, netmask, gateway);
   server.begin();
+
+  // Backdate this so the idle ramp starts at once rather than after one
+  // timeout -- a board that is alive but waiting should look alive.
+  lastDataMs = millis() - kIdleTimeoutMs;
 
   Serial.printf("Funklet OPC server: board %d, %u channels, listening on ",
                 BOARD, kNumChannels);
@@ -242,5 +268,17 @@ void loop() {
     Serial.println("client disconnected");
     client.stop();
     resetParser();
+  }
+
+  // No controller data recently: run the startup ramp. This covers first power
+  // on, a controller that has not started yet, and a controller that has gone
+  // away -- in every case a dark sculpture is less useful than a visible sign
+  // that the boards are alive.
+  const uint32_t now = millis();
+  if (now - lastDataMs > kIdleTimeoutMs) {
+    if (now - lastIdleMs >= kIdleFrameMs && !leds.busy()) {
+      lastIdleMs = now;
+      showIdleFrame();
+    }
   }
 }
