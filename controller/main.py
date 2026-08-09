@@ -3,6 +3,7 @@ import json
 import logging
 import logging.handlers
 import os
+import queue
 import time
 import sys
 import asyncio
@@ -26,10 +27,8 @@ class NonBlockingStreamHandler(logging.StreamHandler):
 
     The controller is usually launched from an SSH terminal, so its stderr is a
     pty at the far end of a network link. A stalled tty makes an ordinary
-    write() block, and because everything here shares one event loop that
-    freezes every LED until the terminal catches up -- even though the LEDs
-    themselves are on a different interface. Losing a console line is fine; the
-    file handler keeps the full record.
+    write() block. Losing a console line is fine; the file handler keeps the
+    full record.
     """
 
     def emit(self, record):
@@ -39,15 +38,39 @@ class NonBlockingStreamHandler(logging.StreamHandler):
             pass
 
 
+class DroppingQueueHandler(logging.handlers.QueueHandler):
+    """Hand records to the logging thread, dropping them if it falls behind.
+
+    An unbounded queue would grow without limit while the disk is unavailable.
+    A dropped log line is a far better outcome than a frozen sculpture.
+    """
+
+    def enqueue(self, record):
+        try:
+            self.queue.put_nowait(record)
+        except queue.Full:
+            pass
+
+
 def setup_logging(log_file):
-    """Log to a rotating file, and to the console on a best-effort basis."""
+    """Log without ever blocking the event loop.
+
+    Every handler runs on a background thread behind a queue. This matters more
+    than it sounds: writing to the log file is a write to the SD card, and a
+    card that stalls -- which this hardware does -- blocks the calling thread
+    inside flush(). With the handler on the event loop that froze frame
+    generation and every OPC connection for as long as the card took to answer,
+    observed at over ten seconds. The loop now only ever enqueues.
+    """
     formatter = logging.Formatter(LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
     root = logging.getLogger()
     root.setLevel(logging.INFO)
 
+    handlers = []
+
     console = NonBlockingStreamHandler()
     console.setFormatter(formatter)
-    root.addHandler(console)
+    handlers.append(console)
     try:
         os.set_blocking(console.stream.fileno(), False)
     except (AttributeError, OSError, ValueError):
@@ -60,7 +83,18 @@ def setup_logging(log_file):
         rotating = logging.handlers.RotatingFileHandler(
             log_file, maxBytes=20 * 1024 * 1024, backupCount=5)
         rotating.setFormatter(formatter)
-        root.addHandler(rotating)
+        handlers.append(rotating)
+
+    # Bounded: a few seconds of records at the rate this logs. Past that the
+    # disk is clearly not coming back quickly and dropping is the right call.
+    record_queue = queue.Queue(maxsize=2000)
+    root.addHandler(DroppingQueueHandler(record_queue))
+
+    listener = logging.handlers.QueueListener(
+        record_queue, *handlers, respect_handler_level=True)
+    listener.daemon = True
+    listener.start()
+    return listener
 
 
 class SerialWriter(asyncio.Protocol):
