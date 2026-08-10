@@ -375,10 +375,17 @@ sudo nmcli connection modify funklet-ap \
      ipv4.addresses 192.168.42.1/24 \
      connection.autoconnect-priority 100
 
+# Prompted, not typed inline: keeps it out of shell history, and out of this
+# file. WPA passphrases must be 8-63 plain ASCII characters -- no em-dashes,
+# smart quotes or accents, which fail in ways that look like a wrong password.
+read -rsp 'AP passphrase: ' AP_PSK && echo
+
 sudo nmcli connection modify funklet-ap \
      wifi-sec.key-mgmt wpa-psk \
-     wifi-sec.psk '<choose a passphrase — do not commit it>' \
+     wifi-sec.psk "$AP_PSK" \
      802-11-wireless-security.pmf 1
+
+unset AP_PSK
 
 sudo nmcli connection up funklet-ap
 ```
@@ -408,6 +415,16 @@ sudo nmcli connection up funklet-ap
 > | nothing at all | frames never reach the AP — radio, channel or regulatory |
 >
 > NM's encoding: `0` default, `1` disable, `2` optional, `3` required.
+
+> **Check what actually got stored** before blaming the phone. A pasted
+> placeholder, a smart quote or a stray space all present as "incorrect
+> password":
+>
+> ```sh
+> sudo nmcli -s -g 802-11-wireless-security.psk connection show funklet-ap
+> ```
+>
+> The `-s` is required — without it `nmcli` prints `<hidden>`.
 
 > **The SSID is `funkletpi`, not `funkypi`.** The other art car uses `funkypi`.
 > If both broadcast the same SSID at an event, a laptop associates with whichever
