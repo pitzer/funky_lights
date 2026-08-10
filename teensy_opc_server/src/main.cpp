@@ -290,7 +290,11 @@ void loop() {
   // that the boards are alive.
   const uint32_t now = millis();
 
-  if (now - lastStatusMs >= kStatusIntervalMs) {
+  // `if (Serial)` is false unless a host has the port open. Without this guard,
+  // a USB cable plugged in for power with nothing reading it makes these writes
+  // block for the USB TX timeout (~120ms) -- during which the board stops
+  // servicing the socket and the controller's write buffer backs up.
+  if (Serial && now - lastStatusMs >= kStatusIntervalMs) {
     lastStatusMs = now;
     Serial.printf("board %d  ip ", BOARD);
     Serial.print(Ethernet.localIP());

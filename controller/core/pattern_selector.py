@@ -117,15 +117,26 @@ class PatternSelector:
             return self.patterns[pattern_id]
 
 
-    async def initializePatterns(self):
-        # Initialize all patterns
+    @run_in_executor
+    def _construct_patterns(self):
+        """Build and initialise every pattern. Runs on a worker thread.
+
+        This opens 15 video files and does a good deal of numpy work, and it is
+        entirely synchronous -- on the event loop it blocked everything for
+        seconds, which showed up as stalls with both OPC connections timing out.
+        Startup-only, but supervisor re-runs it on every restart, so during a
+        crash loop it never stops.
+        """
         for pattern_id, (cls, params) in self.all_patterns_configs():
             pattern = cls()
             for key in params:
                 setattr(pattern.params, key, params[key])
             pattern.prepareSegments(self.led_config)
             pattern.initialize()
-            self.patterns[pattern_id] = pattern  
+            self.patterns[pattern_id] = pattern
+
+    async def initializePatterns(self):
+        await self._construct_patterns()
         
         # Initialize cached patterns
         if self.args.enable_cache:
