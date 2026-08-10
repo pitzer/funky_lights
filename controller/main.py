@@ -18,7 +18,7 @@ from core.opc import connect_to_opc
 from core.websockets import TextureWebSocketsServer, PatternMixWebSocketsServer
 from patterns import pattern_config
 
-LOG_FORMAT = "%(levelname)s %(asctime)s,%(msecs)d %(filename)s(%(lineno)d) %(funcName)s: %(message)s"
+LOG_FORMAT = "%(levelname)s %(asctime)s,%(msecs)03d %(filename)s(%(lineno)d) %(funcName)s: %(message)s"
 LOG_DATE_FORMAT = "%H:%M:%S"
 
 

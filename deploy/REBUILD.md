@@ -359,6 +359,10 @@ ping -c 3 192.168.1.4 && ping -c 3 192.168.1.5
 
 No gateway is needed — this is a flat segment, not a route to anywhere.
 
+If `ping` works but the controller later connects and drops in a loop, go
+straight to [Troubleshooting: it connects, then drops](#troubleshooting-it-connects-then-drops).
+`ping` passing does **not** clear the cable.
+
 ### Access point on wlan0
 
 Bookworm uses NetworkManager, so this is simpler than the old `hostapd` +
@@ -656,6 +660,58 @@ From a laptop joined to `funkletpi`:
 - <http://funkletpi.wlan:9001/> — supervisor dashboard
 - <http://funkletpi.wlan:8000/visualization/index.html> — visualizer
 - <http://funkletpi.wlan:8000/visualization/index.html?debug=index> — LED order check
+
+## Troubleshooting: it connects, then drops
+
+**Check the physical layer first. Every stall on this build has been physical.**
+
+In order of appearance: a Teensy not fully seated in its socket, Pi undervoltage
+that killed three SD cards, and a bad Ethernet cable between the Pi and the
+switch. Each one presented as a software fault and each one cost hours of
+reading code.
+
+The log signature of the cable fault:
+
+```
+INFO    03:57:31,551 connection_made: OPC connection established to ('192.168.1.5', 7890)
+WARNING 03:57:35,160 connection_lost: OPC connection to ('192.168.1.5', 7890) lost: None
+WARNING 03:57:35,161 connect_to_opc: OPC connection ... closed. Retrying in 5.00 seconds.
+INFO    03:58:20,268 connection_made: OPC connection established to ('192.168.1.5', 7890)
+WARNING 03:58:24,027 connection_lost: OPC connection to ('192.168.1.5', 7890) lost: None
+```
+
+Two things name it as physical rather than logical:
+
+- **`lost: None`** is a *clean* FIN — the board deliberately closed the socket.
+  An application bug on our side, a crashed board, or a wedged board would give
+  `ConnectionResetError`, a timeout, or nothing at all. A clean close means the
+  far end's TCP stack gave up on retransmits and shut down tidily.
+- **A consistent ~4 second lifetime** (3.6 s, 3.8 s, 4.5 s above). Logical faults
+  fail either immediately or at random. A constant short lifetime is a link that
+  works until it has to carry sustained throughput — which is exactly a marginal
+  cable, since 20 Hz × 2.5 KB is the first real load it sees.
+
+Checks, cheapest first:
+
+```sh
+# Error and drop counters. These should be 0 and stay 0 while the controller
+# runs. `ping` is far too little traffic to move them -- a cable can pass ping
+# perfectly and still fail under frame load.
+ip -s link show eth0
+
+# Negotiated speed. 100 Mb/s is fine; a gigabit-capable link that settles at
+# 10 Mb/s, or that flaps between speeds, is a damaged cable or connector.
+sudo ethtool eth0 | grep -E 'Speed|Duplex|Link detected'
+
+# Link flaps, in the kernel's own words.
+dmesg -T | grep -iE 'eth0|link (up|down)' | tail -20
+```
+
+Then, regardless of what the counters say: **swap the cable.** It is thirty
+seconds and it has a real prior. Swap the switch port too — the same symptom
+came from a switch that was underpowered earlier in this build.
+
+Only after all of that is clear should you suspect the controller.
 
 ## 11. Afterwards
 
