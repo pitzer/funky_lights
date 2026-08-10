@@ -142,8 +142,10 @@ the failure modes look like faults on the Pi when they are not.
 set in step 1 — not merely *a* working network:
 
 ```sh
-# macOS (use en1 etc. if your WiFi is not en0)
-ipconfig getsummary en0 | grep ' SSID'
+# macOS. Note `ipconfig getsummary` and `networksetup -getairportnetwork`
+# both report <redacted> since Sonoma unless Terminal has Location Services
+# permission -- system_profiler does not need it.
+system_profiler SPAirPortDataType | awk '/Current Network/{getline; print $1; exit}'
 ```
 
 If it does not match, join that network, or the Pi is sitting somewhere you
