@@ -533,11 +533,26 @@ drop SSH sessions mid-command.
 
 ```sh
 sudo nmcli connection modify preconfigured 802-11-wireless.powersave 2
-sudo nmcli connection modify funklet-ap    802-11-wireless.powersave 2
-iw dev wlan0 get power_save
+sudo nmcli connection modify funklet-ap 802-11-wireless.powersave 2
+
+# The setting is stored on the profile and only applied when the connection is
+# (re)activated -- checking straight after `modify` still reports the old value.
+#
+# WARNING: this bounces the access point. If you are SSH'd in *over* funkletpi
+# this kills your session. Either run it from the serial console or from the
+# wlan1 side, or accept the drop and rejoin. `nmcli` completes on the Pi
+# regardless, so the AP does come back -- you just lose the shell.
+sudo nmcli connection up funklet-ap
+
+# Check both radios. wlan1, the client link, is the one that matters: wlan0 is
+# an access point and beacons continuously, so it barely power-saves anyway.
+for i in wlan0 wlan1; do printf '%s: ' $i; iw dev $i get power_save; done
 ```
 
 NetworkManager's encoding: `2` disables, `1` enables, `0` uses the driver default.
+Note `wlan1`'s profile is whichever connection is active on it -- `preconfigured`
+above assumes the bootstrap one; use `nmcli -g NAME,DEVICE connection show --active`
+if you have since made another.
 
 ## 8. Supervisor
 
