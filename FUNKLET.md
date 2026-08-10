@@ -46,7 +46,7 @@ lives on `eth0`. The Pi runs its own access point on `wlan0`, which is only how
 | Interface | Role | Network |
 |---|---|---|
 | `eth0` | to the two boards | `192.168.1.0/24`, Pi at `.1` |
-| `wlan0` | access point, SSID `funkletpi` | `192.168.4.0/24`, Pi at `.1` |
+| `wlan0` | access point, SSID `funkletpi` | `192.168.42.0/24`, Pi at `.1` |
 
 `iptables` MASQUERADE forwards `wlan0` → `eth0`, so a laptop on the AP also gets
 onward connectivity. Note that the *defaults* in
@@ -130,7 +130,7 @@ recorded here — see [Credentials](#connecting-and-ssh) below.
    `funkletpi` (hence `funkletpi.wlan`).
 
    ```sh
-   ssh funklet@192.168.4.1        # by address — the reliable one
+   ssh funklet@192.168.42.1       # by address — the reliable one
    ssh funklet@funkletpi.wlan     # if the dnsmasq domain is configured
    ssh funklet@funkletpi.local    # if mDNS resolves; often it does not
    ```
@@ -208,10 +208,10 @@ Then connect:
 ssh funklet@<that address>
 ```
 
-On this installation that is `192.168.4.1`, so in practice:
+On this installation that is `192.168.42.1`, so in practice:
 
 ```sh
-ssh funklet@192.168.4.1
+ssh funklet@192.168.42.1
 ssh funklet@funkletpi.wlan  # equivalent, via the AP's own dnsmasq
 ```
 
@@ -232,7 +232,7 @@ Once in, `ip -4 addr show wlan0` on the Pi shows the address it is serving, and
 
 Built with `hostapd` + `dnsmasq` following the Raspberry Pi
 [routed wireless access point](https://www.raspberrypi.com/documentation/computers/configuration.html#setting-up-a-routed-wireless-access-point)
-guide, which is where `192.168.4.1` and the `.wlan` domain come from. Forwarding
+guide, which is where the `.wlan` domain comes from. Forwarding
 to the boards' network is done with `iptables`, made persistent via
 `iptables-persistent`:
 
@@ -247,7 +247,7 @@ Verify the whole picture from the Pi:
 
 ```sh
 iw dev wlan0 info | grep type          # expect: type AP
-ip -4 addr show wlan0                  # expect: 192.168.4.1/24
+ip -4 addr show wlan0                  # expect: inet 192.168.42.1/24
 ip -4 addr show eth0                   # expect: inet 192.168.1.1/24
 ping -c 3 192.168.1.4                  # boards reachable over Ethernet
 ping -c 3 192.168.1.5
@@ -256,7 +256,8 @@ sudo systemctl status hostapd dnsmasq
 
 > **The AP must never share `192.168.1.0/24` with `eth0`.** Two interfaces on one
 > subnet makes routing to the boards ambiguous, which produces intermittent
-> unreachability that is very hard to diagnose. `192.168.4.0/24` keeps them apart.
+> unreachability that is very hard to diagnose. `192.168.42.0/24` keeps them
+> apart, and avoids `192.168.4.0/24` which is itself a common router default.
 
 > **Change AP settings over serial, never over SSH.** Restarting `hostapd` tears
 > down the network you would be working over. That is what the GPIO console is for.

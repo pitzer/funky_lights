@@ -14,6 +14,33 @@ the hardware and correct this file.
 
 ---
 
+## 0. Power and card — read this first
+
+The single most expensive failure in this installation's history was **not** software. Undervoltage on the Pi destroyed **three SD cards** in succession, and the symptoms it produced consumed most of a weekend: multi-second freezes with the CPU idle, corrupt git objects, NUL bytes inside log files, truncated video files, and shell commands that needed running two or three times.
+
+None of it looked like a power problem. It looked like a controller bug, then a network bug, then a filesystem bug.
+
+**Before rebuilding, fix the supply:**
+
+- **A dedicated supply for the Pi.** The official Raspberry Pi 15 W USB-C unit is the safe choice. Do **not** share the Pi's rail with the Teensys, the Ethernet switch, or anything else.
+- **5.1 V, not 5.0 V.** The Pi flags undervoltage below about **4.63 V at the board**, and the official supply outputs 5.1 V precisely to absorb cable and connector losses. A nominally adequate 5 V supply has almost no margin left once wiring is accounted for.
+- **Short, thick cable.** Thin USB-C cables drop several hundred millivolts at 3 A, which is enough on its own.
+
+**Use a high-endurance card** — SanDisk Max Endurance or Samsung PRO Endurance. They are built for continuous rewriting; ordinary cards are not.
+
+**Then verify, after it has been running patterns for a while:**
+
+```sh
+vcgencmd get_throttled     # 0x0 is clean
+dmesg | grep -i mmc        # no "Card stuck being busy", no "mmc_erase: erase error"
+```
+
+Any `0x1____` bit means undervoltage has occurred and the new card is already on the same path as the last three. `erase error -110` means the card has stopped completing writes and is beyond saving.
+
+> Both of those checks are worth running at the start of any future debugging session too. Storage that times out blocks processes in uninterruptible I/O, which presents as the application hanging — so it is the first thing to rule out, not the last.
+
+---
+
 ## 1. Flash the card
 
 Use **Raspberry Pi Imager**.
@@ -314,7 +341,7 @@ Two interfaces doing different jobs:
 | Interface | Role | Network |
 |---|---|---|
 | `eth0` | to the two Teensy boards | `192.168.1.0/24`, Pi at `.1` |
-| `wlan0` | access point for laptops | `192.168.4.0/24`, Pi at `.1` |
+| `wlan0` | access point for laptops | `192.168.42.0/24`, Pi at `.1` |
 
 ### Ethernet to the boards
 
@@ -345,7 +372,7 @@ sudo nmcli connection modify funklet-ap \
      802-11-wireless.mode ap \
      802-11-wireless.band bg \
      ipv4.method shared \
-     ipv4.addresses 192.168.4.1/24 \
+     ipv4.addresses 192.168.42.1/24 \
      connection.autoconnect-priority 100
 
 sudo nmcli connection modify funklet-ap \
@@ -445,12 +472,10 @@ dnsmasq config will help — the query never reaches it.
 > is broken when you were never talking to it. That happened during this build and
 > cost a while.
 >
-> Prefer something unlikely to clash:
->
-> ```sh
-> sudo nmcli connection modify funklet-ap ipv4.addresses 192.168.42.1/24
-> sudo nmcli connection up funklet-ap
-> ```
+> This build uses `192.168.42.0/24` for exactly that reason, and the commands
+> above already reflect it. If you ever change it, pick something equally
+> unlikely and update the `dnsmasq` record below to match -- they are set in two
+> places and nothing checks that they agree.
 >
 > And before trusting any test against the AP, confirm what you are attached to:
 >
@@ -587,7 +612,7 @@ grep -i "No cache found" ~/funklet.log     # should be empty after step 9
 
 # network
 iw dev wlan0 info | grep type              # type AP
-ip -4 addr show wlan0                      # 192.168.4.1/24
+ip -4 addr show wlan0                      # expect: inet 192.168.42.1/24
 ip -4 addr show eth0                       # expect: inet 192.168.1.1/24
 ping -c 3 192.168.1.4 && ping -c 3 192.168.1.5
 ```
