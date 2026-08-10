@@ -52,7 +52,14 @@ using namespace qindesign::network;
   // ch:      1    2    3    4    5    6    7    8
   // uid:    21  214  272   28   26  220  221   25
   // seg:  dome ball eyes_left tusks ear_l trunk ear_r head
-  static const uint16_t kChannelLen[kNumChannels] = { 181, 33, 256, 2, 68, 134, 69, 65 };
+  //
+  // ball is a single high-power fixture, not the 33 LED ring its geometry in
+  // led_config.json still describes. The Pi keeps those 33 positions as a
+  // sampling footprint and averages them down to one transmitted pixel, so
+  // this length is 1. applyChannel() clamps with min(), so a board still
+  // running the old value of 33 renders this correctly too -- the length here
+  // only decides how much of the strip the idle ramp lights.
+  static const uint16_t kChannelLen[kNumChannels] = { 181, 1, 256, 2, 68, 134, 69, 65 };
 #else
   #error "Set BOARD to 1 or 2"
 #endif

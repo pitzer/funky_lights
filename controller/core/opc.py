@@ -65,6 +65,22 @@ def _configure_socket(sock):
             sock.setsockopt(socket.IPPROTO_TCP, getattr(socket, name), value)
 
 
+def collapse_colors(colors, target):
+    """Average an (N, 3) colour array down to (target, 3) contiguous groups.
+
+    Used where a segment's sample points outnumber its physical LEDs. Taking
+    colors[:target] instead would sample a single point of the pattern, which
+    on a moving video changes completely every frame and looks like random
+    flicker; the mean over the area the fixture occupies tracks the pattern.
+    """
+    colors = np.asarray(colors)
+    if target >= len(colors) or target < 1:
+        return colors
+    groups = np.array_split(colors.astype(np.uint16), target)
+    out = np.array([g.mean(axis=0) for g in groups])
+    return np.clip(np.rint(out), 0, 255).astype(np.uint8)
+
+
 def _next_delay(delay):
     """Return the next backoff delay, capped at MAX_RECONNECT_DELAY."""
     return min(MAX_RECONNECT_DELAY, delay * 2)
@@ -275,6 +291,13 @@ class OpenPixelControlProtocol(asyncio.Protocol):
                 if segment.uid in self.uids:
                     channel = self.uids.index(segment.uid) + 1
                     colors = segment.colors
+                    physical = getattr(segment, 'physical_num_leds',
+                                       segment.num_leds)
+                    if physical != len(colors):
+                        # Returns a new array, so the segment itself is
+                        # untouched and the visualiser still sees every
+                        # sample point.
+                        colors = collapse_colors(colors, physical)
                     if self.swap_red_green:
                         # Board-local correction for firmware built with the
                         # wrong colour order. Fancy indexing returns a copy, so

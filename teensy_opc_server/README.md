@@ -37,7 +37,7 @@ position:
 | ch | pin | board_1 (192.168.1.4) | LEDs | board_2 (192.168.1.5) | LEDs |
 |---|---|---|---|---|---|
 | 1 | 2  | tail            | 54  | dome      | 181 |
-| 2 | 14 | leg_front_right | 74  | ball      | 33  |
+| 2 | 14 | leg_front_right | 74  | ball      | 1   |
 | 3 | 7  | leg_back_right  | 80  | eyes_left | 256 |
 | 4 | 8  | leg_front_left  | 82  | tusks     | 2   |
 | 5 | 6  | leg_back_left   | 89  | ear_left  | 68  |

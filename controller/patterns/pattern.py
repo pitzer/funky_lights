@@ -3,9 +3,18 @@ import sys
 
 
 class Segment:
-    def __init__(self, uid, num_leds, led_positions):
+    def __init__(self, uid, num_leds, led_positions, physical_num_leds=None):
         self.uid = uid
         self.num_leds = num_leds
+        # How many LEDs the hardware actually has, when that differs from the
+        # number of sample points above. The `ball` is one high-power fixture
+        # standing where a 33 LED ring used to be: we keep the ring's positions
+        # so it still samples the pattern over the area it occupies, but only
+        # one colour is transmitted. Without this it would show a single point
+        # of a moving video, which reads as random flicker rather than as the
+        # pattern. See collapse_colors() in core/opc.py.
+        self.physical_num_leds = (num_leds if physical_num_leds is None
+                                  else physical_num_leds)
         self.colors = np.array([[0, 0, 0] for i in range(num_leds)], dtype=np.ubyte)
         self.led_positions = np.array(led_positions)
         self.mask = None
@@ -25,7 +34,8 @@ class Pattern:
 
     def prepareSegments(self, led_config):
         for s in led_config['led_segments']:
-            segment = Segment(s['uid'], s['num_leds'], s['led_positions'])
+            segment = Segment(s['uid'], s['num_leds'], s['led_positions'],
+                              s.get('physical_num_leds'))
             for mask in self.params.segment_masks:
                 if mask.segment_uid == segment.uid:
                     segment.mask = mask

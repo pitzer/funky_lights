@@ -4567,6 +4567,7 @@
             "uid": 214,
             "name": "ball",
             "num_leds": 33,
+            "physical_num_leds": 1,
             "length": 1.66,
             "led_positions": [
                 [
