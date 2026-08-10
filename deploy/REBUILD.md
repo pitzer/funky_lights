@@ -189,16 +189,21 @@ micro-HDMI nearest the USB-C socket), with the monitor connected before power-on
 Also how you move the Pi to a different network later, when the one it was
 flashed with is not the one you are near.
 
+**Pin the interface with `ifname`.** Once the access point exists, this Pi has
+two radios: `wlan0` is the built-in one running the `funkletpi` AP, and `wlan1`
+is the USB module used as a client. An unpinned `nmcli device wifi connect` is
+free to pick `wlan0`, which tears the access point down and drops anyone on it.
+
 ```sh
-sudo nmcli device wifi list                     # what is in range
-sudo nmcli --ask device wifi connect "Jake's Jukebox (2)"
+sudo nmcli device wifi list ifname wlan1        # what is in range
+sudo nmcli --ask device wifi connect "Jake's Jukebox (2)" ifname wlan1
 ```
 
 `--ask` prompts for the password rather than leaving it in shell history. One
 line, if you prefer:
 
 ```sh
-sudo nmcli device wifi connect "SSID" password "PASSWORD"
+sudo nmcli device wifi connect "SSID" password "PASSWORD" ifname wlan1
 ```
 
 **Keep the double quotes.** An SSID with spaces, apostrophes or parentheses will
@@ -207,14 +212,14 @@ otherwise break in ways that look exactly like a wrong password.
 Variants:
 
 ```sh
-sudo nmcli device wifi rescan                                    # not listed yet
-sudo nmcli device wifi connect "SSID" password "PW" hidden yes   # hidden SSID
+sudo nmcli device wifi rescan ifname wlan1                       # not listed yet
+sudo nmcli device wifi connect "SSID" password "PW" hidden yes ifname wlan1
 ```
 
 Confirm:
 
 ```sh
-nmcli device status                  # wlan0 -> connected
+nmcli device status                  # wlan1 -> connected, wlan0 still the AP
 hostname -I                          # the address to SSH to
 ping -c3 deb.debian.org              # real internet, not just an association
 ```
@@ -222,10 +227,11 @@ ping -c3 deb.debian.org              # real internet, not just an association
 Note `hostname -I` — if `funkletpi.local` will not resolve, that address is how
 you get in.
 
-> Once the access point exists (step 7) `wlan0` cannot be a client and an AP at
-> the same time. To borrow the radio back for internet:
+> This applies only if you have the single built-in radio: `wlan0` cannot be a
+> client and an AP at the same time. To borrow it back for internet:
 > `sudo nmcli connection up preconfigured`, and `sudo nmcli connection up funklet-ap`
 > to return. Doing either over SSH drops the session — use the console.
+> With the USB module present, `wlan1` does this job and the AP stays up.
 
 ### 3c. Connect and update
 
