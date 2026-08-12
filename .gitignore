@@ -1,5 +1,6 @@
 .DS_Store
 .vscode
+.venv
 controller/media/full
 *.pyc
 bootloader/build
