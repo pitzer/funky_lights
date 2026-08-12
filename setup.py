@@ -4,7 +4,7 @@ with open("requirements.txt") as requirement_file:
     requirements = requirement_file.read().split()
 
 setup(
-    name="funky_ligths",
+    name="funky_lights",
     description="The Funky Lights project",
     version="1.0.0",
     install_requires=requirements,
