@@ -338,7 +338,8 @@ async def main():
                 uids=bus['uids'],
                 server_ip=opc['server_ip'],
                 server_port=opc['server_port'],
-                swap_red_green=bus.get('swap_red_green', False)))
+                swap_red_green=bus.get('swap_red_green', False),
+                skip_leds=bus.get('skip_leds')))
     
     # Wait forever
     try:

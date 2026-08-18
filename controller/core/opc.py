@@ -92,7 +92,7 @@ async def _sleep_with_jitter(delay):
 
 
 async def connect_to_opc(generator, uids, server_ip, server_port,
-                         swap_red_green=False):
+                         swap_red_green=False, skip_leds=None):
     loop = asyncio.get_event_loop()
     reconnect_delay = INITIAL_RECONNECT_DELAY
     while True:
@@ -105,7 +105,8 @@ async def connect_to_opc(generator, uids, server_ip, server_port,
             generator=generator,
             uids=uids,
             on_con_lost=on_con_lost,
-            swap_red_green=swap_red_green)
+            swap_red_green=swap_red_green,
+            skip_leds=skip_leds)
         try:
             transport, protocol = await asyncio.wait_for(
                 loop.create_connection(opc_factory, server_ip, server_port),
@@ -142,9 +143,14 @@ async def connect_to_opc(generator, uids, server_ip, server_port,
 
 
 class OpenPixelControlProtocol(asyncio.Protocol):
-    def __init__(self, generator, uids, on_con_lost, swap_red_green=False):
+    def __init__(self, generator, uids, on_con_lost, swap_red_green=False,
+                 skip_leds=None):
         super().__init__()
         self.swap_red_green = swap_red_green
+        # uid -> number of LEDs at the head of that run to force to black.
+        # Config keys arrive as JSON strings; normalise to int uids once here
+        # rather than converting on every frame.
+        self.skip_leds = {int(k): int(v) for k, v in (skip_leds or {}).items()}
         self.transport = None
         self.opc = None
         self.generator = generator
@@ -298,6 +304,22 @@ class OpenPixelControlProtocol(asyncio.Protocol):
                         # untouched and the visualiser still sees every
                         # sample point.
                         colors = collapse_colors(colors, physical)
+
+                    # Force the head of the run to black. These runs have a
+                    # series resistor on the data line, and the first pixel no
+                    # longer latches reliably -- it sits at a fixed colour. We
+                    # cannot switch off a pixel that is not reading its data,
+                    # but we can make certain we are never sending it anything
+                    # but black, so it goes dark the moment it does read.
+                    skip = self.skip_leds.get(segment.uid, 0)
+                    if skip > 0:
+                        if colors is segment.colors:
+                            # collapse_colors did not already copy, and the
+                            # segment is shared with the other bus and the
+                            # visualiser, so it must not be mutated.
+                            colors = colors.copy()
+                        colors[:skip] = 0
+
                     if self.swap_red_green:
                         # Board-local correction for firmware built with the
                         # wrong colour order. Fancy indexing returns a copy, so
