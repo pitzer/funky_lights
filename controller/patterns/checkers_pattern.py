@@ -15,12 +15,12 @@ class CheckersPattern(PatternUV):
     def initialize(self):
         self.generateUVCoordinates(self.width, self.height)
         self.grid = UVGrid(self.width, self.height)
-        for u in range(self.width):
-            for v in range(self.height):
-                if (u//self.box_size) % 2 == (v//self.box_size) % 2:
-                    self.grid.coordinates[u][v] = self.params.color
-                else:
-                    self.grid.coordinates[u][v] = self.params.background_color
+        # Board as a broadcast comparison rather than a 100x100 Python loop.
+        u = np.arange(self.width).reshape(-1, 1)
+        v = np.arange(self.height).reshape(1, -1)
+        light = ((u // self.box_size) % 2) == ((v // self.box_size) % 2)
+        self.grid.coordinates[:] = np.where(
+            light[..., None], self.params.color, self.params.background_color)
         self.applyGrid(self.grid)
     
     def reset(self):
@@ -28,9 +28,14 @@ class CheckersPattern(PatternUV):
         self.initialize()
 
     async def animate(self, delta):
-        for u in range(self.width):
-            for v in range(self.height):
-                self.grid.coordinates[u][v] =  self.params.decay_param * self.grid.coordinates[u][v] + \
-                        (1 - self.params.decay_param) * self.params.background_color
+        # Each cell decays from its own previous value only, so the per-cell
+        # loop this replaces was pure overhead: 10,000 iterations a frame,
+        # synchronously on the event loop. That is enough to stall OPC output
+        # for every segment at once -- the same fault that made the whole
+        # sculpture flash together when RainbowWavesPattern came round.
+        # Float maths and the truncation on assignment into the ubyte grid are
+        # unchanged, so the output is byte for byte what it was.
+        self.grid.coordinates[:] = (
+            self.params.decay_param * self.grid.coordinates
+            + (1 - self.params.decay_param) * self.params.background_color)
         self.applyGrid(self.grid)
-

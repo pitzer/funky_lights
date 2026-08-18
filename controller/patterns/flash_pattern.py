@@ -41,7 +41,11 @@ class FlashPatternSegment(Pattern):
             self.segment.colors[:] = self.params.color
             self.start_flash = False
         else:
-            for i in range(self.segment.num_leds):
-                self.segment.colors[i] = self.params.decay_param * self.segment.colors[i] + \
-                        (1 - self.params.decay_param) * self.params.background_color
+            # Whole-segment decay instead of a per-LED loop. Each LED decays
+            # from its own previous value only, so the loop was pure overhead
+            # -- and an effect is overlaid on every segment at once, on the
+            # event loop, where the cost stalls all OPC output.
+            self.segment.colors[:] = (
+                self.params.decay_param * self.segment.colors
+                + (1 - self.params.decay_param) * self.params.background_color)
                 

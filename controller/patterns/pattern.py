@@ -74,15 +74,24 @@ class UVGrid():
     
     #Paint a defined area of the grid one color
     def paintArea(self, u, v, color):
-        u_range = np.arange(int(u[0]), int(u[1]), 1)
-        v_range = np.arange(int(v[0]), int(v[1]), 1)
-        
-        #create grid of positions
-        self.paintMesh(np.meshgrid(u_range, v_range), color)
+        # One clipped slice assignment instead of building a meshgrid and
+        # calling paintPoint per cell. StarburstPattern paints 300 blocks a
+        # frame, so the old path made ~4,800 bounds-checked Python calls every
+        # frame on the event loop. int() rather than floor, and the exclusive
+        # upper bound, match what np.arange + paintPoint did -- including for
+        # negative and fractional coordinates.
+        u0, u1 = max(int(u[0]), 0), min(int(u[1]), self.width)
+        v0, v1 = max(int(v[0]), 0), min(int(v[1]), self.height)
+        if u1 > u0 and v1 > v0:
+            self.coordinates[u0:u1, v0:v1] = color
 
     #Apply one color to entire grid
     def paintAll(self, color):
-        self.coordinates = [[color for j in range(self.height)] for i in range(self.width)]
+        # Fill in place. This used to rebind coordinates to a list of lists,
+        # destroying the ndarray __init__ creates, so any later slice
+        # assignment on the grid failed with "list indices must be integers".
+        # Every palette is uint8 in 0-255, so the values are unchanged.
+        self.coordinates[:] = color
     
 
 class PatternUV(Pattern):

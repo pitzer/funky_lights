@@ -28,9 +28,7 @@ class StarburstPattern(PatternUV):
     def initialize(self):
         self.generateUVCoordinates(self.width, self.height)
         self.grid = UVGrid(self.width, self.height)
-        for u in range(self.width):
-            for v in range(self.height):
-                self.grid.coordinates[u][v] = self.params.background_color
+        self.grid.coordinates[:] = self.params.background_color
         self.bursts = []
         for burst in range(self.num_bursts):
             picker = np.random.randint(0, 4)
@@ -64,9 +62,12 @@ class StarburstPattern(PatternUV):
         self.initialize()
 
     async def animate(self, delta):
-        for u in range(self.width):
-            for v in range(self.height):
-                self.grid.coordinates[u][v] = self.params.background_color
+        # Two 100x100 Python loops used to run here every frame -- 20,000
+        # iterations synchronously on the event loop, which stalls OPC output
+        # for every segment at once. Same defect as RainbowWavesPattern had.
+        # The float maths and the truncation on assignment into the ubyte grid
+        # are unchanged, so the output is identical.
+        self.grid.coordinates[:] = self.params.background_color
         
         for burst in self.bursts:
             burst.speed = burst.speed * self.params.decay_param
@@ -75,9 +76,8 @@ class StarburstPattern(PatternUV):
             self.grid.paintArea([burst.u, burst.u + burst.size], [burst.v, burst.v + burst.size], burst.color)
 
         
-        for u in range(self.width):
-            for v in range(self.height):
-                self.grid.coordinates[u][v] =  self.params.decay_param * self.grid.coordinates[u][v] + \
-                        (1 - self.params.decay_param) * self.params.background_color
+        self.grid.coordinates[:] = (
+            self.params.decay_param * self.grid.coordinates
+            + (1 - self.params.decay_param) * self.params.background_color)
         self.applyGrid(self.grid)
 

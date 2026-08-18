@@ -33,10 +33,15 @@ class SparklePatternSegment(Pattern):
             [self.params.background_color for i in range(self.segment.num_leds)]))
 
     async def animate(self, delta):
-        for i in range(self.segment.num_leds):
-             # Decay all LEDs
-            self.segment.colors[i] = self.params.decay_param * self.segment.colors[i] + \
-                    (1 - self.params.decay_param) * self.params.background_color
-            # Sparkle random lights
-            if random.random() <= self.params.sparkle_probability:
-                self.segment.colors[i] = self.params.color
+        # Decay every LED at once. The sparkle draws stay a per-LED loop on
+        # purpose: they consume the stdlib random stream one call per LED, so
+        # replacing them with np.random would change the sequence. The cost was
+        # in the numpy scalar arithmetic above, not in random().
+        n = self.segment.num_leds
+        self.segment.colors[:] = (
+            self.params.decay_param * self.segment.colors
+            + (1 - self.params.decay_param) * self.params.background_color)
+        hits = np.fromiter(
+            (random.random() <= self.params.sparkle_probability for _ in range(n)),
+            dtype=bool, count=n)
+        self.segment.colors[hits] = self.params.color
