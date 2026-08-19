@@ -63,8 +63,23 @@ class VideoPattern(PatternUV):
             self.prev_delta = delta - frame_delta / (self.params.fps)
             if frame_delta <= 0:
                 return None
+            # Advance by grabbing frames, not by seeking. CAP_PROP_POS_FRAMES
+            # has to decode forward from the preceding keyframe, so its cost
+            # rises the further into a GOP the target sits and collapses at the
+            # next keyframe -- a sawtooth with the GOP's period, which on
+            # typical footage is several seconds. Measured here at ~3ms against
+            # 0.10ms for a sequential read, and far worse on the Pi at real
+            # video sizes. This was the only pattern in the rotation that
+            # seeked; the eyes do not, which is why they alone stayed smooth.
+            #
+            # At fps=10 against the 20Hz loop frame_delta is only ever 0 or 1,
+            # so the seek was targeting the very next frame regardless. grab()
+            # decodes without retrieving, for the general case where the
+            # pattern's fps is a larger multiple of the animation rate.
+            for _ in range(frame_delta - 1):
+                if not self.video.grab():
+                    break
             self.current_frame = self.current_frame + frame_delta
-            self.video.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame)
         else:
             self.current_frame += 1
 
