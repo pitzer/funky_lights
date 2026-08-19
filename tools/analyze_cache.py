@@ -108,12 +108,27 @@ def main():
         # slamming between black and full is 255.
         thresh = args.threshold
         jump = float((deltas > thresh).mean()) * 100
+        # Distinguish a fault from a pattern that alternates by design. A chase
+        # or strobe jumps on a short regular period and every burst is a single
+        # frame; the reported fault holds the sculpture in a flashing state for
+        # seconds at a time. Only sustained bursts count.
+        big = np.where(deltas > thresh)[0]
+        longest = 0
+        if len(big):
+            run = 1
+            for a, b in zip(big, big[1:]):
+                run = run + 1 if b == a + 1 else 1
+                longest = max(longest, run)
+            longest = max(longest, 1)
         verdict = 'ok'
-        if jump > 10:
-            verdict = 'FLASHES -- %.0f%% of frames jump' % jump
+        if longest >= 20:                      # a full second or more of it
+            verdict = 'FLASHES -- %.1fs sustained burst' % (longest / 20)
             flagged.append((pid, deltas, thresh))
+        elif jump > 10:
+            verdict = 'alternates every frame (chase/strobe?) -- %.0f%% jump, ' \
+                      'longest burst %d frame(s)' % (jump, longest)
         elif jump > 2 or deltas.mean() > 25:
-            verdict = 'suspect'
+            verdict = 'busy, no sustained burst'
         print('%-6s %7d %10.2f %10.2f %7.1f%%  %s' %
               (pid, len(frames), deltas.mean(), np.percentile(deltas, 99), jump, verdict))
 
