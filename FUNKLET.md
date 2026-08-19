@@ -468,8 +468,14 @@ Stop the supervisor controller first (see the warning above), then:
 
 ```sh
 cd controller
-python main.py
+~/venv/bin/python main.py
 ```
+
+**Use the venv's interpreter, not bare `python`.** Bookworm marks the system
+Python as externally managed (PEP 668), so the project's dependencies are
+installed in `~/venv` -- bare `python` finds a system interpreter that has none
+of them and fails on `import numpy`. `source ~/venv/bin/activate` first if you
+prefer, then plain `python` works for the rest of the shell session.
 
 Useful flags:
 
@@ -555,8 +561,13 @@ live video decoding.
 
 ```sh
 cd controller
-python create_pattern_cache.py
+~/venv/bin/python create_pattern_cache.py
 ```
+
+Bare `python` is the system interpreter and fails on `import numpy`; see the
+note under [By hand](#by-hand-for-debugging). This takes a while -- 16 patterns
+at 60 seconds each -- so run it under `tmux` if you are on a wifi link that
+might drop.
 
 | Flag | Meaning |
 |---|---|
@@ -569,7 +580,7 @@ python create_pattern_cache.py
 
 ```sh
 cd controller
-python main.py -c
+~/venv/bin/python main.py -c
 ```
 
 ### Where it lives, and how it is keyed
@@ -648,7 +659,7 @@ boards:
 ```sh
 echo '{ "led_busses": [] }' > /tmp/bus_local.json
 cd controller
-python main.py -b /tmp/bus_local.json
+~/venv/bin/python main.py -b /tmp/bus_local.json
 ```
 
 and view it in the [visualizer](#running-the-visualizer). Everything except the
