@@ -400,7 +400,7 @@ class PatternSelector:
                 continue
 
 
-    async def launchpadWSListener(self, websocket, path):
+    async def launchpadWSListener(self, websocket):
         while True:
             try:
                 res = await websocket.recv()
